@@ -1,0 +1,24 @@
+---
+description: Frontend rules for planning-poker-web
+alwaysApply: true
+---
+
+# Frontend Rules — web
+
+## Scope
+
+- `src/**`
+
+## Rules
+
+- Do not change backend contracts.
+- Reuse existing UI components and patterns.
+- Handle loading, error, empty, and success states.
+
+## Output
+
+1. UI behavior implemented
+2. States covered
+3. Files changed
+4. Manual checks
+5. Risks
