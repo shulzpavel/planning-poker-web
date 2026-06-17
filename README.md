@@ -2,8 +2,6 @@
 
 React/Vite SPA for manager cockpit, participant voting, CMS, and retrospectives.
 
-<!-- deploy-alert-test: 2026-06-17 -->
-
 ## Run locally
 
 ```bash
