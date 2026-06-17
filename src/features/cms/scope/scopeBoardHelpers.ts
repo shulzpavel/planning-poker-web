@@ -516,6 +516,10 @@ function positiveTrackSp(value: number | null | undefined): number | null {
   return value;
 }
 
+function isTrackSpSet(value: number | null | undefined): boolean {
+  return value != null && !Number.isNaN(value) && value >= 0;
+}
+
 export function issueInTestPhase(issue: ScopeBoardIssue): boolean {
   const status = (issue.status || "").toLowerCase().trim();
   return TEST_STATUS_NAMES.has(status);
@@ -618,7 +622,12 @@ export function roleAttentionReasons(
     }
   }
 
-  if (issueInTestPhase(issue) && configured.qa && !hasJiraRoleAssignee(issue, "qa")) {
+  if (
+    issueInTestPhase(issue) &&
+    configured.qa &&
+    !isTrackSpSet(issue.story_points_test) &&
+    !hasJiraRoleAssignee(issue, "qa")
+  ) {
     reasons.push(JIRA_ROLE_FIELD_LABELS.qa);
   }
 
@@ -631,8 +640,8 @@ export function needsRoleAttributionAttention(issue: ScopeBoardIssue): boolean {
 
 export function missingWorkloadTracks(issue: ScopeBoardIssue): Array<"dev" | "test"> {
   const missing: Array<"dev" | "test"> = [];
-  if (positiveTrackSp(issue.story_points_dev) == null) missing.push("dev");
-  if (positiveTrackSp(issue.story_points_test) == null) missing.push("test");
+  if (!isTrackSpSet(issue.story_points_dev)) missing.push("dev");
+  if (!isTrackSpSet(issue.story_points_test)) missing.push("test");
   return missing;
 }
 

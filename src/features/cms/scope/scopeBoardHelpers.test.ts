@@ -397,4 +397,40 @@ describe("workload attention", () => {
     expect(needsWorkloadTrackAttention(issue)).toBe(true);
     expect(workloadAttentionReasons(issue)).toEqual(["нет SP Dev", "нет SP Test", "указан только общий SP"]);
   });
+
+  it("treats explicit zero track SP as filled", () => {
+    const issue = {
+      key: "FLEX-3001",
+      summary: "Example",
+      url: "https://example/browse/FLEX-3001",
+      story_points: 5,
+      story_points_dev: 5,
+      story_points_test: 0,
+      estimated: true,
+      status: "В работе",
+      status_category: "indeterminate",
+      issue_type: "Story",
+      labels: [],
+    };
+    expect(needsWorkloadTrackAttention(issue)).toBe(false);
+    expect(workloadAttentionReasons(issue)).toEqual([]);
+  });
+
+  it("does not require QA assignee when SP Test is explicitly zero", () => {
+    const issue = {
+      key: "FLEX-3002",
+      summary: "Example",
+      url: "https://example/browse/FLEX-3002",
+      story_points: 5,
+      story_points_dev: 5,
+      story_points_test: 0,
+      estimated: true,
+      status: "Тестирование",
+      status_category: "indeterminate",
+      issue_type: "Story",
+      labels: [],
+      jira_role_assignees: { front: "", back: "", qa: "" },
+    };
+    expect(roleAttentionReasons(issue).some((reason) => reason.includes("Тестировщик"))).toBe(false);
+  });
 });
