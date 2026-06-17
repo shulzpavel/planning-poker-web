@@ -637,8 +637,12 @@ export interface ScopeBoardMetrics {
   unplan_by_developer?: ScopeDeveloperBreakdown[];
   plan_by_role?: ScopeRoleBreakdownMap;
   unplan_by_role?: ScopeRoleBreakdownMap;
+  plan_by_role_sprint?: ScopeRoleBreakdownMap;
+  unplan_by_role_sprint?: ScopeRoleBreakdownMap;
   plan_role_coverage?: ScopeRoleCoverageMap;
   unplan_role_coverage?: ScopeRoleCoverageMap;
+  plan_role_coverage_sprint?: ScopeRoleCoverageMap;
+  unplan_role_coverage_sprint?: ScopeRoleCoverageMap;
   plan_status_counts?: Record<string, number>;
   plan_change_reason_counts?: Record<string, number>;
   sections?: ScopeSectionMetrics[];

@@ -17,11 +17,32 @@ import {
 
 type ChartMode = "sp" | "tasks";
 type RoleKey = "front" | "back" | "qa";
+type WorkloadHorizon = "active" | "sprint";
 
 const ROLE_META: Record<RoleKey, { label: string; accent: "info" | "warning" | "neutral" }> = {
   front: { label: "Front", accent: "neutral" },
   back: { label: "Back", accent: "info" },
   qa: { label: "QA", accent: "warning" },
+};
+
+const HORIZON_META: Record<
+  WorkloadHorizon,
+  { label: string; description: (role: RoleKey) => string }
+> = {
+  active: {
+    label: "Сейчас",
+    description: (role) =>
+      role === "qa"
+        ? "Активная очередь тестирования: задачи в статусах «Тестирование» и «К релизу»."
+        : "Активная разработка: задачи в работе и на тестировании.",
+  },
+  sprint: {
+    label: "За спринт",
+    description: (role) =>
+      role === "qa"
+        ? "Протестировано за спринт: тестирование, к релизу и готово."
+        : "Весь объём спринта: все задачи, кроме «К выполнению» и бэклога.",
+  },
 };
 
 function RoleSegmentPicker({ value, onChange }: { value: RoleKey; onChange: (role: RoleKey) => void }) {
@@ -55,17 +76,74 @@ function RoleSegmentPicker({ value, onChange }: { value: RoleKey; onChange: (rol
   );
 }
 
+function HorizonSegmentPicker({
+  value,
+  onChange,
+}: {
+  value: WorkloadHorizon;
+  onChange: (horizon: WorkloadHorizon) => void;
+}) {
+  return (
+    <div
+      className="grid w-full grid-cols-2 gap-2 sm:inline-grid sm:w-auto sm:grid-cols-2"
+      role="tablist"
+      aria-label="Горизонт нагрузки"
+    >
+      {(Object.keys(HORIZON_META) as WorkloadHorizon[]).map((key) => {
+        const active = value === key;
+        return (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(key)}
+            className={[
+              "min-h-10 rounded-lg border px-4 text-sm font-semibold transition-colors",
+              active
+                ? "border-blue bg-blue/10 text-ink"
+                : "border-line bg-surface text-ink2 hover:border-blue/40 hover:bg-bg/80",
+            ].join(" ")}
+          >
+            {HORIZON_META[key].label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function roleBreakdownForHorizon(
+  metrics: ScopeBoardMetrics,
+  horizon: WorkloadHorizon,
+): { plan: ScopeRoleBreakdownMap | undefined; unplan: ScopeRoleBreakdownMap | undefined } {
+  if (horizon === "sprint") {
+    return {
+      plan: metrics.plan_by_role_sprint,
+      unplan: metrics.unplan_by_role_sprint,
+    };
+  }
+  return {
+    plan: metrics.plan_by_role,
+    unplan: metrics.unplan_by_role,
+  };
+}
+
 export function ScopeAssigneeCharts({ metrics }: { metrics: ScopeBoardMetrics }) {
   const [role, setRole] = useState<RoleKey>("front");
-  const planByRole = metrics.plan_by_role;
-  const unplanByRole = metrics.unplan_by_role;
-  const hasData = hasRoleBreakdown(planByRole) || hasRoleBreakdown(unplanByRole);
+  const [horizon, setHorizon] = useState<WorkloadHorizon>("active");
+  const { plan: planByRole, unplan: unplanByRole } = roleBreakdownForHorizon(metrics, horizon);
+  const hasActive = hasRoleBreakdown(metrics.plan_by_role) || hasRoleBreakdown(metrics.unplan_by_role);
+  const hasSprint =
+    hasRoleBreakdown(metrics.plan_by_role_sprint) || hasRoleBreakdown(metrics.unplan_by_role_sprint);
+  const hasData = hasActive || hasSprint;
 
   if (!hasData) {
     return null;
   }
 
   const roleMeta = ROLE_META[role];
+  const horizonMeta = HORIZON_META[horizon];
 
   return (
     <Surface className="scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0">
@@ -80,33 +158,45 @@ export function ScopeAssigneeCharts({ metrics }: { metrics: ScopeBoardMetrics })
         </summary>
 
         <div className="space-y-5 p-4 sm:p-6 lg:p-7">
-          <RoleSegmentPicker value={role} onChange={setRole} />
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <RoleSegmentPicker value={role} onChange={setRole} />
+            <HorizonSegmentPicker value={horizon} onChange={setHorizon} />
+          </div>
+
+          <p className="rounded-xl bg-bg/70 px-3 py-2 text-sm text-ink3">{horizonMeta.description(role)}</p>
 
           <div className="grid gap-5 xl:grid-cols-2">
-          <RoleDonutCard
-            title={`Плановые задачи роли ${roleMeta.label}`}
-            rows={planByRole?.[role] ?? []}
-            accent={roleMeta.accent}
-            role={role}
-          />
-          <RoleDonutCard
-            title={`Внеплановые задачи роли ${roleMeta.label}`}
-            rows={unplanByRole?.[role] ?? []}
-            accent={roleMeta.accent}
-            role={role}
-          />
-        </div>
+            <RoleDonutCard
+              title={`План · ${roleMeta.label} · ${horizonMeta.label}`}
+              rows={planByRole?.[role] ?? []}
+              accent={roleMeta.accent}
+              role={role}
+            />
+            <RoleDonutCard
+              title={`Внеплан · ${roleMeta.label} · ${horizonMeta.label}`}
+              rows={unplanByRole?.[role] ?? []}
+              accent={roleMeta.accent}
+              role={role}
+            />
+          </div>
         </div>
       </details>
     </Surface>
   );
 }
 
-export function summarizeRoleWorkload(metrics: ScopeBoardMetrics, role: RoleKey) {
-  const planRows = metrics.plan_by_role?.[role] ?? [];
-  const unplanRows = metrics.unplan_by_role?.[role] ?? [];
-  const planCoverage = metrics.plan_role_coverage?.[role];
-  const unplanCoverage = metrics.unplan_role_coverage?.[role];
+export function summarizeRoleWorkload(
+  metrics: ScopeBoardMetrics,
+  role: RoleKey,
+  horizon: WorkloadHorizon = "active",
+) {
+  const { plan, unplan } = roleBreakdownForHorizon(metrics, horizon);
+  const planRows = plan?.[role] ?? [];
+  const unplanRows = unplan?.[role] ?? [];
+  const planCoverage =
+    horizon === "sprint" ? metrics.plan_role_coverage_sprint?.[role] : metrics.plan_role_coverage?.[role];
+  const unplanCoverage =
+    horizon === "sprint" ? metrics.unplan_role_coverage_sprint?.[role] : metrics.unplan_role_coverage?.[role];
   return {
     scopeSp: Math.max(0, metrics.plan_sp) + Math.max(0, metrics.unplan_sp),
     scopeCount: metrics.plan_count + metrics.unplan_count,
@@ -298,9 +388,7 @@ function RoleLegend({
                         <span className="font-medium text-ink">{task.key}</span>
                       )}
                       <span className="text-ink3">{formatRoleSp(task.story_points ?? null)}</span>
-                      {role === "qa" && task.status ? (
-                        <Badge tone="neutral">{task.status}</Badge>
-                      ) : null}
+                      {task.status ? <Badge tone="neutral">{task.status}</Badge> : null}
                       {role === "qa" && (task.status_entered_at || task.status_changed_at) ? (
                         <span className="text-ink3">
                           {formatQueueTimelineDate(task.status_entered_at || task.status_changed_at || "")}
