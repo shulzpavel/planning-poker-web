@@ -1,0 +1,708 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root,
+  :root[data-theme="light"] {
+    /* Apple-like light surfaces. Values are R G B triplets so Tailwind opacity
+       modifiers (`bg-blue/20`) keep working through <alpha-value>. */
+    --c-canvas:   247 248 250;
+    --c-surface:  255 255 255;
+    --c-elevated: 255 255 255;
+    --c-ink:       10  10  15;
+    --c-ink2:      60  60  67;
+    --c-ink3:     110 110 115;
+    --c-ink4:     174 174 178;
+    --c-line:     229 229 234;
+    --c-line2:    242 242 247;
+    --c-blue:       0 113 227;
+    --c-blue2:      0 119 237;
+    --c-green:     48 209  88;
+    --c-red:      255  59  48;
+    --c-amber:    180  83   9;
+    --c-purple:   191  90 242;
+
+    --shadow-card:  0 1px 3px rgba(0, 0, 0, .06), 0 4px 16px rgba(0, 0, 0, .06);
+    --shadow-hover: 0 2px 8px rgba(0, 0, 0, .08), 0 8px 24px rgba(0, 0, 0, .08);
+    --shadow-pop:   0 4px 12px rgba(0, 113, 227, .25);
+    --shadow-inset: inset 0 0 0 1.5px rgba(0, 0, 0, .08);
+
+    color-scheme: light;
+
+    --radius: 8px;
+    --radius-sm: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+    --motion-fast: 120ms;
+    --motion-base: 180ms;
+    --motion-slow: 240ms;
+    /* Native-feeling easing curves. `ease-out-soft` is close to iOS spring
+       without bounce; `ease-emphasized` mirrors Material 3 emphasized motion
+       for state changes (sheets, content swaps). */
+    --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+    --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* Mobile safe-area insets — these resolve to 0 on devices/browsers
+       without insets, so it's always safe to add them. The custom property
+       lets us combine paddings inside calc(): pb-safe + nav height etc. */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+
+  :root[data-theme="dark"] {
+    /* Deep, considered dark palette. Not pure-black so cards still feel
+       layered, with accent blues slightly brighter to keep contrast on the
+       darker canvas. */
+    --c-canvas:    18  18  22;
+    --c-surface:   28  28  33;
+    --c-elevated:  40  40  48;
+    --c-ink:      245 245 247;
+    --c-ink2:     209 209 214;
+    --c-ink3:     152 152 158;
+    --c-ink4:      99  99 106;
+    --c-line:      58  58  65;
+    --c-line2:     44  44  50;
+    --c-blue:      10 132 255;
+    --c-blue2:     64 156 255;
+    --c-green:     48 209  88;
+    --c-red:      255  69  58;
+    --c-amber:    255 159  10;
+    --c-purple:   191  90 242;
+
+    --shadow-card:  0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .45);
+    --shadow-hover: 0 2px 6px rgba(0, 0, 0, .5),  0 14px 32px rgba(0, 0, 0, .55);
+    --shadow-pop:   0 4px 18px rgba(10, 132, 255, .35);
+    --shadow-inset: inset 0 0 0 1.5px rgba(255, 255, 255, .06);
+
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    font-size: 17px;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: rgb(var(--c-canvas));
+  }
+
+  @media (min-width: 640px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
+  /* Defensive: any stray oversized element should be clipped at the
+     viewport, not produce a horizontal scrollbar. `overflow-x: clip` is
+     preferred over `hidden` because it does NOT create a new scroll
+     container, so `position: sticky` etc. keep working as expected.
+     Browsers without clip support fall back to hidden. */
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans;
+    min-height: 100dvh;
+    transition: background-color 200ms ease, color 200ms ease;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-blue) / 0.45);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  @keyframes skeleton-shimmer {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+  }
+
+  .skeleton-base {
+    border: 1px solid rgb(var(--c-line) / 0.7);
+    background-color: rgb(var(--c-line2) / 0.75);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  .scope-section-header {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--c-line2) / 0.95) 0%,
+      rgb(var(--c-surface) / 0.9) 55%,
+      rgb(var(--c-elevated) / 0.82) 100%
+    );
+    color: rgb(var(--c-ink));
+  }
+
+  .scope-section-header-subtitle {
+    color: rgb(var(--c-ink3));
+  }
+
+  .scope-section-header-icon {
+    background: rgb(var(--c-line2) / 0.9);
+    color: rgb(var(--c-ink2));
+  }
+
+  .scope-collapsible-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .scope-section-header-warning {
+    background: rgb(var(--c-amber) / 0.08);
+    color: rgb(var(--c-amber));
+  }
+
+  .scope-section-header-warning .scope-section-header-subtitle {
+    color: rgb(var(--c-amber) / 0.8);
+  }
+
+  .scope-section-header-warning .scope-section-header-icon {
+    background: rgb(var(--c-amber) / 0.15);
+    color: rgb(var(--c-amber));
+  }
+
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      rgb(var(--c-surface) / 0.65) 50%,
+      transparent 80%
+    );
+    filter: blur(8px);
+    animation: skeleton-shimmer 1.4s var(--ease-out-soft) infinite;
+    pointer-events: none;
+  }
+
+  .card {
+    @apply bg-surface rounded-lg shadow-card border border-line;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  .btn-primary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 px-5 py-3 rounded-lg
+           bg-blue text-white font-semibold text-base leading-none
+           transition-[background-color,box-shadow] duration-150
+           hover:bg-blue2
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none;
+  }
+
+  .btn-ghost {
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg
+           text-ink3 text-sm font-medium
+           hover:bg-line2 hover:text-ink transition-[background-color,color] duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+  }
+
+  .input {
+    @apply w-full px-3 py-2.5 rounded-lg border border-line bg-surface
+           text-ink text-base sm:text-sm placeholder-ink4
+           outline-none ring-0
+           transition-[border-color,box-shadow] duration-150
+           focus:border-blue focus:ring-2 focus:ring-blue/20;
+    scroll-margin-top: 6rem;
+    scroll-margin-bottom: 10rem;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-1.5 rounded-full bg-line overflow-hidden;
+  }
+  .progress-fill {
+    @apply h-full rounded-full bg-blue transition-all duration-500;
+  }
+
+  @keyframes scroll-hint-bob {
+    0%, 100% { transform: translateY(0); opacity: 0.7; }
+    50% { transform: translateY(5px); opacity: 1; }
+  }
+
+  /* === Apple-Intelligence-style AI surface ===
+     Used by the AI summary panel (manager + voter side panel). The visible
+     border is a thin conic-gradient ring that slowly rotates around the
+     card, with a faint sparkle glyph anchored at the top-right corner.
+     Stays calm: low chroma, long period (8s), small icon — does not
+     compete with the rest of the laconic UI.
+
+     Implementation:
+       1. `.ai-intelligence-surface` paints content over a normal Surface
+          background. A `::before` pseudo-element draws the gradient ring
+          using the standard "padding-mask trick" so the gradient is
+          visible only on the border, not behind the content.
+       2. Rotation is animated via a CSS custom property `--ai-angle`
+          registered through `@property`, which is required to make
+          `conic-gradient(from <angle>, …)` tweenable.
+       3. Browsers without `@property` (older Safari) fall back to a
+          static gradient — the panel still looks intentional.
+       4. `prefers-reduced-motion` rule above already nukes the keyframes.
+  */
+
+  @property --ai-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+  }
+
+  @keyframes ai-rotate-border {
+    to { --ai-angle: 360deg; }
+  }
+
+  @keyframes ai-sparkle-pulse {
+    0%, 100% { opacity: 0.85; transform: scale(1); }
+    50%      { opacity: 1;    transform: scale(1.08); }
+  }
+
+  @keyframes ai-orb-breathe {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgb(var(--c-purple) / 0.20), 0 0 28px rgb(var(--c-blue) / 0.20);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 10px rgb(var(--c-purple) / 0), 0 0 40px rgb(var(--c-blue2) / 0.30);
+    }
+  }
+
+  @keyframes ai-progress-sweep {
+    0% { transform: translateX(-105%); }
+    100% { transform: translateX(105%); }
+  }
+
+  .ai-intelligence-surface {
+    position: relative;
+    border-radius: var(--radius-lg);
+    background: rgb(var(--c-surface));
+    box-shadow: var(--shadow-card);
+    isolation: isolate;
+  }
+
+  .ai-intelligence-surface::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from var(--ai-angle, 0deg),
+      rgb(var(--c-purple)) 0%,
+      rgb(var(--c-blue2)) 25%,
+      rgb(var(--c-blue)) 50%,
+      rgb(var(--c-purple)) 75%,
+      rgb(var(--c-blue2)) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+            mask-composite: exclude;
+    animation: ai-rotate-border 8s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Faint inner wash so content sits on a slightly tinted card, matching
+     the previous `bg-blue/5` aesthetic of the AI panel. */
+  .ai-intelligence-surface::after {
+    content: "";
+    position: absolute;
+    inset: 1.5px;
+    border-radius: calc(var(--radius-lg) - 1.5px);
+    background:
+      radial-gradient(120% 80% at 0% 0%, rgb(var(--c-purple) / 0.06), transparent 60%),
+      radial-gradient(120% 80% at 100% 100%, rgb(var(--c-blue) / 0.06), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ai-intelligence-surface > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .ai-sparkle {
+    animation: ai-sparkle-pulse 2.6s var(--ease-out-soft) infinite;
+    transform-origin: center;
+  }
+
+  .ai-sparkle-pill {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    min-height: 1.75rem;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    color: rgb(var(--c-blue2));
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    background:
+      linear-gradient(rgb(var(--c-surface)), rgb(var(--c-surface))) padding-box,
+      conic-gradient(
+        from var(--ai-angle, 0deg),
+        rgb(var(--c-purple)) 0%,
+        rgb(var(--c-blue2)) 25%,
+        rgb(var(--c-blue)) 50%,
+        rgb(var(--c-purple)) 75%,
+        rgb(var(--c-blue2)) 100%
+      ) border-box;
+    border: 1.25px solid transparent;
+    animation: ai-rotate-border 8s linear infinite;
+  }
+
+  .ai-orb {
+    position: relative;
+    display: inline-flex;
+    height: 3rem;
+    width: 3rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: rgb(var(--c-blue2));
+    background:
+      radial-gradient(circle at 35% 30%, rgb(var(--c-surface)) 0 32%, transparent 33%),
+      conic-gradient(
+        from var(--ai-angle, 0deg),
+        rgb(var(--c-purple)),
+        rgb(var(--c-blue2)),
+        rgb(var(--c-blue)),
+        rgb(var(--c-purple))
+      );
+    animation:
+      ai-rotate-border 7s linear infinite,
+      ai-orb-breathe 2.8s var(--ease-out-soft) infinite;
+  }
+
+  .ai-orb::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: inherit;
+    background: rgb(var(--c-surface) / 0.86);
+    z-index: -1;
+  }
+
+  .ai-progress-track {
+    position: relative;
+    height: 0.375rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(var(--c-line2) / 0.95);
+  }
+
+  .ai-progress-fill {
+    position: absolute;
+    inset-block: 0;
+    width: 58%;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--c-purple) / 0.80),
+      rgb(var(--c-blue2)),
+      transparent
+    );
+    filter: blur(0.5px);
+    animation: ai-progress-sweep 1.45s var(--ease-out-soft) infinite;
+  }
+
+  /* === AI-styled button ===
+     Same Apple-Intelligence ring as the AI surface, but with no filled
+     pill: transparent center, animated gradient border, sparkle glyph.
+  */
+  .ai-sparkle-button {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background-image: none !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: rgb(var(--c-blue2)) !important;
+    box-shadow: none;
+  }
+
+  .ai-sparkle-button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.25px;
+    background: conic-gradient(
+      from var(--ai-angle, 0deg),
+      rgb(var(--c-purple)) 0%,
+      rgb(var(--c-blue2)) 25%,
+      rgb(var(--c-blue)) 50%,
+      rgb(var(--c-purple)) 75%,
+      rgb(var(--c-blue2)) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+            mask-composite: exclude;
+    animation: ai-rotate-border 8s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ai-sparkle-button > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .ai-sparkle-button:hover:not(:disabled):not([aria-disabled="true"]) {
+    background-color: rgb(var(--c-blue2) / .045) !important;
+    color: rgb(var(--c-blue2)) !important;
+    box-shadow: 0 8px 22px rgba(87, 127, 255, .10);
+    filter: none;
+  }
+
+  .ai-sparkle-button:active:not(:disabled):not([aria-disabled="true"]) {
+    background-color: rgb(var(--c-purple) / .06) !important;
+    filter: none;
+  }
+
+  .ai-sparkle-button:disabled,
+  .ai-sparkle-button[aria-disabled="true"] {
+    color: rgb(var(--c-blue2) / .55) !important;
+    box-shadow: none;
+    filter: saturate(0.5);
+  }
+}
+
+@layer utilities {
+  .text-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  .text-balance { text-wrap: balance; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* === Safe-area helpers ===
+     Use on sticky/fixed CTAs and full-bleed mobile containers so iPhone
+     notches and home-indicator do not eat the active control. All resolve to
+     0 on devices without insets, so they are free to add unconditionally. */
+  .pt-safe { padding-top: var(--safe-top); }
+  .pb-safe { padding-bottom: var(--safe-bottom); }
+  .pl-safe { padding-left: var(--safe-left); }
+  .pr-safe { padding-right: var(--safe-right); }
+  .px-safe { padding-left: var(--safe-left); padding-right: var(--safe-right); }
+  .py-safe { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); }
+  /* Compose with a fixed gutter, e.g. `.pb-safe-4` = 1rem + safe inset. */
+  .pb-safe-4 { padding-bottom: calc(var(--safe-bottom) + 1rem); }
+  .pb-safe-6 { padding-bottom: calc(var(--safe-bottom) + 1.5rem); }
+  .pt-safe-4 { padding-top: calc(var(--safe-top) + 1rem); }
+  .mb-safe-cta { margin-bottom: calc(var(--safe-bottom) + 0.5rem); }
+  /* Reserves bottom space inside a scroll container so sticky CTAs never
+     overlap the last item. */
+  .scroll-pb-cta { padding-bottom: calc(var(--safe-bottom) + 5rem); }
+
+  /* Space for the manager mobile bottom dock so page scroll does not hide CTAs. */
+  .pb-mobile-dock {
+    padding-bottom: calc(var(--safe-bottom) + 5.5rem);
+  }
+
+  /* Mobile viewport helpers. `dvh`/`svh` are already in Tailwind 3.4, this
+     just gives a stable alias and a min-h-dvh-safe variant that reserves
+     bottom inset on iOS Safari. */
+  .min-h-screen-mobile { min-height: 100svh; min-height: 100dvh; }
+  .h-screen-mobile { height: 100svh; height: 100dvh; }
+
+  /* Shared blue glow from the landing page. Use only on page-level shells:
+     cards and controls stay plain so the product keeps a calm, laconic look. */
+  .app-gradient-bg {
+    background-color: rgb(var(--c-canvas));
+    background-image:
+      radial-gradient(46rem 34rem at 14% -6rem, rgb(var(--c-blue2) / 0.16), transparent 72%),
+      radial-gradient(42rem 30rem at 52% 4rem, rgb(var(--c-blue) / 0.10), transparent 74%),
+      radial-gradient(44rem 32rem at 92% 92%, rgb(var(--c-blue) / 0.12), transparent 78%),
+      radial-gradient(32rem 24rem at -8% 100%, rgb(var(--c-blue2) / 0.10), transparent 76%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+
+  /* Native-feeling transitions for general state changes. Apply to elements
+     that grow/shrink/swap inline content — kept under 250ms per spec. */
+  .transition-soft { transition: all var(--motion-base) var(--ease-out-soft); }
+  .transition-emphasized { transition: all var(--motion-slow) var(--ease-emphasized); }
+
+  /* Mobile-friendly tap targets. Pair with role="button" / <button> wrappers
+     where the visible glyph is smaller than 44px (icons, chips, close-X). */
+  .tap-target { min-width: 44px; min-height: 44px; }
+
+  .scroll-hint-bob { animation: scroll-hint-bob 1.35s var(--ease-out-soft) infinite; }
+
+  /* Jira renderedFields HTML — mirrors common Jira Cloud typography. */
+  .jira-html-content {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .jira-html-content * {
+    max-width: 100%;
+  }
+  .jira-html-content p { margin: 0.5rem 0; }
+  .jira-html-content p:first-child { margin-top: 0; }
+  .jira-html-content p:last-child { margin-bottom: 0; }
+  .jira-html-content h1 { font-size: 1.125rem; font-weight: 700; margin: 1rem 0 0.5rem; color: rgb(var(--c-ink)); }
+  .jira-html-content h2 { font-size: 1rem; font-weight: 700; margin: 0.875rem 0 0.375rem; color: rgb(var(--c-ink)); }
+  .jira-html-content h3,
+  .jira-html-content h4 { font-size: 0.875rem; font-weight: 600; margin: 0.75rem 0 0.25rem; color: rgb(var(--c-ink)); }
+  .jira-html-content ul { list-style: disc; margin: 0.5rem 0; padding-left: 1.25rem; }
+  .jira-html-content ol { list-style: decimal; margin: 0.5rem 0; padding-left: 1.25rem; }
+  .jira-html-content li { margin: 0.25rem 0; }
+  .jira-html-content a { color: rgb(var(--c-blue)); overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 2px; }
+  .jira-html-content code { font-family: ui-monospace, monospace; font-size: 0.85em; background: rgb(var(--c-line) / 0.5); padding: 0.1em 0.35em; border-radius: 4px; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .jira-html-content pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; margin: 0.5rem 0; padding: 0.75rem; border-radius: 6px; background: rgb(var(--c-line) / 0.35); }
+  .jira-html-content blockquote { margin: 0.5rem 0; padding-left: 0.75rem; border-left: 2px solid rgb(var(--c-line)); color: rgb(var(--c-ink2)); }
+  .jira-html-content img { height: auto; max-width: 100%; }
+  .jira-html-content table { display: block; width: 100%; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 0.5rem 0; font-size: 0.8125rem; }
+  .jira-html-content th,
+  .jira-html-content td { border: 1px solid rgb(var(--c-line)); padding: 0.35rem 0.5rem; vertical-align: top; }
+  .jira-html-content th { background: rgb(var(--c-line) / 0.35); font-weight: 600; }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+}
+
+/* Defer fontstack swap so we don't get a layout reflow between fallback and
+   the loaded Inter font; CLS budget stays small. */
+@supports (font-display: swap) {
+  body { font-display: swap; }
+}
+
+.scope-print-only {
+  display: none !important;
+}
+
+@media print {
+  @page {
+    margin: 10mm;
+    size: A4;
+  }
+
+  body.scope-print-mode {
+    background: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.scope-print-mode > main > header {
+    display: none !important;
+  }
+
+  body.scope-print-mode > main > .mx-auto {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  body.scope-print-mode .scope-board-shell > *:not(.scope-report-print-root) {
+    display: none !important;
+  }
+
+  body.scope-print-mode .scope-no-print,
+  body.scope-print-mode .scope-print-hide {
+    display: none !important;
+  }
+
+  body.scope-print-mode .scope-print-only {
+    display: block !important;
+  }
+
+  body.scope-print-mode .scope-print-cover {
+    display: block !important;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgb(var(--c-line));
+  }
+
+  body.scope-print-mode .scope-report-print-root {
+    display: block !important;
+  }
+
+  body.scope-print-mode .scope-report-print-root details {
+    break-inside: avoid-page;
+  }
+
+  body.scope-print-mode .scope-report-print-root details > summary {
+    list-style: none;
+  }
+
+  body.scope-print-mode .scope-report-print-root details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  body.scope-print-mode .scope-report-print-root button,
+  body.scope-print-mode .scope-report-print-root input,
+  body.scope-print-mode .scope-report-print-root textarea,
+  body.scope-print-mode .scope-report-print-root select {
+    display: none !important;
+  }
+
+  body.scope-print-mode .scope-ai-history-aside {
+    display: none !important;
+  }
+
+  body.scope-print-mode .scope-ai-panel-grid {
+    display: block !important;
+  }
+}

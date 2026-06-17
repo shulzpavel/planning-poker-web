@@ -1,0 +1,264 @@
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { type MouseEvent, useEffect, useMemo, useState } from "react";
+import AiSummaryView from "../components/AiSummaryView";
+import JiraDescriptionPanel from "../components/JiraDescriptionPanel";
+import ParticipantChip from "../components/ParticipantChip";
+import TaskTextBlock from "../components/TaskTextBlock";
+import VoteCard from "../components/VoteCard";
+import {
+  Alert,
+  AutoHideAppHeader,
+  Badge,
+  BrandHomeLink,
+  LoadingDots,
+  ProgressBar,
+  Surface,
+  ThemeToggle,
+} from "../design-system";
+import { ParticipantStatus, TaskInfo, WebSessionState } from "../hooks/useSession";
+import { loadWebIdentity } from "../shared/lib/participantIdentity";
+import {
+  getEstimationModeOption,
+  isSplitEstimationMode,
+  resolveTrackForRole,
+  resolveTrackLabel,
+} from "../shared/lib/estimationModes";
+
+const VOTE_VALUES = ["0", "1", "2", "3", "5", "8", "13", "21", "?"];
+
+interface VotePageProps {
+  task: TaskInfo;
+  participants: ParticipantStatus[];
+  estimation?: Pick<
+    WebSessionState,
+    "estimation_mode" | "estimation_mode_label" | "estimation_mode_description" | "estimation_tracks"
+  >;
+  onVote: (value: string, track?: string | null) => Promise<boolean>;
+  error: string | null;
+  onLogoClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
+}
+
+export default function VotePage({
+  task,
+  participants,
+  estimation,
+  onVote,
+  error,
+  onLogoClick,
+}: VotePageProps) {
+  const reduceMotion = useReducedMotion();
+  const [selected, setSelected] = useState<string | null>(null);
+  const [voted, setVoted] = useState(false);
+
+  const identity = loadWebIdentity();
+  const voterTrack = useMemo(
+    () => resolveTrackForRole(estimation?.estimation_mode, identity?.role ?? null),
+    [estimation?.estimation_mode, identity?.role],
+  );
+  const voterTrackLabel = resolveTrackLabel(estimation?.estimation_mode, voterTrack);
+  const modeOption = getEstimationModeOption(estimation?.estimation_mode);
+  const splitMode = isSplitEstimationMode(estimation?.estimation_mode);
+
+  const taskKey = task.task_id ?? `${task.index}-${task.text}`;
+  useEffect(() => {
+    setSelected(null);
+    setVoted(false);
+  }, [taskKey]);
+
+  async function handleSelect(value: string) {
+    if (voted) return;
+    setSelected(value);
+    setVoted(true);
+    const ok = await onVote(value, voterTrack);
+    if (!ok) {
+      setVoted(false);
+      setSelected(null);
+    }
+  }
+
+  const votedCount = participants.filter((p) => p.voted).length;
+  const totalCount = participants.length;
+  const progress = totalCount > 0 ? votedCount / totalCount : 0;
+  const transitionBase = { duration: reduceMotion ? 0 : 0.18, ease: [0.2, 0, 0, 1] as const };
+  const hasDescription =
+    Boolean(task.description) ||
+    Boolean(task.description_adf) ||
+    Boolean(task.description_html);
+
+  return (
+    <div className="flex min-h-screen-mobile flex-col app-gradient-bg">
+      <AutoHideAppHeader className="z-10 border-line/60 bg-surface/85">
+        <div className="flex min-h-14 w-full items-center gap-2 px-3 pt-safe sm:gap-3 sm:px-4 md:px-8">
+          <BrandHomeLink size="sm" showWordmark={false} className="shrink-0 sm:hidden" onClick={onLogoClick} />
+          <BrandHomeLink size="sm" className="hidden min-w-0 sm:inline-flex" onClick={onLogoClick} />
+          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
+            {estimation?.estimation_mode_label ? (
+              <Badge tone="neutral">{estimation.estimation_mode_label}</Badge>
+            ) : null}
+            {task.jira_key ? <Badge tone="info">{task.jira_key}</Badge> : null}
+            <span className="text-xs font-medium tabular-nums text-ink3">
+              {task.index}&thinsp;/&thinsp;{task.total}
+            </span>
+            <ThemeToggle />
+          </div>
+        </div>
+      </AutoHideAppHeader>
+
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-4 pb-safe-6 md:grid md:grid-cols-[18rem_minmax(0,1fr)] md:gap-8 md:px-8 md:py-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
+        <AnimatePresence mode="wait">
+          <motion.aside
+            key={taskKey}
+            className="order-3 flex flex-col gap-3 md:order-1 md:gap-5"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={transitionBase}
+          >
+            <Surface className="p-4 md:p-5">
+              <p className="mb-1.5 text-2xs font-semibold uppercase tracking-widest text-ink3">Задача</p>
+              <TaskTextBlock
+                text={task.text}
+                fallback="Без названия"
+                titleClassName="text-base md:text-lg"
+              />
+              {splitMode && voterTrackLabel ? (
+                <p className="mt-2 text-xs text-ink3">
+                  Ваша зона оценки: <span className="font-semibold text-ink">{voterTrackLabel}</span>
+                </p>
+              ) : null}
+              <div className="mt-3 md:mt-4">
+                <div className="mb-1.5 flex items-center justify-between text-2xs text-ink3">
+                  <span>Прогресс</span>
+                  <span className="tabular-nums">{votedCount} / {totalCount}</span>
+                </div>
+                <ProgressBar value={progress} />
+              </div>
+            </Surface>
+
+            {participants.length > 0 ? (
+              <Surface className="p-4 md:p-5">
+                <p className="mb-2 text-2xs font-semibold uppercase tracking-widest text-ink3 md:mb-3">Участники</p>
+                <div className="flex flex-wrap gap-2">
+                  {participants.map((p, i) => (
+                    <ParticipantChip
+                      key={`${p.name}-${i}`}
+                      name={p.name}
+                      voted={p.voted}
+                      value={p.value ?? null}
+                      suffix={p.track_label ?? undefined}
+                    />
+                  ))}
+                </div>
+              </Surface>
+            ) : null}
+
+            {splitMode && modeOption.tracks.length > 0 ? (
+              <Surface className="p-4 md:p-5">
+                <p className="mb-2 text-2xs font-semibold uppercase tracking-widest text-ink3">Треки оценки</p>
+                <div className="flex flex-wrap gap-2">
+                  {modeOption.tracks.map((track) => (
+                    <Badge key={track.key} tone={track.key === voterTrack ? "info" : "neutral"}>
+                      {track.label}
+                    </Badge>
+                  ))}
+                </div>
+              </Surface>
+            ) : null}
+          </motion.aside>
+        </AnimatePresence>
+
+        <section className="order-1 flex w-full min-w-0 flex-col gap-4 md:order-2 md:mx-auto md:max-w-2xl md:gap-6">
+          <Surface className="flex min-h-[22rem] flex-col items-stretch justify-center p-4 md:p-6">
+            <AnimatePresence mode="wait" initial={false}>
+              {voted ? (
+                <motion.div
+                  key="voted"
+                  className="flex flex-col items-center justify-center gap-4 py-6 text-center md:py-8"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={transitionBase}
+                >
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green/12 md:h-20 md:w-20">
+                    <svg width="32" height="26" viewBox="0 0 36 28" fill="none" aria-hidden="true">
+                      <path d="M3 14L13 24L33 4" stroke="#30D158" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-ink md:text-xl">Вы проголосовали!</p>
+                    <p className="mt-1 text-sm text-ink3 md:text-base">
+                      Ваш выбор{voterTrackLabel ? ` (${voterTrackLabel})` : ""}:{" "}
+                      <span className="text-lg font-bold text-blue">{selected}</span>
+                    </p>
+                  </div>
+                  <p className="text-xs text-ink4 md:text-sm">Ожидаем остальных участников…</p>
+                  <LoadingDots className="text-ink4" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="cards"
+                  className="flex flex-col"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={transitionBase}
+                >
+                  <p className="mb-1 text-center text-2xs font-semibold uppercase tracking-widest text-ink3 md:text-left md:text-xs">
+                    {splitMode && voterTrackLabel ? `Выберите ${voterTrackLabel}` : "Выберите оценку"}
+                  </p>
+                  <p className="mb-3 text-center text-2xs text-ink4 md:mb-4 md:text-left">
+                    Выбор подтвердится сразу после тапа и сразу станет виден всей команде.
+                  </p>
+                  <div className="grid grid-cols-5 gap-2 sm:gap-3">
+                    {VOTE_VALUES.map((v) => (
+                      <VoteCard
+                        key={v}
+                        value={v}
+                        selected={selected === v}
+                        disabled={voted}
+                        onSelect={() => handleSelect(v)}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-3 min-h-[3.25rem]">
+                    <AnimatePresence initial={false}>
+                      {error ? (
+                        <motion.div
+                          key="err"
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: reduceMotion ? 0 : 0.16 }}
+                        >
+                          <Alert tone="danger">{error}</Alert>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Surface>
+
+          {hasDescription ? (
+            <JiraDescriptionPanel
+              description={task.description}
+              descriptionAdf={task.description_adf}
+              descriptionHtml={task.description_html}
+              jiraKey={task.jira_key ?? null}
+            />
+          ) : null}
+
+          {task.ai_summary ? (
+            <AiSummaryView
+              summary={task.ai_summary}
+              helperText="для оценки"
+              sparkleLabel="AI-подсказка"
+              className="p-4 md:p-5"
+            />
+          ) : null}
+        </section>
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Planning Poker">
+  <rect width="64" height="64" rx="14" fill="#0071E3"/>
+  <g transform="translate(12.8 12.8) scale(2.4)" fill="#fff">
+    <rect x="1.5" y="1.5" width="6" height="9" rx="1.2" fill-opacity="0.95"/>
+    <rect x="8.5" y="5.5" width="6" height="9" rx="1.2" fill-opacity="0.55"/>
+  </g>
+</svg>
