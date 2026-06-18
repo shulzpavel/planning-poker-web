@@ -5,6 +5,7 @@ import {
   saveWebIdentity,
   type WebParticipantIdentity,
 } from "../../../shared/lib/participantIdentity";
+import { useReconnectOnVisible } from "../../../shared/lib/useReconnectOnVisible";
 import type { ParticipantRole } from "../../../hooks/useSession";
 import {
   canAddToSection,
@@ -93,6 +94,22 @@ export function useRetro(
     }
   }, []);
 
+  const refreshState = useCallback(async () => {
+    if (mockEnabled || unmounted.current) return;
+    const pidQuery = participantIdRef.current
+      ? `?participant_id=${encodeURIComponent(participantIdRef.current)}`
+      : "";
+    try {
+      const resp = await fetch(apiUrl(`/retro/state/${token}${pidQuery}`));
+      if (!resp.ok || unmounted.current) return;
+      const data = (await resp.json()) as RetroLiveState;
+      applyState(data);
+      if (participantIdRef.current) setMyVotes(new Set(data.my_votes ?? []));
+    } catch {
+      // WebSocket reconnect will keep retrying; this is only catch-up.
+    }
+  }, [applyState, mockEnabled, token]);
+
   // Seed once from the HTTP state endpoint, then rely on the WebSocket.
   useEffect(() => {
     if (mockEnabled) return;
@@ -164,10 +181,18 @@ export function useRetro(
   const connect = useCallback(() => {
     if (mockEnabled) return;
     if (unmounted.current) return;
+
+    if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
     const ws = new WebSocket(retroWsUrl(token));
     wsRef.current = ws;
     ws.onopen = () => {
       reconnectDelay.current = 1000;
+      void refreshState();
     };
     ws.onmessage = (ev) => {
       try {
@@ -198,7 +223,21 @@ export function useRetro(
       reconnectTimer.current = setTimeout(connect, delay);
     };
     ws.onerror = () => ws.close();
-  }, [mockEnabled, token]);
+  }, [mockEnabled, refreshState, token]);
+
+  const reconnectNow = useCallback(() => {
+    if (mockEnabled || unmounted.current) return;
+    void refreshState();
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = null;
+    }
+    reconnectDelay.current = 1000;
+    connect();
+  }, [connect, mockEnabled, refreshState]);
+
+  useReconnectOnVisible(reconnectNow);
 
   useEffect(() => {
     if (mockEnabled) return;

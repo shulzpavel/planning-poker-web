@@ -31,6 +31,7 @@ import { ManagerSessionChrome } from "./ManagerSessionChrome";
 import { managerApi, type SessionAiSummaryResult, type SessionAiSummaryStartResponse } from "./api/managerClient";
 import type { CompletedTask, JiraPreview, ManagerSession, ManagerSessionRef, NamedVote, TaskItem, TaskMutation } from "./api/managerTypes";
 import { pollAiJob } from "../../shared/lib/pollAiJob";
+import { useReconnectOnVisible } from "../../shared/lib/useReconnectOnVisible";
 import EstimationModePicker, { DEFAULT_ESTIMATION_MODE } from "./components/EstimationModePicker";
 import { getEstimationModeOption, isSplitEstimationMode, type EstimationMode } from "../../shared/lib/estimationModes";
 
@@ -592,6 +593,11 @@ function ManagerWorkspace({
     }, 2500);
     return () => window.clearInterval(timer);
   }, [busy, refresh, sessionRef]);
+
+  useReconnectOnVisible(() => {
+    if (!sessionRef || busy) return;
+    void refresh(true);
+  });
 
   // Validate the cached invite token once per session reference. Web tokens
   // live in Redis with an 8h TTL and may have been evicted (volume reset,

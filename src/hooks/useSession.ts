@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiUrl, wsUrl } from "../app/config";
 import { saveWebIdentity } from "../shared/lib/participantIdentity";
+import { useReconnectOnVisible } from "../shared/lib/useReconnectOnVisible";
 
 export interface TaskInfo {
   task_id?: string;
@@ -125,6 +126,12 @@ export function useSession(token: string): UseSessionReturn {
   const connect = useCallback(() => {
     if (unmounted.current || !participantId) return;
 
+    if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
     const ws = new WebSocket(wsUrl(token));
     wsRef.current = ws;
 
@@ -218,6 +225,20 @@ export function useSession(token: string): UseSessionReturn {
       ws.close();
     };
   }, [token, participantId, pidKey, refreshState]);
+
+  const reconnectNow = useCallback(() => {
+    if (!participantId || unmounted.current) return;
+    void refreshState();
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = null;
+    }
+    reconnectDelay.current = 1000;
+    connect();
+  }, [connect, participantId, refreshState]);
+
+  useReconnectOnVisible(reconnectNow);
 
   useEffect(() => {
     unmounted.current = false;
