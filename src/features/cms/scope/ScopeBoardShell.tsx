@@ -95,6 +95,7 @@ import {
 } from "./scopeLayoutOrder";
 import {
   defaultScopeSections,
+  isReleaseTemplateTeam,
   normalizeScopeSectionOrder,
   resolveScopeSections,
   resolveSnapshotSections,
@@ -281,12 +282,6 @@ function sumIssueSp(issues: ScopeBoardIssue[]): number {
     const sp = issue.story_points;
     return sum + (typeof sp === "number" && sp > 0 ? sp : 0);
   }, 0);
-}
-
-function isReleaseTemplateTeam(team: { slug?: string; name?: string } | null | undefined): boolean {
-  if (!team) return false;
-  const haystack = `${team.slug ?? ""} ${team.name ?? ""}`.toLowerCase();
-  return haystack.includes("ios") || haystack.includes("android") || haystack.includes("igaming");
 }
 
 function buildReportSummary(snapshot: ScopeBoardSnapshot): ScopeReportSummary {

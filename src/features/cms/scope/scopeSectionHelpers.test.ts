@@ -1,10 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultScopeSections,
+  isReleaseTemplateTeam,
   normalizeScopeSections,
   reorderScopeSections,
   validateScopeSections,
 } from "./scopeSectionHelpers";
+
+describe("isReleaseTemplateTeam", () => {
+  it("matches only explicit mobile team slugs", () => {
+    expect(isReleaseTemplateTeam({ slug: "igaming-ios", name: "iGaming iOS" })).toBe(true);
+    expect(isReleaseTemplateTeam({ slug: "igaming-android", name: "iGaming Android" })).toBe(true);
+    expect(isReleaseTemplateTeam({ slug: "igaming-rip", name: "iGaming RIP" })).toBe(false);
+    expect(isReleaseTemplateTeam({ slug: "igaming-test", name: "iGaming Test" })).toBe(false);
+    expect(isReleaseTemplateTeam({ slug: "studios", name: "Studios" })).toBe(false);
+    expect(isReleaseTemplateTeam({ slug: "ios", name: "iOS" })).toBe(false);
+    expect(isReleaseTemplateTeam({ name: "iGaming iOS" })).toBe(false);
+    expect(isReleaseTemplateTeam(null)).toBe(false);
+  });
+});
 
 describe("normalizeScopeSections", () => {
   it("returns defaults when no sections or legacy jql", () => {

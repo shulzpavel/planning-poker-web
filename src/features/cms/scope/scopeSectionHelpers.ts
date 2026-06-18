@@ -1,5 +1,17 @@
 import type { ScopeBoardRecord, ScopeBoardSnapshot, ScopeSectionConfig, ScopeSectionKind } from "../api/cmsClient";
 
+/** Explicit CMS team slugs that use the mobile release scope template on /cms/scope/new. */
+export const RELEASE_SCOPE_TEAM_SLUGS = new Set(["igaming-ios", "igaming-android"]);
+
+export function normalizeScopeTeamSlug(slug: string | null | undefined): string {
+  return (slug ?? "").trim().toLowerCase();
+}
+
+export function isReleaseTemplateTeam(team: { slug?: string; name?: string } | null | undefined): boolean {
+  if (!team?.slug) return false;
+  return RELEASE_SCOPE_TEAM_SLUGS.has(normalizeScopeTeamSlug(team.slug));
+}
+
 export function createSectionId(): string {
   return `sec-${Math.random().toString(36).slice(2, 8)}`;
 }
