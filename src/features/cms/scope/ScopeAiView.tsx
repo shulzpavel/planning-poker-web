@@ -19,7 +19,7 @@ const HEALTH_TONE: Record<ScopeAiSummary["health"], "success" | "warning" | "dan
 const HEALTH_HINT: Record<ScopeAiSummary["health"], string> = {
   green: "Месяц идёт по плану — критичных сигналов нет.",
   yellow: "Есть зоны риска — нужны решения в ближайшие дни.",
-  red: "Требуется срочное внимание руководства и PO.",
+  red: "Требуется срочное внимание команды.",
 };
 
 const BUFFER_LABELS: Record<ScopeAiSummary["buffer_status"], string> = {
@@ -81,9 +81,16 @@ export function ScopeAiView({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-lg font-bold text-ink">Сводка для PO и руководства</h3>
               {isHistorical ? <Badge tone="neutral">из истории</Badge> : null}
               <Badge tone={HEALTH_TONE[summary.health]}>{HEALTH_LABELS[summary.health]}</Badge>
+              {summary.jira_export?.status === "ok" ? (
+                <span className="text-xs text-green">Сохранено в Jira</span>
+              ) : null}
+              {summary.jira_export?.status === "error" ? (
+                <span className="text-xs text-red" title={summary.jira_export.error}>
+                  Ошибка сохранения в Jira
+                </span>
+              ) : null}
             </div>
             <p className="max-w-3xl text-sm text-ink2">{HEALTH_HINT[summary.health]}</p>
             {generatedLabel || snapshotLabel ? (

@@ -845,6 +845,7 @@ export interface ScopeBoardRecord {
   previous_release_comment?: string;
   next_release_comment?: string;
   custom_release_comment?: string;
+  plan_epic_key?: string;
   todo_jql: string;
   test_jql: string;
   snapshot: ScopeBoardSnapshot | null;
@@ -885,6 +886,7 @@ export const cmsScopeApi = {
     previous_release_comment?: string;
     next_release_comment?: string;
     custom_release_comment?: string;
+    plan_epic_key?: string;
     team_id?: number | null;
   }) =>
     cmsFetch<ScopeBoardRecord>("/scope-boards", {
@@ -912,6 +914,7 @@ export const cmsScopeApi = {
       previous_release_comment?: string;
       next_release_comment?: string;
       custom_release_comment?: string;
+      plan_epic_key?: string;
     }
   ) =>
     cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}`, {

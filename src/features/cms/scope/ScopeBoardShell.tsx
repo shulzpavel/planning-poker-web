@@ -135,6 +135,7 @@ interface ScopeBoardForm {
   previous_release_comment: string;
   next_release_comment: string;
   custom_release_comment: string;
+  plan_epic_key: string;
 }
 
 function createReleaseQuery(type: ScopeReleaseQuery["type"] = "future"): ScopeReleaseQuery {
@@ -235,6 +236,7 @@ function boardToForm(board: ScopeBoardRecord): ScopeBoardForm {
     previous_release_comment: board.previous_release_comment ?? "",
     next_release_comment: board.next_release_comment ?? "",
     custom_release_comment: board.custom_release_comment ?? "",
+    plan_epic_key: board.plan_epic_key ?? "",
   };
 }
 
@@ -258,7 +260,14 @@ function defaultForm(): ScopeBoardForm {
     previous_release_comment: "",
     next_release_comment: "",
     custom_release_comment: "",
+    plan_epic_key: "",
   };
+}
+
+function normalizePlanEpicKey(value: string): string {
+  const raw = value.trim().toUpperCase();
+  if (!raw) return "";
+  return /^[A-Z][A-Z0-9]+-\d+$/.test(raw) ? raw : "";
 }
 
 function parseCapacity(raw: string): number | null {
@@ -665,6 +674,7 @@ interface ScopeBoardPayload {
   previous_release_comment: string;
   next_release_comment: string;
   custom_release_comment: string;
+  plan_epic_key: string;
 }
 
 function validateScopeForm(form: ScopeBoardForm): { error: string } | { payload: ScopeBoardPayload } {
@@ -688,6 +698,10 @@ function validateScopeForm(form: ScopeBoardForm): { error: string } | { payload:
   const sectionError = validateScopeSections(form.scope_sections);
   if (sectionError) {
     return { error: sectionError };
+  }
+  const planEpicKey = normalizePlanEpicKey(form.plan_epic_key);
+  if (form.plan_epic_key.trim() && !planEpicKey) {
+    return { error: "Plan эпик: укажите ключ в формате PROJ-123 или оставьте поле пустым." };
   }
   const resolvedCapacity = splitMode ? Math.max(capacityDev ?? 0, capacityTest ?? 0) : (capacity ?? 0);
   return {
@@ -717,6 +731,7 @@ function validateScopeForm(form: ScopeBoardForm): { error: string } | { payload:
       previous_release_comment: form.previous_release_comment.trim(),
       next_release_comment: form.next_release_comment.trim(),
       custom_release_comment: form.custom_release_comment.trim(),
+      plan_epic_key: planEpicKey,
     },
   };
 }
@@ -1459,6 +1474,16 @@ function ScopeBoardEditorPage({
                 disabled={!canManage}
                 onChange={(workload_mode) => setForm((current) => applyWorkloadModeChange(current, workload_mode))}
               />
+              <TextField
+                label="Jira-ключ Plan эпика"
+                value={form.plan_epic_key}
+                disabled={!canManage}
+                placeholder="FLEX-100"
+                onChange={(event) => setForm((current) => ({ ...current, plan_epic_key: event.target.value }))}
+              />
+              <p className="-mt-2 text-xs text-ink3">
+                После генерации AI-сводка публикуется комментарием в этот эпик. Оставьте пустым, чтобы не отправлять в Jira.
+              </p>
               {isReleaseTemplate ? (
                 <div className="space-y-5">
                   <TextareaField
@@ -1632,6 +1657,16 @@ function ScopeBoardEditorPage({
                 disabled={!canManage}
                 onChange={(workload_mode) => setForm((current) => applyWorkloadModeChange(current, workload_mode))}
               />
+              <TextField
+                label="Jira-ключ Plan эпика"
+                value={form.plan_epic_key}
+                disabled={!canManage}
+                placeholder="FLEX-100"
+                onChange={(event) => setForm((current) => ({ ...current, plan_epic_key: event.target.value }))}
+              />
+              <p className="-mt-2 text-xs text-ink3">
+                После генерации AI-сводка публикуется комментарием в этот эпик. Оставьте пустым, чтобы не отправлять в Jira.
+              </p>
             </Surface>
           ) : null}
 

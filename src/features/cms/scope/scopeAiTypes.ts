@@ -41,6 +41,13 @@ export interface ScopeAiSummary {
   watch_list: string[];
   generated_at: string;
   source: string;
+  jira_export?: {
+    status?: "ok" | "error";
+    hash?: string;
+    comment_id?: string | null;
+    error?: string;
+    exported_at?: string;
+  };
 }
 
 export interface ScopeAiHistoryEntry {
