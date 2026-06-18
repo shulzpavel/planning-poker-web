@@ -1183,6 +1183,16 @@ function ScopeBoardEditorPage({
     [boardId, toast]
   );
 
+  const saveReportComment = useCallback(
+    async (issueKey: string, text: string) => {
+      if (boardId === null || Number.isNaN(boardId)) return;
+      const record = await cmsScopeApi.updateReportComment(boardId, issueKey, text);
+      setBoard(record);
+      toast.success(text.trim() ? "Комментарий сохранён" : "Комментарий удалён");
+    },
+    [boardId, toast]
+  );
+
   const updateQueueDueDate = useCallback(
     async (queue: ScopePriorityQueueKind, issueKey: string, dueDate: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
@@ -1374,6 +1384,8 @@ function ScopeBoardEditorPage({
               custom: board?.custom_release_comment ?? form.custom_release_comment,
             }}
             onSaveReleaseComment={saveReleaseComment}
+            reportComments={snapshot.report_comments ?? {}}
+            onSaveReportComment={saveReportComment}
             onAddQuestion={addManualQuestion}
             onResolveQuestion={resolveQuestion}
           />

@@ -457,6 +457,12 @@ export interface ScopeTopItem {
   created_at?: string;
 }
 
+export interface ScopeReportComment {
+  text: string;
+  by?: string;
+  at?: string;
+}
+
 export interface ScopeResolvedQuestion {
   id: string;
   key?: string;
@@ -753,6 +759,7 @@ export interface ScopeBoardSnapshot {
   todo_items?: ScopeTodoItem[];
   resolved_questions?: ScopeResolvedQuestion[];
   priority_queues?: ScopePriorityQueues;
+  report_comments?: Record<string, ScopeReportComment>;
   refreshed_at: string;
   delta?: ScopeRefreshDelta | null;
   events?: ScopeRefreshEvent[];
@@ -946,6 +953,11 @@ export const cmsScopeApi = {
   addIssueComment: (boardId: number, issueKey: string, text: string) =>
     cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}/issues/${encodeURIComponent(issueKey)}/comment`, {
       method: "POST",
+      body: JSON.stringify({ text }),
+    }),
+  updateReportComment: (boardId: number, issueKey: string, text: string) =>
+    cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}/issues/${encodeURIComponent(issueKey)}/report-comment`, {
+      method: "PUT",
       body: JSON.stringify({ text }),
     }),
   addQuestion: (boardId: number, text: string) =>

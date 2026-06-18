@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Spinner, TextareaField } from "../../../design-system";
 import type {
   ScopeBoardIssue,
@@ -8,6 +8,7 @@ import type {
   ScopeReleaseContext,
   ScopeReleaseSlot,
   ScopeReleaseVersionMeta,
+  ScopeReportComment,
   ScopeReportSectionBlock,
   ScopeResolvedQuestion,
 } from "../api/cmsClient";
@@ -54,6 +55,8 @@ export function ScopeReportSection({
   isReleaseReport = false,
   releaseComments,
   onSaveReleaseComment,
+  reportComments,
+  onSaveReportComment,
   onAddQuestion,
   onResolveQuestion,
   presentation = false,
@@ -64,6 +67,8 @@ export function ScopeReportSection({
   isReleaseReport?: boolean;
   releaseComments?: Partial<Record<ScopeReleaseSlot, string>>;
   onSaveReleaseComment?: (slot: ScopeReleaseSlot, text: string) => Promise<void>;
+  reportComments?: Record<string, ScopeReportComment>;
+  onSaveReportComment?: (issueKey: string, text: string) => Promise<void>;
   onAddQuestion: (text: string) => Promise<void>;
   onResolveQuestion: (questionId: string, comment: string) => Promise<void>;
   presentation?: boolean;
@@ -84,6 +89,8 @@ export function ScopeReportSection({
             canManage={canManage}
             releaseComments={releaseComments ?? {}}
             onSaveReleaseComment={onSaveReleaseComment}
+            reportComments={reportComments ?? {}}
+            onSaveReportComment={onSaveReportComment}
           />
         ) : (
           (report.sections ?? []).map((section) => (
@@ -94,6 +101,9 @@ export function ScopeReportSection({
               accent={section.kind === "planned" ? "blue" : "amber"}
               section={section}
               showTechnicalFields={showTechnicalFields}
+              reportComments={reportComments ?? {}}
+              canManage={canManage}
+              onSaveReportComment={onSaveReportComment}
             />
           ))
         )}
@@ -154,12 +164,16 @@ function ReleaseReportBlocks({
   canManage,
   releaseComments,
   onSaveReleaseComment,
+  reportComments,
+  onSaveReportComment,
 }: {
   releaseContext: ScopeReleaseContext;
   showTechnicalFields: boolean;
   canManage: boolean;
   releaseComments: Partial<Record<ScopeReleaseSlot, string>>;
   onSaveReleaseComment?: (slot: ScopeReleaseSlot, text: string) => Promise<void>;
+  reportComments: Record<string, ScopeReportComment>;
+  onSaveReportComment?: (issueKey: string, text: string) => Promise<void>;
 }) {
   const current = releaseContext.current;
   const dynamicReleases = releaseContext.releases ?? [];
@@ -195,6 +209,8 @@ function ReleaseReportBlocks({
           canManage={canManage}
           releaseComments={releaseComments}
           onSaveReleaseComment={onSaveReleaseComment}
+          reportComments={reportComments}
+          onSaveReportComment={onSaveReportComment}
         />
       ) : null}
 
@@ -210,6 +226,9 @@ function ReleaseReportBlocks({
             issues={current[column.key]}
             showTechnicalFields={showTechnicalFields}
             hidePlanFields
+            reportComments={reportComments}
+            canManage={canManage}
+            onSaveReportComment={onSaveReportComment}
           />
         ))}
       </div>
@@ -229,6 +248,8 @@ function ReleaseReportBlocks({
           canManage={canManage}
           releaseComments={releaseComments}
           onSaveReleaseComment={onSaveReleaseComment}
+          reportComments={reportComments}
+          onSaveReportComment={onSaveReportComment}
         />
       ) : null}
     </div>
@@ -243,6 +264,8 @@ function ReleaseContextGroup({
   canManage,
   releaseComments,
   onSaveReleaseComment,
+  reportComments,
+  onSaveReportComment,
 }: {
   title: string;
   eyebrow: string;
@@ -251,6 +274,8 @@ function ReleaseContextGroup({
   canManage: boolean;
   releaseComments: Partial<Record<ScopeReleaseSlot, string>>;
   onSaveReleaseComment?: (slot: ScopeReleaseSlot, text: string) => Promise<void>;
+  reportComments: Record<string, ScopeReportComment>;
+  onSaveReportComment?: (issueKey: string, text: string) => Promise<void>;
 }) {
   return (
     <div className="border-t border-line/70 bg-line2/20 p-4 lg:p-5">
@@ -270,6 +295,8 @@ function ReleaseContextGroup({
             canManage={canManage}
             comment={releaseComments[bucket.slot] ?? ""}
             onSaveComment={isStoredReleaseCommentSlot(bucket.slot) ? onSaveReleaseComment : undefined}
+            reportComments={reportComments}
+            onSaveReportComment={onSaveReportComment}
           />
         ))}
       </div>
@@ -361,6 +388,8 @@ function ReleaseSecondarySlot({
   canManage,
   comment,
   onSaveComment,
+  reportComments,
+  onSaveReportComment,
 }: {
   bucket: ScopeReleaseBucket;
   subtitle: string;
@@ -368,6 +397,8 @@ function ReleaseSecondarySlot({
   canManage: boolean;
   comment: string;
   onSaveComment?: (slot: ScopeReleaseSlot, text: string) => Promise<void>;
+  reportComments: Record<string, ScopeReportComment>;
+  onSaveReportComment?: (issueKey: string, text: string) => Promise<void>;
 }) {
   const meta = bucket.version_meta;
   const releaseDate = formatReleaseDate(meta?.release_date);
@@ -422,6 +453,9 @@ function ReleaseSecondarySlot({
             issues={bucket[column.key]}
             showTechnicalFields={showTechnicalFields}
             hidePlanFields
+            reportComments={reportComments}
+            canManage={canManage}
+            onSaveReportComment={onSaveReportComment}
           />
         ))}
       </div>
@@ -896,12 +930,18 @@ function EpicReportBlock({
   accent,
   section,
   showTechnicalFields,
+  reportComments,
+  canManage,
+  onSaveReportComment,
 }: {
   title: string;
   subtitle: string;
   accent: "blue" | "amber";
   section: ScopeEpicReportSection | ScopeReportSectionBlock;
   showTechnicalFields: boolean;
+  reportComments: Record<string, ScopeReportComment>;
+  canManage: boolean;
+  onSaveReportComment?: (issueKey: string, text: string) => Promise<void>;
 }) {
   const accentStyles =
     accent === "blue"
@@ -951,6 +991,9 @@ function EpicReportBlock({
             count={section.counts[column.key]}
             issues={section[column.key]}
             showTechnicalFields={showTechnicalFields}
+            reportComments={reportComments}
+            canManage={canManage}
+            onSaveReportComment={onSaveReportComment}
           />
         ))}
       </div>
@@ -1243,6 +1286,9 @@ function ReportColumn({
   issues,
   showTechnicalFields,
   hidePlanFields = false,
+  reportComments = {},
+  canManage = false,
+  onSaveReportComment,
 }: {
   columnKey: "in_work" | "in_test" | "done";
   title: string;
@@ -1251,6 +1297,9 @@ function ReportColumn({
   issues: ScopeBoardIssue[];
   showTechnicalFields: boolean;
   hidePlanFields?: boolean;
+  reportComments?: Record<string, ScopeReportComment>;
+  canManage?: boolean;
+  onSaveReportComment?: (issueKey: string, text: string) => Promise<void>;
 }) {
   const sortedIssues = useMemo(
     () =>
@@ -1314,6 +1363,14 @@ function ReportColumn({
                         {[issue.status, issue.assignee].filter(Boolean).join(" · ") || "—"}
                       </p>
                     )}
+                    {columnKey !== "done" ? (
+                      <ReportIssueComment
+                        issueKey={issue.key}
+                        comment={lookupReportComment(reportComments, issue.key)}
+                        canManage={canManage}
+                        onSave={onSaveReportComment}
+                      />
+                    ) : null}
                   </li>
                 </Fragment>
               );
@@ -1340,4 +1397,128 @@ function ReportIssueLink({ issue }: { issue: ScopeBoardIssue }) {
     );
   }
   return <span className="text-sm font-medium text-ink">{issue.key}</span>;
+}
+
+function lookupReportComment(
+  comments: Record<string, ScopeReportComment>,
+  issueKey: string
+): ScopeReportComment | undefined {
+  if (!issueKey) return undefined;
+  const direct = comments[issueKey];
+  if (direct?.text?.trim()) return direct;
+  const upper = issueKey.toUpperCase();
+  const match = Object.entries(comments).find(([key, value]) => key.toUpperCase() === upper && value.text?.trim());
+  return match?.[1];
+}
+
+function ReportIssueComment({
+  issueKey,
+  comment,
+  canManage,
+  onSave,
+}: {
+  issueKey: string;
+  comment?: ScopeReportComment;
+  canManage: boolean;
+  onSave?: (issueKey: string, text: string) => Promise<void>;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [draft, setDraft] = useState(comment?.text ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const savedText = comment?.text?.trim() ?? "";
+  const draftText = draft.trim();
+  const isDirty = draftText !== savedText;
+
+  useEffect(() => {
+    setDraft(comment?.text ?? "");
+  }, [comment?.text, issueKey]);
+
+  const adjustHeight = useCallback(() => {
+    const element = textareaRef.current;
+    if (!element) return;
+    element.style.height = "0px";
+    element.style.height = `${element.scrollHeight}px`;
+  }, []);
+
+  useLayoutEffect(() => {
+    adjustHeight();
+  }, [draft, savedText, adjustHeight]);
+
+  if (!canManage && !savedText) {
+    return null;
+  }
+
+  async function persist(nextText: string) {
+    if (!onSave || saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(issueKey, nextText);
+      setDraft(nextText);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось сохранить комментарий.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeComment() {
+    setDraft("");
+    await persist("");
+  }
+
+  if (!canManage) {
+    return (
+      <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-ink2">{savedText}</p>
+    );
+  }
+
+  const canSave = Boolean(draftText) && isDirty;
+
+  return (
+    <div className="scope-print-hide mt-2">
+      <div className="flex items-stretch gap-1">
+        <textarea
+          ref={textareaRef}
+          rows={1}
+          value={draft}
+          disabled={saving}
+          placeholder="комментарий"
+          className="min-h-8 w-0 min-w-0 flex-1 resize-none overflow-hidden rounded-md border border-line/70 bg-bg/40 px-2 py-1.5 text-xs leading-relaxed text-ink placeholder:text-ink4 outline-none transition-[border-color] focus:border-blue/40 disabled:opacity-60"
+          onChange={(event) => {
+            setDraft(event.target.value);
+            setError(null);
+          }}
+        />
+        <div className="flex shrink-0 flex-col gap-0.5 self-stretch">
+          {canSave ? (
+            <button
+              type="button"
+              aria-label="Сохранить комментарий"
+              title="Сохранить"
+              disabled={saving || !onSave}
+              className="flex min-h-8 w-8 flex-1 items-center justify-center rounded-md border border-line/80 bg-surface text-sm font-semibold text-ink2 transition hover:border-blue/30 hover:text-blue disabled:opacity-40"
+              onClick={() => void persist(draftText)}
+            >
+              {saving ? <Spinner size="sm" /> : "+"}
+            </button>
+          ) : null}
+          {savedText ? (
+            <button
+              type="button"
+              aria-label="Удалить комментарий"
+              title="Удалить"
+              disabled={saving}
+              className="flex min-h-8 w-8 flex-1 items-center justify-center rounded-md border border-line/80 bg-surface text-sm font-semibold text-ink3 transition hover:border-red/30 hover:text-danger disabled:opacity-40"
+              onClick={() => void removeComment()}
+            >
+              −
+            </button>
+          ) : null}
+        </div>
+      </div>
+      {error ? <p className="mt-1 text-xs text-danger">{error}</p> : null}
+    </div>
+  );
 }
