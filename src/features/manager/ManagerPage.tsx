@@ -34,6 +34,12 @@ import { pollAiJob } from "../../shared/lib/pollAiJob";
 import { useReconnectOnVisible } from "../../shared/lib/useReconnectOnVisible";
 import EstimationModePicker, { DEFAULT_ESTIMATION_MODE } from "./components/EstimationModePicker";
 import { getEstimationModeOption, isSplitEstimationMode, type EstimationMode } from "../../shared/lib/estimationModes";
+import {
+  TeamSelect,
+  teamPickerRequired,
+  useTeamIdState,
+} from "../cms/components/TeamSelect";
+import { useCmsTeams } from "../cms/hooks/useCmsTeams";
 
 const PHASE_META: Record<string, { label: string; tone: "info" | "success" | "warning" | "danger" | "neutral"; description: string }> = {
   waiting: { label: "Готовы к старту", tone: "warning",  description: "Очередь задач сформирована — ждём команду и жмём Start." },
@@ -651,18 +657,20 @@ function ManagerWorkspace({
     return () => { alive = false; };
   }, [cachedChatId, cachedTopicId, cachedToken, cachedTitle, onSessionRef]);
 
-  async function createSession(title: string, mode: EstimationMode = estimationMode) {
+  async function createSession(title: string, mode: EstimationMode = estimationMode, teamId?: number) {
     setBusy("create");
     setError(null);
     try {
-      const created = await managerApi.createSession(title, undefined, mode);
+      const created = await managerApi.createSession(title, teamId, mode);
       const ref = storeSession(created);
       onSessionRef(ref);
       setSession(normalizeFullSession(created));
       setTasks([]);
       setCursor(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Session create failed");
+      const message = err instanceof Error ? err.message : "Session create failed";
+      setError(message);
+      throw err;
     } finally {
       setBusy(null);
     }
@@ -910,6 +918,7 @@ function ManagerWorkspace({
         <div className="mx-auto mt-10 max-w-xl">
           {error ? <Alert tone="danger" className="mb-4">{error}</Alert> : null}
           <CreateSessionPanel
+            principal={principal}
             loading={busy === "create"}
             estimationMode={estimationMode}
             onEstimationModeChange={setEstimationMode}
@@ -1221,23 +1230,68 @@ function CockpitShell({
 }
 
 function CreateSessionPanel({
+  principal,
   loading,
   estimationMode,
   onEstimationModeChange,
   onCreate,
 }: {
+  principal: CmsPrincipal;
   loading: boolean;
   estimationMode: EstimationMode;
   onEstimationModeChange: (mode: EstimationMode) => void;
-  onCreate: (title: string, mode: EstimationMode) => Promise<void>;
+  onCreate: (title: string, mode: EstimationMode, teamId?: number) => Promise<void>;
 }) {
   const [title, setTitle] = useState("Sprint planning");
+  const { teams, loading: teamsLoading, error: teamsError, reload: reloadTeams } = useCmsTeams(principal);
+  const principalTeamIds = principal.team_ids ?? principal.teams?.map((team) => team.id);
+  const [teamId, setTeamId] = useTeamIdState(teams, true);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void reloadTeams();
+  }, [reloadTeams]);
+
+  async function handleCreate() {
+    setCreateError(null);
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    const resolvedTeamId = teamId === "" ? undefined : teamId;
+    if (teamPickerRequired(teams, principal.is_superuser, principalTeamIds) && resolvedTeamId == null) {
+      setCreateError("Выберите команду");
+      return;
+    }
+    try {
+      await onCreate(trimmed, estimationMode, resolvedTeamId);
+    } catch {
+      // Parent ManagerWorkspace surfaces API errors in its own alert.
+    }
+  }
+
   return (
     <Surface className="p-6">
       <h2 className="text-2xl font-bold text-ink">Новая planning session</h2>
       <p className="mt-2 text-sm leading-6 text-ink3">Сначала создайте комнату. После этого появится ссылка для участников, очередь задач и панель управления голосованием.</p>
       <div className="mt-6 space-y-4">
         <TextField label="Название" value={title} onChange={(event) => setTitle(event.target.value)} />
+        <TeamSelect
+          teams={teams}
+          value={teamId}
+          forcePicker
+          loading={teamsLoading}
+          required={teamPickerRequired(teams, principal.is_superuser, principalTeamIds)}
+          allowEmpty={principal.is_superuser}
+          disabled={loading}
+          onChange={setTeamId}
+        />
+        {!teamsLoading && teams.length === 0 ? (
+          <Alert tone="warning">
+            {principal.is_superuser
+              ? "Команд пока нет. Создайте их в «Доступ → Команды»."
+              : "Нет доступных команд для вашего аккаунта. Обратитесь к администратору."}
+          </Alert>
+        ) : null}
+        {teamsError ? <Alert tone="danger">{teamsError}</Alert> : null}
         <div>
           <p className="mb-2 text-sm font-semibold text-ink">Как оцениваем</p>
           <EstimationModePicker
@@ -1247,12 +1301,13 @@ function CreateSessionPanel({
             compact
           />
         </div>
+        {createError ? <Alert tone="danger">{createError}</Alert> : null}
         <Button
           variant="primary"
           className="w-full"
           loading={loading}
           disabled={loading || !title.trim()}
-          onClick={() => onCreate(title.trim(), estimationMode)}
+          onClick={() => void handleCreate()}
         >
           Создать сессию
         </Button>

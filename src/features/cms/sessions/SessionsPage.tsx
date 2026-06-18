@@ -438,7 +438,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
         title={createTitle}
         teamId={createTeamId}
         teams={teams}
-        showTeamPicker={needsTeamPicker(teams, principal.is_superuser, principalTeamIds)}
+        showTeamPicker
         isSuperuser={principal.is_superuser}
         teamsLoading={teamsLoading}
         teamsError={teamsError}
@@ -629,28 +629,30 @@ function CreateSessionDialog({
           hint="Можно оставить пустым — подставим «Planning Poker»."
         />
         {showTeamPicker ? (
-          <TeamSelect
-            teams={teams}
-            value={teamId}
-            forcePicker
-            loading={teamsLoading}
-            required={teamPickerRequired(teams, isSuperuser, principalTeamIds)}
-            allowEmpty={isSuperuser}
-            disabled={busy}
-            onChange={(next) => {
-              setConfirmCancel(false);
-              onTeamIdChange(next);
-            }}
-          />
+          <>
+            <TeamSelect
+              teams={teams}
+              value={teamId}
+              forcePicker
+              loading={teamsLoading}
+              required={teamPickerRequired(teams, isSuperuser, principalTeamIds)}
+              allowEmpty={isSuperuser}
+              disabled={busy}
+              onChange={(next) => {
+                setConfirmCancel(false);
+                onTeamIdChange(next);
+              }}
+            />
+            {!teamsLoading && teams.length === 0 ? (
+              <Alert tone="warning">
+                {isSuperuser
+                  ? "Команд пока нет. Создайте их в разделе «Доступ → Команды», затем обновите список."
+                  : "Нет доступных команд для вашего аккаунта. Обратитесь к администратору."}
+              </Alert>
+            ) : null}
+            {teamsError ? <Alert tone="danger">{teamsError}</Alert> : null}
+          </>
         ) : null}
-        {!teamsLoading && teams.length === 0 && showTeamPicker ? (
-          <Alert tone="warning">
-            {isSuperuser
-              ? "Команд пока нет. Создайте их в разделе «Доступ → Команды», затем обновите список."
-              : "Нет доступных команд для вашего аккаунта. Обратитесь к администратору."}
-          </Alert>
-        ) : null}
-        {teamsError ? <Alert tone="danger">{teamsError}</Alert> : null}
         <div>
           <p className="mb-2 text-sm font-semibold text-ink">Как оцениваем</p>
           <EstimationModePicker

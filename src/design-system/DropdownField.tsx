@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { FieldLabel } from "./components";
 import { cn } from "./utils";
 
@@ -207,9 +208,10 @@ export function DropdownField({
   useEffect(() => {
     if (!open) return;
     function handlePointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) return;
+      setOpen(false);
     }
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -299,81 +301,81 @@ export function DropdownField({
         </span>
       </button>
 
-      {open ? (
-        <div
-          ref={popoverRef}
-          style={
-            popoverLayout
-              ? { left: popoverLayout.left, top: popoverLayout.top, width: popoverLayout.width }
-              : undefined
-          }
-          className={cn(
-            "fixed z-50 rounded-2xl border border-line bg-surface p-2 shadow-xl",
-            !popoverLayout && "pointer-events-none opacity-0",
-          )}
-          onKeyDown={handleControlKeyDown}
-        >
-          {searchable ? (
-            <div className="relative mb-2">
-              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink4" />
-              <input
-                ref={searchRef}
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  window.requestAnimationFrame(layoutPopover);
-                }}
-                placeholder={searchPlaceholder}
-                className="min-h-10 w-full rounded-lg border border-line bg-bg/70 py-2 pl-9 pr-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-ink4 focus:border-blue focus:ring-2 focus:ring-blue/20"
-              />
-            </div>
-          ) : null}
+      {open && popoverLayout
+        ? createPortal(
+            <div
+              ref={popoverRef}
+              style={{
+                left: popoverLayout.left,
+                top: popoverLayout.top,
+                width: popoverLayout.width,
+              }}
+              className="fixed z-[110] rounded-2xl border border-line bg-surface p-2 shadow-xl"
+              onKeyDown={handleControlKeyDown}
+            >
+              {searchable ? (
+                <div className="relative mb-2">
+                  <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink4" />
+                  <input
+                    ref={searchRef}
+                    value={query}
+                    onChange={(event) => {
+                      setQuery(event.target.value);
+                      window.requestAnimationFrame(layoutPopover);
+                    }}
+                    placeholder={searchPlaceholder}
+                    className="min-h-10 w-full rounded-lg border border-line bg-bg/70 py-2 pl-9 pr-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-ink4 focus:border-blue focus:ring-2 focus:ring-blue/20"
+                  />
+                </div>
+              ) : null}
 
-          <div id={listboxId} role="listbox" aria-labelledby={inputId} className="max-h-72 overflow-y-auto">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => {
-                const selected = option.value === value;
-                const active = option.value === activeValue;
-                return (
-                  <button
-                    key={option.value}
-                    ref={(node) => {
-                      if (node) {
-                        optionRefs.current.set(option.value, node);
-                      } else {
-                        optionRefs.current.delete(option.value);
-                      }
-                    }}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    disabled={option.disabled}
-                    onMouseEnter={() => {
-                      if (!option.disabled) setActiveValue(option.value);
-                    }}
-                    onClick={() => selectValue(option.value)}
-                    className={cn(
-                      "flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/25",
-                      selected ? "bg-blue/10 text-blue" : "text-ink hover:bg-line2",
-                      active && !selected ? "bg-line2" : undefined,
-                      option.disabled ? "cursor-not-allowed text-ink4 opacity-60 hover:bg-transparent" : undefined,
-                    )}
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate font-semibold">{option.label}</span>
-                      {option.hint ? <span className="mt-0.5 block text-xs text-ink3">{option.hint}</span> : null}
-                    </span>
-                    {selected ? <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" /> : null}
-                  </button>
-                );
-              })
-            ) : (
-              <p className="px-3 py-6 text-center text-sm text-ink3">{emptyLabel}</p>
-            )}
-          </div>
-        </div>
-      ) : null}
+              <div id={listboxId} role="listbox" aria-labelledby={inputId} className="max-h-72 overflow-y-auto">
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((option) => {
+                    const selected = option.value === value;
+                    const active = option.value === activeValue;
+                    return (
+                      <button
+                        key={option.value}
+                        ref={(node) => {
+                          if (node) {
+                            optionRefs.current.set(option.value, node);
+                          } else {
+                            optionRefs.current.delete(option.value);
+                          }
+                        }}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        disabled={option.disabled}
+                        onMouseEnter={() => {
+                          if (!option.disabled) setActiveValue(option.value);
+                        }}
+                        onClick={() => selectValue(option.value)}
+                        className={cn(
+                          "flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/25",
+                          selected ? "bg-blue/10 text-blue" : "text-ink hover:bg-line2",
+                          active && !selected ? "bg-line2" : undefined,
+                          option.disabled ? "cursor-not-allowed text-ink4 opacity-60 hover:bg-transparent" : undefined,
+                        )}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold">{option.label}</span>
+                          {option.hint ? <span className="mt-0.5 block text-xs text-ink3">{option.hint}</span> : null}
+                        </span>
+                        {selected ? <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" /> : null}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <p className="px-3 py-6 text-center text-sm text-ink3">{emptyLabel}</p>
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
       <FieldMessage id={descriptionId} error={error} hint={hint} reserveSpace={reserveMessageSpace} />
     </div>
   );
