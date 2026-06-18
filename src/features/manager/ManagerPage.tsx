@@ -588,11 +588,12 @@ function ManagerWorkspace({
 
   useEffect(() => {
     if (!sessionRef) return;
+    const pollMs = session?.state?.phase === "voting" ? 1200 : 2500;
     const timer = window.setInterval(() => {
       if (!busy) void refresh(true);
-    }, 2500);
+    }, pollMs);
     return () => window.clearInterval(timer);
-  }, [busy, refresh, sessionRef]);
+  }, [busy, refresh, session?.state?.phase, sessionRef]);
 
   useReconnectOnVisible(() => {
     if (!sessionRef || busy) return;

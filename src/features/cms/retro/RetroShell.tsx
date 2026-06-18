@@ -292,6 +292,7 @@ function RetroCreatePage({ principal, canManage }: { principal: CmsPrincipal; ca
   const navigate = useNavigate();
   const toast = useToast();
   const { teams, loading: teamsLoading } = useCmsTeams(principal);
+  const principalTeamIds = principal.team_ids ?? principal.teams?.map((team) => team.id);
   const [teamId, setTeamId] = useTeamIdState(teams);
 
   if (!canManage) {
@@ -299,7 +300,7 @@ function RetroCreatePage({ principal, canManage }: { principal: CmsPrincipal; ca
   }
 
   async function handleCreate(title: string, config: RetroConfig) {
-    if (teamPickerRequired(teams, principal.is_superuser) && teamId === "") {
+    if (teamPickerRequired(teams, principal.is_superuser, principalTeamIds) && teamId === "") {
       throw new Error("Выберите команду");
     }
     const created = await cmsRetroApi.create({
@@ -314,13 +315,13 @@ function RetroCreatePage({ principal, canManage }: { principal: CmsPrincipal; ca
   return (
     <div className="space-y-5">
       <SectionHeader title="Новое ретро" description="Задайте название и секции для обсуждения." />
-      {needsTeamPicker(teams, principal.is_superuser) ? (
+      {needsTeamPicker(teams, principal.is_superuser, principalTeamIds) ? (
         <TeamSelect
           teams={teams}
           value={teamId}
           forcePicker
           loading={teamsLoading}
-          required={teamPickerRequired(teams, principal.is_superuser)}
+          required={teamPickerRequired(teams, principal.is_superuser, principalTeamIds)}
           allowEmpty={principal.is_superuser}
           onChange={setTeamId}
         />

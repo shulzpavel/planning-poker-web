@@ -84,13 +84,28 @@ export function resolveDefaultTeamId(teams: CmsTeam[]): number | "" {
   return "";
 }
 
-export function needsTeamPicker(teams: CmsTeam[], isSuperuser: boolean): boolean {
-  if (isSuperuser) return true;
-  return teams.length > 1;
+/** How many teams the current user can choose from (loaded list or auth hint). */
+export function teamChoiceCount(teams: CmsTeam[], teamIds?: number[]): number {
+  return Math.max(teams.length, teamIds?.length ?? 0);
 }
 
-export function teamPickerRequired(teams: CmsTeam[], isSuperuser: boolean): boolean {
-  return needsTeamPicker(teams, isSuperuser) && !isSuperuser && teams.length > 1;
+export function needsTeamPicker(
+  teams: CmsTeam[],
+  isSuperuser: boolean,
+  teamIds?: number[],
+): boolean {
+  if (isSuperuser) return true;
+  return teamChoiceCount(teams, teamIds) > 1;
+}
+
+export function teamPickerRequired(
+  teams: CmsTeam[],
+  isSuperuser: boolean,
+  teamIds?: number[],
+): boolean {
+  return needsTeamPicker(teams, isSuperuser, teamIds)
+    && !isSuperuser
+    && teamChoiceCount(teams, teamIds) > 1;
 }
 
 /** Keep create forms in sync when teams finish loading after the first render. */

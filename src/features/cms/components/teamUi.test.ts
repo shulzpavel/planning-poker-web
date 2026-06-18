@@ -20,6 +20,7 @@ describe("team UI helpers", () => {
     expect(needsTeamPicker(teams, false)).toBe(true);
     expect(needsTeamPicker(teams, true)).toBe(true);
     expect(needsTeamPicker(teams.slice(0, 1), false)).toBe(false);
+    expect(needsTeamPicker([], false, [1, 2])).toBe(true);
     expect(teamPickerRequired(teams, false)).toBe(true);
     expect(teamPickerRequired(teams, true)).toBe(false);
     expect(teamPickerRequired(teams.slice(0, 1), false)).toBe(false);

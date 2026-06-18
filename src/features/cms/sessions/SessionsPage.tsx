@@ -71,7 +71,8 @@ interface SessionsPageProps {
 }
 
 export default function SessionsPage({ principal, canManageTasks, canManageSessions }: SessionsPageProps) {
-  const { teams, loading: teamsLoading } = useCmsTeams(principal);
+  const { teams, loading: teamsLoading, error: teamsError, reload: reloadTeams } = useCmsTeams(principal);
+  const principalTeamIds = principal.team_ids ?? principal.teams?.map((team) => team.id);
   const [q, setQ] = useState("");
   const [active, setActive] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
@@ -97,6 +98,11 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
   const [createError, setCreateError] = useState<string | null>(null);
   const [createTeamId, setCreateTeamId] = useTeamIdState(teams, createOpen);
   const debouncedQ = useDebouncedValue(q);
+
+  useEffect(() => {
+    if (!createOpen) return;
+    void reloadTeams();
+  }, [createOpen, reloadTeams]);
   const params = useMemo(
     () => ({
       q: debouncedQ,
@@ -130,7 +136,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
     setCreateError(null);
     const title = createTitle.trim() || "Planning Poker";
     const teamId = createTeamId === "" ? undefined : createTeamId;
-    if (teamPickerRequired(teams, principal.is_superuser) && teamId == null) {
+    if (teamPickerRequired(teams, principal.is_superuser, principalTeamIds) && teamId == null) {
       setCreateError("Выберите команду");
       setCreateBusy(false);
       return;
@@ -432,9 +438,11 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
         title={createTitle}
         teamId={createTeamId}
         teams={teams}
-        showTeamPicker={needsTeamPicker(teams, principal.is_superuser)}
+        showTeamPicker={needsTeamPicker(teams, principal.is_superuser, principalTeamIds)}
         isSuperuser={principal.is_superuser}
         teamsLoading={teamsLoading}
+        teamsError={teamsError}
+        principalTeamIds={principalTeamIds}
         busy={createBusy}
         error={createError}
         onTitleChange={setCreateTitle}
@@ -495,6 +503,8 @@ function CreateSessionDialog({
   showTeamPicker,
   isSuperuser,
   teamsLoading,
+  teamsError,
+  principalTeamIds,
   busy,
   error,
   dirty,
@@ -512,6 +522,8 @@ function CreateSessionDialog({
   showTeamPicker: boolean;
   isSuperuser: boolean;
   teamsLoading: boolean;
+  teamsError: string | null;
+  principalTeamIds?: number[];
   busy: boolean;
   error: string | null;
   dirty: boolean;
@@ -622,7 +634,7 @@ function CreateSessionDialog({
             value={teamId}
             forcePicker
             loading={teamsLoading}
-            required={teamPickerRequired(teams, isSuperuser)}
+            required={teamPickerRequired(teams, isSuperuser, principalTeamIds)}
             allowEmpty={isSuperuser}
             disabled={busy}
             onChange={(next) => {
@@ -631,6 +643,14 @@ function CreateSessionDialog({
             }}
           />
         ) : null}
+        {!teamsLoading && teams.length === 0 && showTeamPicker ? (
+          <Alert tone="warning">
+            {isSuperuser
+              ? "Команд пока нет. Создайте их в разделе «Доступ → Команды», затем обновите список."
+              : "Нет доступных команд для вашего аккаунта. Обратитесь к администратору."}
+          </Alert>
+        ) : null}
+        {teamsError ? <Alert tone="danger">{teamsError}</Alert> : null}
         <div>
           <p className="mb-2 text-sm font-semibold text-ink">Как оцениваем</p>
           <EstimationModePicker

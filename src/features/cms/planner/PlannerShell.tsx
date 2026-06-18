@@ -510,6 +510,7 @@ function PlannerEditorPage({
   mode: "create" | "edit";
 }) {
   const { teams, loading: teamsLoading } = useCmsTeams(principal);
+  const principalTeamIds = principal.team_ids ?? principal.teams?.map((team) => team.id);
   const [teamId, setTeamId] = useTeamIdState(teams, mode === "create");
   const navigate = useNavigate();
   const toast = useToast();
@@ -565,7 +566,7 @@ function PlannerEditorPage({
   async function save() {
     setSaving(true);
     setError(null);
-    if (mode === "create" && teamPickerRequired(teams, principal.is_superuser) && teamId === "") {
+    if (mode === "create" && teamPickerRequired(teams, principal.is_superuser, principalTeamIds) && teamId === "") {
       const message = "Выберите команду";
       setError(message);
       toast.error(message, { title: "Сохранение не прошло" });
@@ -683,14 +684,14 @@ function PlannerEditorPage({
               <TeamBadge teamId={teamId === "" ? null : teamId} team={team} />
             </div>
           ) : null}
-          {mode === "create" && needsTeamPicker(teams, principal.is_superuser) ? (
+          {mode === "create" && needsTeamPicker(teams, principal.is_superuser, principalTeamIds) ? (
             <div className="max-w-sm rounded-card border border-line bg-surface p-3 shadow-card">
               <TeamSelect
                 teams={teams}
                 value={teamId}
                 forcePicker
                 loading={teamsLoading}
-                required={teamPickerRequired(teams, principal.is_superuser)}
+                required={teamPickerRequired(teams, principal.is_superuser, principalTeamIds)}
                 allowEmpty={principal.is_superuser}
                 disabled={!canManage}
                 compact
