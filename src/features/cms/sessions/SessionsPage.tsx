@@ -37,7 +37,6 @@ import { TeamBadge } from "../components/TeamBadge";
 import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
 import {
   TeamSelect,
-  needsTeamPicker,
   resolveDefaultTeamId,
   teamPickerRequired,
   useTeamIdState,
