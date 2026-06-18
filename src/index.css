@@ -169,6 +169,23 @@
     box-shadow: var(--shadow-card);
   }
 
+  .scope-board-header__toolbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scope-board-header__toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scope-board-header__toolbar > * {
+    flex-shrink: 0;
+  }
+
+  .scope-board-header__meta {
+    line-height: 1.35;
+  }
+
   .scope-section-header-warning {
     background: rgb(var(--c-amber) / 0.08);
     color: rgb(var(--c-amber));
@@ -704,5 +721,401 @@
 
   body.scope-print-mode .scope-ai-panel-grid {
     display: block !important;
+  }
+}
+
+/* ── Scope board: desktop presentation mode (portal layer) ────────────── */
+
+@keyframes scope-presentation-layer-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scope-presentation-layer-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes scope-presentation-tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(36px) scaleX(0.9) scaleY(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes scope-presentation-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(48px) scale(0.9);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes scope-presentation-tile-stretch {
+  0% {
+    transform: scaleX(0.94);
+  }
+  55% {
+    transform: scaleX(1.015);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes scope-donut-segment-draw {
+  from {
+    stroke-dasharray: 0 239;
+    stroke-dashoffset: 0;
+    opacity: 0.25;
+  }
+  to {
+    stroke-dasharray: var(--seg-dasharray);
+    stroke-dashoffset: var(--seg-dashoffset);
+    opacity: 1;
+  }
+}
+
+@keyframes scope-capacity-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes scope-capacity-metric-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.scope-presentation-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  width: 100%;
+  transition: grid-template-columns 680ms var(--ease-emphasized), gap 680ms var(--ease-emphasized);
+}
+
+@media (min-width: 1400px) {
+  .scope-presentation-stage {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scope-presentation-tile--full,
+  .scope-presentation-tile--hero {
+    grid-column: 1 / -1;
+  }
+}
+
+.scope-presentation-tile {
+  min-width: 0;
+  transition:
+    grid-column 680ms var(--ease-emphasized),
+    transform 680ms var(--ease-emphasized);
+}
+
+.scope-presentation-tile-inner {
+  height: 100%;
+  transition: transform 680ms var(--ease-emphasized);
+}
+
+.scope-presentation-tile--pair {
+  display: flex;
+  flex-direction: column;
+}
+
+.scope-presentation-tile--pair .scope-presentation-tile-inner {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.scope-presentation-tile--pair .scope-presentation-tile-inner > * {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.scope-presentation-tile--pair .scope-collapsible-card {
+  flex: 1;
+}
+
+.scope-presentation-tile--pair details.group {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.scope-presentation-tile--pair details.group > :not(summary) {
+  flex: 1;
+}
+
+.scope-presentation-tile {
+  animation: scope-presentation-tile-in 620ms var(--ease-emphasized) both;
+  animation-delay: var(--presentation-delay, 0ms);
+}
+
+.scope-presentation-tile--hero {
+  animation: scope-presentation-hero-in 780ms var(--ease-emphasized) both;
+  animation-delay: var(--presentation-delay, 0ms);
+}
+
+.scope-presentation-tile--hero .scope-presentation-tile-inner {
+  animation: scope-presentation-tile-stretch 900ms var(--ease-emphasized) both;
+  animation-delay: calc(var(--presentation-delay, 0ms) + 120ms);
+  transform-origin: center top;
+}
+
+.scope-presentation-tile--capacity > .scope-presentation-tile-inner > * {
+  height: 100%;
+}
+
+/* Capacity hero — presentation layout */
+.scope-capacity-presentation {
+  min-height: min(72vh, 52rem);
+}
+
+.scope-capacity-presentation-body {
+  display: flex;
+  min-height: inherit;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.scope-capacity-hero {
+  display: grid;
+  flex: 1;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: min(58vh, 40rem);
+  transition: grid-template-columns 680ms var(--ease-emphasized), gap 680ms var(--ease-emphasized);
+}
+
+@media (min-width: 1100px) {
+  .scope-capacity-hero {
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+}
+
+.scope-capacity-hero-split {
+  display: grid;
+  flex: 1;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: min(58vh, 40rem);
+  transition: grid-template-columns 680ms var(--ease-emphasized), gap 680ms var(--ease-emphasized);
+}
+
+@media (min-width: 1200px) {
+  .scope-capacity-hero-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.scope-capacity-donut-panel,
+.scope-capacity-metrics-panel,
+.scope-capacity-track-panel {
+  animation: scope-capacity-panel-in 640ms var(--ease-emphasized) both;
+}
+
+.scope-capacity-donut-panel {
+  animation-delay: 180ms;
+}
+
+.scope-capacity-metrics-panel {
+  animation-delay: 280ms;
+}
+
+.scope-capacity-track-panel {
+  animation-delay: calc(180ms + var(--track-index, 0) * 120ms);
+}
+
+.scope-capacity-donut-panel,
+.scope-capacity-metrics-panel,
+.scope-capacity-track-panel {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 1.25rem;
+  background: rgb(var(--c-bg) / 0.72);
+  padding: 1.25rem;
+  transition:
+    padding 680ms var(--ease-emphasized),
+    border-radius 680ms var(--ease-emphasized),
+    transform 680ms var(--ease-emphasized);
+}
+
+@media (min-width: 1280px) {
+  .scope-capacity-donut-panel,
+  .scope-capacity-metrics-panel,
+  .scope-capacity-track-panel {
+    padding: 1.75rem 2rem;
+  }
+}
+
+.scope-capacity-donut {
+  position: relative;
+  margin-inline: auto;
+  aspect-ratio: 1;
+  height: auto;
+  width: min(72vw, 22rem);
+  transition: width 680ms var(--ease-emphasized), height 680ms var(--ease-emphasized);
+}
+
+@media (min-width: 1100px) {
+  .scope-capacity-donut {
+    width: min(36vw, 26rem);
+  }
+}
+
+@media (min-width: 1600px) {
+  .scope-capacity-donut {
+    width: min(28vw, 30rem);
+  }
+}
+
+.scope-capacity-donut--compact {
+  width: min(64vw, 18rem);
+}
+
+@media (min-width: 1200px) {
+  .scope-capacity-donut--compact {
+    width: min(30vw, 20rem);
+  }
+}
+
+.scope-capacity-donut-center-value {
+  font-size: clamp(2rem, 4.5vw, 3.75rem);
+  line-height: 1;
+}
+
+.scope-donut-segment {
+  animation: scope-donut-segment-draw 920ms var(--ease-emphasized) both;
+  animation-delay: calc(260ms + var(--seg-index, 0) * 130ms);
+}
+
+.scope-capacity-metric-grid {
+  display: grid;
+  flex: 1;
+  gap: 0.875rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 1500px) {
+  .scope-capacity-metric-grid {
+    gap: 1rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .scope-capacity-hero .scope-capacity-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.scope-capacity-metric-chip {
+  animation: scope-capacity-metric-in 560ms var(--ease-emphasized) both;
+  animation-delay: calc(360ms + var(--metric-index, 0) * 70ms);
+  transition: transform 680ms var(--ease-emphasized), padding 680ms var(--ease-emphasized);
+}
+
+.scope-capacity-alerts-panel {
+  animation: scope-capacity-panel-in 640ms var(--ease-emphasized) both;
+  animation-delay: 420ms;
+}
+
+.scope-capacity-segment-row {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  width: 100%;
+}
+
+.scope-presentation-exit-sticky {
+  transition:
+    background-color 240ms var(--ease-out-soft),
+    border-color 240ms var(--ease-out-soft),
+    box-shadow 240ms var(--ease-out-soft);
+}
+
+.scope-presentation-layer:not(.scope-presentation-layer--closing) .scope-presentation-exit-sticky {
+  box-shadow: 0 1px 0 rgb(var(--c-line) / 0.45);
+}
+
+.scope-presentation-layer--open {
+  animation: scope-presentation-layer-in 360ms var(--ease-emphasized) both;
+}
+
+.scope-presentation-layer--closing {
+  animation: scope-presentation-layer-out 300ms var(--ease-out-soft) both;
+  pointer-events: none;
+}
+
+.scope-presentation-layer .scope-report-print-root .scope-presentation-hide,
+.scope-presentation-layer .scope-report-print-root input.scope-presentation-hide,
+.scope-presentation-layer .scope-report-print-root textarea.scope-presentation-hide,
+.scope-presentation-layer .scope-report-print-root select.scope-presentation-hide {
+  display: none !important;
+}
+
+.scope-presentation-layer .scope-ai-history-aside {
+  display: none !important;
+}
+
+.scope-presentation-layer .scope-ai-panel-grid {
+  display: block !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scope-presentation-layer--open,
+  .scope-presentation-layer--closing,
+  .scope-presentation-tile,
+  .scope-presentation-tile--hero .scope-presentation-tile-inner,
+  .scope-donut-segment,
+  .scope-capacity-donut-panel,
+  .scope-capacity-metrics-panel,
+  .scope-capacity-track-panel,
+  .scope-capacity-metric-chip,
+  .scope-capacity-alerts-panel {
+    animation: none;
+  }
+
+  .scope-presentation-stage,
+  .scope-presentation-tile,
+  .scope-presentation-tile-inner,
+  .scope-capacity-donut,
+  .scope-capacity-metric-chip,
+  .scope-capacity-donut-panel,
+  .scope-capacity-metrics-panel,
+  .scope-capacity-track-panel {
+    transition: none;
   }
 }

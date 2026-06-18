@@ -70,6 +70,7 @@ import {
 } from "./scopeBoardHelpers";
 import { ScopeActivityFeed } from "./ScopeActivityFeed";
 import { ScopeAiPanel } from "./ScopeAiPanel";
+import { ScopeBoardHeader, ScopeBoardMetaSeparator } from "./ScopeBoardHeader";
 import { ScopeFloatingTodo } from "./ScopeFloatingTodo";
 import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
 import { ScopePriorityQueuesSection } from "./ScopePriorityQueuesSection";
@@ -80,6 +81,12 @@ import { ScopeAssigneeCharts } from "./ScopeAssigneeCharts";
 import { ScopePlanInsights, planChangeReasonLabel } from "./scopePlanInsights";
 import { ScopeVisualDashboard, type ScopeDataQualityDetails, type ScopeReportSummary } from "./ScopeVisualDashboard";
 import { SortableScopeBlock } from "./SortableScopeBlock";
+import {
+  ScopePresentationEnterButton,
+  ScopePresentationLayer,
+  ScopePresentationTile,
+  presentationCloseDelayMs,
+} from "./ScopePresentationLayer";
 import {
   DEFAULT_SCOPE_LAYOUT_ORDER,
   mergeScopeLayoutOrder,
@@ -96,6 +103,11 @@ import {
 import { useIncrementalList } from "./scopeListPaging";
 import type { ScopeAiSummary, ScopeAiHistoryEntry } from "./scopeAiTypes";
 import { printScopeReport } from "./scopeReportPrint";
+import {
+  filterScopePresentationOrder,
+  isScopePresentationDesktop,
+  scopePresentationGridClass,
+} from "./scopePresentationMode";
 import type { ScopeSectionConfig, ScopeWorkloadMode } from "../api/cmsClient";
 import WorkloadModePicker, { DEFAULT_SCOPE_WORKLOAD_MODE } from "./WorkloadModePicker";
 
@@ -831,6 +843,8 @@ function ScopeBoardEditorPage({
   const [savedForm, setSavedForm] = useState<ScopeBoardForm>(defaultForm);
   const [layoutOrder, setLayoutOrder] = useState<ScopeLayoutBlockKey[]>(DEFAULT_SCOPE_LAYOUT_ORDER);
   const [layoutDragging, setLayoutDragging] = useState(false);
+  const [presentationOpen, setPresentationOpen] = useState(false);
+  const [presentationClosing, setPresentationClosing] = useState(false);
   const printRootRef = useRef<HTMLDivElement>(null);
   const aiReportRef = useRef<HTMLDivElement>(null);
 
@@ -1229,6 +1243,26 @@ function ScopeBoardEditorPage({
     [layoutOrder, visibleBlockKeys],
   );
 
+  const presentationLayoutOrder = useMemo(
+    () => filterScopePresentationOrder(visibleLayoutOrder),
+    [visibleLayoutOrder],
+  );
+
+  const closePresentation = useCallback(() => {
+    if (!presentationOpen || presentationClosing) return;
+    setPresentationClosing(true);
+    window.setTimeout(() => {
+      setPresentationOpen(false);
+      setPresentationClosing(false);
+    }, presentationCloseDelayMs());
+  }, [presentationClosing, presentationOpen]);
+
+  const enterPresentationMode = useCallback(() => {
+    if (!isScopePresentationDesktop() || !metrics) return;
+    setPresentationClosing(false);
+    setPresentationOpen(true);
+  }, [metrics]);
+
   const layoutSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -1285,12 +1319,13 @@ function ScopeBoardEditorPage({
             reportSummary={reportSummary ?? undefined}
             dataQualityDetails={dataQualityDetails ?? undefined}
             jiraFetchTruncated={snapshot?.jira_fetch_warnings?.length ?? 0}
+            presentation={presentationOpen}
           />
         );
       case "roleWorkload":
-        return <ScopeAssigneeCharts metrics={metrics} />;
+        return <ScopeAssigneeCharts metrics={metrics} presentation={presentationOpen} />;
       case "planInsights":
-        return <ScopePlanInsights metrics={metrics} />;
+        return <ScopePlanInsights metrics={metrics} presentation={presentationOpen} />;
       case "aiSummary":
         return (
           <div ref={aiReportRef} className="scroll-mt-24 space-y-3">
@@ -1305,6 +1340,7 @@ function ScopeBoardEditorPage({
               openQuestionsCount={resolveOpenQuestions(snapshot).length}
               autoOpenSignal={aiPanelOpenSignal}
               analyzing={analyzing}
+              presentation={presentationOpen}
             />
           </div>
         );
@@ -1315,6 +1351,7 @@ function ScopeBoardEditorPage({
             canManage={canManage}
             showTechnicalFields
             isReleaseReport={isReleaseTemplate}
+            presentation={presentationOpen}
             releaseComments={{
               current: board?.release_comment ?? form.release_comment,
               previous: board?.previous_release_comment ?? form.previous_release_comment,
@@ -1332,7 +1369,7 @@ function ScopeBoardEditorPage({
             snapshot={snapshot}
             todoJql={board?.todo_jql ?? form.todo_jql}
             testJql={board?.test_jql ?? form.test_jql}
-            canManage={canManage}
+            canManage={canManage && !presentationOpen}
             onReorderQueue={reorderQueue}
             onAddQueueComment={addQueueComment}
             onUpdateQueueDueDate={updateQueueDueDate}
@@ -1485,51 +1522,57 @@ function ScopeBoardEditorPage({
 
   return (
     <section className="scope-board-shell min-w-0 space-y-5">
-      <SectionHeader
+      <ScopeBoardHeader
         title={mode === "create" ? "Новый отчёт месяца" : board?.name ?? "Отчёт месяца"}
-        description={
+        onBack={() => navigate("..")}
+        meta={
           mode === "edit" && board ? (
-            <span className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
               <TeamBadge teamId={board.team_id} team={board.team} />
+              <ScopeBoardMetaSeparator />
               <span>Месяц {formatScopeDisplayMonth(board.month)}</span>
+              <ScopeBoardMetaSeparator />
               {snapshotRefreshedLabel ? (
-                <span className="text-xs text-ink3">Snapshot Jira: {snapshotRefreshedLabel}</span>
+                <span className="text-xs">Snapshot Jira: {snapshotRefreshedLabel}</span>
               ) : (
                 <span className="text-xs text-amber">Нет snapshot — обновите из Jira</span>
               )}
             </span>
-          ) : (
+          ) : mode === "create" ? (
             "Выберите команду и задайте capacity с JQL-секциями."
-          )
+          ) : undefined
         }
-        actions={
-          <div className="flex flex-wrap gap-2 scope-no-print">
-            <Button size="sm" variant="ghost" onClick={() => navigate("..")}>
-              Назад
-            </Button>
-            {mode === "edit" && snapshot ? (
-              <AiSparkleButton
-                size="sm"
-                loading={analyzing}
-                disabled={analyzing || refreshing || saving}
-                onClick={() => void analyzeScope()}
-              >
-                {aiSummary ? "Обновить AI" : "AI-анализ"}
-              </AiSparkleButton>
-            ) : null}
-            {mode === "edit" && canManage ? (
-              <Button size="sm" variant="secondary" disabled={refreshing || saving} onClick={() => void refreshFromJira()}>
-                {refreshing ? <Spinner size="sm" /> : null}
-                Обновить из Jira
-              </Button>
-            ) : null}
-            {canManage ? (
-              <Button size="sm" variant="primary" disabled={saving || refreshing} onClick={() => void handleSave()}>
-                {saving ? <Spinner size="sm" /> : null}
-                {mode === "create" ? "Создать" : "Сохранить"}
-              </Button>
-            ) : null}
-          </div>
+        toolbar={
+          mode === "edit" && (snapshot || canManage) ? (
+            <>
+              {snapshot ? (
+                <AiSparkleButton
+                  className="shrink-0 whitespace-nowrap"
+                  size="sm"
+                  loading={analyzing}
+                  disabled={analyzing || refreshing || saving}
+                  onClick={() => void analyzeScope()}
+                >
+                  {aiSummary ? "Обновить AI" : "AI-анализ"}
+                </AiSparkleButton>
+              ) : null}
+              {canManage ? (
+                <Button
+                  className="shrink-0 whitespace-nowrap"
+                  size="sm"
+                  variant="secondary"
+                  disabled={refreshing || saving}
+                  onClick={() => void refreshFromJira()}
+                >
+                  {refreshing ? <Spinner size="sm" /> : null}
+                  Обновить из Jira
+                </Button>
+              ) : null}
+              {snapshot ? (
+                <ScopePresentationEnterButton disabled={!metrics} onClick={enterPresentationMode} />
+              ) : null}
+            </>
+          ) : undefined
         }
       />
 
@@ -1543,6 +1586,7 @@ function ScopeBoardEditorPage({
           onAdd={addTodoItem}
           onToggle={toggleTodoItem}
           onDelete={deleteTodoItem}
+          presentation={presentationOpen}
         />
       ) : null}
 
@@ -1591,7 +1635,7 @@ function ScopeBoardEditorPage({
             </Surface>
           ) : null}
 
-          {mode === "edit" && snapshot && metrics ? (
+          {mode === "edit" && snapshot && metrics && !presentationOpen ? (
             canManage ? (
               <DndContext
                 sensors={layoutSensors}
@@ -1720,12 +1764,47 @@ function ScopeBoardEditorPage({
         </>
       ) : null}
 
-      {!loading && mode === "edit" && snapshot ? (
-        <div className="scope-no-print flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
-          <Button variant="secondary" disabled={!metrics} onClick={() => printScopeReport(printRootRef.current)}>
-            Сохранить PDF
+      {!loading && canManage ? (
+        <footer className="scope-board-footer scope-no-print mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
+          {mode === "edit" && snapshot ? (
+            <Button variant="secondary" disabled={!metrics} onClick={() => printScopeReport(printRootRef.current)}>
+              Сохранить PDF
+            </Button>
+          ) : null}
+          <Button variant="primary" disabled={saving || refreshing} onClick={() => void handleSave()}>
+            {saving ? <Spinner size="sm" /> : null}
+            {mode === "create" ? "Создать" : "Сохранить"}
           </Button>
-        </div>
+        </footer>
+      ) : null}
+
+      {presentationOpen ? (
+        <ScopePresentationLayer
+          open={presentationOpen}
+          closing={presentationClosing}
+          title={board?.name ?? "Отчёт месяца"}
+          subtitle={
+            board ? (
+              <span>
+                Месяц {formatScopeDisplayMonth(board.month)}
+                {snapshotRefreshedLabel ? ` · Snapshot Jira: ${snapshotRefreshedLabel}` : null}
+              </span>
+            ) : null
+          }
+          contentRef={printRootRef}
+          onClose={closePresentation}
+        >
+          {presentationLayoutOrder.map((key, index) => (
+            <ScopePresentationTile
+              key={key}
+              blockKey={key}
+              index={index}
+              className={scopePresentationGridClass(key)}
+            >
+              {renderScopeLayoutBlock(key)}
+            </ScopePresentationTile>
+          ))}
+        </ScopePresentationLayer>
       ) : null}
 
       {unsavedGuard.dialog}

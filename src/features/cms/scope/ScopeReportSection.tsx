@@ -56,6 +56,7 @@ export function ScopeReportSection({
   onSaveReleaseComment,
   onAddQuestion,
   onResolveQuestion,
+  presentation = false,
 }: {
   snapshot: ScopeBoardSnapshot;
   canManage: boolean;
@@ -65,6 +66,7 @@ export function ScopeReportSection({
   onSaveReleaseComment?: (slot: ScopeReleaseSlot, text: string) => Promise<void>;
   onAddQuestion: (text: string) => Promise<void>;
   onResolveQuestion: (questionId: string, comment: string) => Promise<void>;
+  presentation?: boolean;
 }) {
   const report = snapshot.report ? normalizeScopeReport(snapshot.report) : computeScopeReport(snapshot);
   const openQuestions = resolveOpenQuestions(snapshot);
@@ -105,6 +107,7 @@ export function ScopeReportSection({
         resolved={closedQuestions}
         onAddQuestion={onAddQuestion}
         onResolveQuestion={onResolveQuestion}
+        presentation={presentation}
       />
     </div>
   );
@@ -126,7 +129,7 @@ export function ScopeReportSection({
   }
 
   return (
-    <details className="scope-collapsible-card group overflow-hidden rounded-lg bg-surface">
+    <details className="scope-collapsible-card scope-presentation-section group overflow-hidden rounded-lg bg-surface">
       <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
         <div>
           <h2 className="text-base font-semibold text-ink">Отчёт</h2>
@@ -963,6 +966,7 @@ function OpenQuestionsBlock({
   resolved,
   onAddQuestion,
   onResolveQuestion,
+  presentation = false,
 }: {
   snapshot: ScopeBoardSnapshot;
   count: number;
@@ -971,6 +975,7 @@ function OpenQuestionsBlock({
   resolved: ScopeResolvedQuestion[];
   onAddQuestion: (text: string) => Promise<void>;
   onResolveQuestion: (questionId: string, comment: string) => Promise<void>;
+  presentation?: boolean;
 }) {
   const needsAttention = count > 0;
   const stats = snapshotOpenQuestionStats(snapshot);
@@ -1062,6 +1067,7 @@ function OpenQuestionsBlock({
                   key={issue.id}
                   issue={issue}
                   canManage={canManage}
+                  presentation={presentation}
                   onResolveQuestion={onResolveQuestion}
                 />
               ))}
@@ -1100,10 +1106,12 @@ function OpenQuestionsBlock({
 function OpenQuestionCard({
   issue,
   canManage,
+  presentation = false,
   onResolveQuestion,
 }: {
   issue: ScopeOpenQuestion;
   canManage: boolean;
+  presentation?: boolean;
   onResolveQuestion: (questionId: string, comment: string) => Promise<void>;
 }) {
   const isJira = issue.kind === "jira";
@@ -1130,7 +1138,7 @@ function OpenQuestionCard({
 
   return (
     <li className="rounded-md border border-line border-l-4 border-l-amber bg-bg px-3 py-3 sm:px-4">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)]">
+      <div className={presentation ? "grid gap-3" : "grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)]"}>
         <div>
           <div className="flex flex-wrap items-center gap-2">
             {jiraIssue ? <ReportIssueLink issue={jiraIssue} /> : <span className="text-sm font-medium text-ink">Вручную</span>}
@@ -1142,11 +1150,19 @@ function OpenQuestionCard({
           <p className="mt-1 text-sm text-ink2">{issue.summary}</p>
           {jiraIssue?.assignee ? <p className="mt-1 text-xs text-ink3">Owner: {jiraIssue.assignee}</p> : null}
           {jiraIssue?.last_comment ? (
+            presentation ? (
+              <div className="mt-2 rounded-md border border-line bg-surface px-3 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink3">Контекст из Jira</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-ink2">{jiraIssue.last_comment}</p>
+                {commentMeta ? <p className="mt-1 text-xs text-ink3">{commentMeta}</p> : null}
+              </div>
+            ) : (
             <details className="mt-2">
               <summary className="cursor-pointer text-xs font-medium text-ink2">Контекст из Jira</summary>
               <p className="mt-1 whitespace-pre-wrap rounded border border-line bg-surface px-2 py-2 text-xs text-ink2">{jiraIssue.last_comment}</p>
               {commentMeta ? <p className="mt-1 text-xs text-ink3">{commentMeta}</p> : null}
             </details>
+            )
           ) : null}
         </div>
 

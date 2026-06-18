@@ -1,4 +1,4 @@
-import { Badge, Surface } from "../../../design-system";
+import { Badge, Surface, cn } from "../../../design-system";
 import type { ScopeBoardIssue, ScopeBoardMetrics } from "../api/cmsClient";
 
 export function planChangeReasonLabel(issue: ScopeBoardIssue): string {
@@ -85,7 +85,7 @@ export function CountBarChart({
   );
 }
 
-export function ScopePlanInsights({ metrics }: { metrics: ScopeBoardMetrics }) {
+export function ScopePlanInsights({ metrics, presentation = false }: { metrics: ScopeBoardMetrics; presentation?: boolean }) {
   const reasonCounts = metrics.plan_change_reason_counts ?? {};
   const statusCounts = metrics.plan_status_counts ?? {};
   const hasReasons = Object.keys(reasonCounts).length > 0;
@@ -96,8 +96,8 @@ export function ScopePlanInsights({ metrics }: { metrics: ScopeBoardMetrics }) {
   }
 
   return (
-    <Surface className="scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0">
-      <details className="group">
+    <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0", presentation && "h-full")}>
+      <details className="scope-presentation-section group">
         <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
           <div>
             <h2 className="text-base font-semibold text-ink">Plan status и Plan change reason</h2>

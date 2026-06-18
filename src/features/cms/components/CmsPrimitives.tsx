@@ -104,6 +104,7 @@ export function LoadMoreFooter({
           : `Это всё · ${counter}`}
       </p>
       <Button
+        className="scope-presentation-keep"
         variant="ghost"
         size="sm"
         onClick={onMore}

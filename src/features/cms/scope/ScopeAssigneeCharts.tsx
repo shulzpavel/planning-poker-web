@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Badge, Button, Surface } from "../../../design-system";
+import { Badge, Button, Surface, cn } from "../../../design-system";
 import type {
   ScopeBoardMetrics,
   ScopeDeveloperBreakdown,
@@ -62,7 +62,7 @@ function RoleSegmentPicker({ value, onChange }: { value: RoleKey; onChange: (rol
             aria-selected={active}
             onClick={() => onChange(key)}
             className={[
-              "min-h-10 rounded-lg border px-4 text-sm font-semibold transition-colors",
+              "scope-presentation-keep min-h-10 rounded-lg border px-4 text-sm font-semibold transition-colors",
               active
                 ? "border-blue bg-blue/10 text-ink"
                 : "border-line bg-surface text-ink2 hover:border-blue/40 hover:bg-bg/80",
@@ -99,7 +99,7 @@ function HorizonSegmentPicker({
             aria-selected={active}
             onClick={() => onChange(key)}
             className={[
-              "min-h-10 rounded-lg border px-4 text-sm font-semibold transition-colors",
+              "scope-presentation-keep min-h-10 rounded-lg border px-4 text-sm font-semibold transition-colors",
               active
                 ? "border-blue bg-blue/10 text-ink"
                 : "border-line bg-surface text-ink2 hover:border-blue/40 hover:bg-bg/80",
@@ -129,7 +129,7 @@ function roleBreakdownForHorizon(
   };
 }
 
-export function ScopeAssigneeCharts({ metrics }: { metrics: ScopeBoardMetrics }) {
+export function ScopeAssigneeCharts({ metrics, presentation = false }: { metrics: ScopeBoardMetrics; presentation?: boolean }) {
   const [role, setRole] = useState<RoleKey>("front");
   const [horizon, setHorizon] = useState<WorkloadHorizon>("active");
   const { plan: planByRole, unplan: unplanByRole } = roleBreakdownForHorizon(metrics, horizon);
@@ -146,10 +146,15 @@ export function ScopeAssigneeCharts({ metrics }: { metrics: ScopeBoardMetrics })
   const horizonMeta = HORIZON_META[horizon];
 
   return (
-    <Surface className="scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0">
-      <details className="group">
+    <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0", presentation && "h-full")}>
+      <details className="scope-presentation-section group">
         <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
-          <h2 className="text-base font-semibold text-ink">Нагрузка по ролям</h2>
+          <div>
+            <h2 className="text-base font-semibold text-ink">Нагрузка по ролям</h2>
+            <p className="scope-section-header-subtitle mt-1 text-sm">
+              Распределение SP и задач по Front / Back / QA — план и внеплан в горизонтах «Сейчас» и «За спринт».
+            </p>
+          </div>
           <span className="scope-section-header-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform group-open:rotate-180">
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
               <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" />
@@ -315,7 +320,7 @@ function ModeButton({
       type="button"
       size="sm"
       variant={active ? "secondary" : "ghost"}
-      className="min-h-8 px-3 text-xs"
+      className="scope-presentation-keep min-h-8 px-3 text-xs"
       onClick={onClick}
     >
       {children}

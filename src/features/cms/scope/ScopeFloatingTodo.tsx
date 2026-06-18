@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
-import { Badge, Button, CheckboxField, Surface, TextField } from "../../../design-system";
+import { createPortal } from "react-dom";
+import { Badge, Button, CheckboxField, Surface, TextField, cn } from "../../../design-system";
 import type { ScopeTodoItem } from "../api/cmsClient";
 
 interface TodoPosition {
@@ -50,12 +51,14 @@ export function ScopeFloatingTodo({
   onAdd,
   onToggle,
   onDelete,
+  presentation = false,
 }: {
   boardId: number;
   items: ScopeTodoItem[];
   onAdd: (text: string) => Promise<void>;
   onToggle: (itemId: string, done: boolean) => Promise<void>;
   onDelete: (itemId: string) => Promise<void>;
+  presentation?: boolean;
 }) {
   const storagePrefix = useMemo(() => `cms.scope.todo.${boardId}`, [boardId]);
   const openKey = `${storagePrefix}.open`;
@@ -159,22 +162,30 @@ export function ScopeFloatingTodo({
 
   const activeCount = items.filter((item) => !item.done).length;
   const panelStyle: CSSProperties = { left: position.x, top: position.y, width: PANEL_WIDTH };
+  const layerClass = cn(
+    presentation ? "z-[240]" : "scope-no-print z-40 hidden md:block",
+  );
+
+  const collapsed = (
+    <div className={cn("fixed bottom-5 right-5", layerClass)}>
+      <Button variant="secondary" className="border-amber/30 bg-surface" onClick={() => setOpen(true)}>
+        <span className="inline-flex h-2 w-2 rounded-full bg-amber" aria-hidden="true" />
+        Мини todo
+        {activeCount > 0 ? <Badge tone="warning">{activeCount}</Badge> : null}
+      </Button>
+    </div>
+  );
 
   if (!open) {
-    return (
-      <div className="scope-no-print fixed bottom-5 right-5 z-40 hidden md:block">
-        <Button variant="secondary" className="border-amber/30 bg-surface" onClick={() => setOpen(true)}>
-          <span className="inline-flex h-2 w-2 rounded-full bg-amber" aria-hidden="true" />
-          Мини todo
-          {activeCount > 0 ? <Badge tone="warning">{activeCount}</Badge> : null}
-        </Button>
-      </div>
-    );
+    return presentation ? createPortal(collapsed, document.body) : collapsed;
   }
 
-  return (
+  const panel = (
     <Surface
-      className="scope-no-print fixed z-40 hidden max-h-[min(70vh,420px)] overflow-hidden border-line bg-surface p-0 ring-1 ring-amber/20 md:block"
+      className={cn(
+        "fixed max-h-[min(70vh,420px)] overflow-hidden border-line bg-surface p-0 ring-1 ring-amber/20",
+        layerClass,
+      )}
       style={panelStyle}
       aria-label="Мини todo"
     >
@@ -261,4 +272,6 @@ export function ScopeFloatingTodo({
       </div>
     </Surface>
   );
+
+  return presentation ? createPortal(panel, document.body) : panel;
 }

@@ -16,6 +16,7 @@ export function ScopeAiPanel({
   openQuestionsCount = 0,
   autoOpenSignal = 0,
   analyzing = false,
+  presentation = false,
 }: {
   summary: ScopeAiSummary | null;
   history: ScopeAiHistoryEntry[];
@@ -26,6 +27,7 @@ export function ScopeAiPanel({
   openQuestionsCount?: number;
   autoOpenSignal?: number;
   analyzing?: boolean;
+  presentation?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const entries = useMemo(() => normalizeAiHistory(summary, history), [summary, history]);
@@ -39,6 +41,12 @@ export function ScopeAiPanel({
   }, [entries, selectedHistoryId]);
 
   useEffect(() => {
+    if (presentation) {
+      setOpen(true);
+    }
+  }, [presentation]);
+
+  useEffect(() => {
     if (autoOpenSignal > 0 || analyzing) {
       setOpen(true);
     }
@@ -47,7 +55,10 @@ export function ScopeAiPanel({
   if (!activeEntry) {
     return (
       <details
-        className="scope-collapsible-card group overflow-hidden rounded-lg bg-surface"
+        className={cn(
+          "scope-collapsible-card group overflow-hidden rounded-lg bg-surface",
+          presentation && "scope-presentation-section",
+        )}
         open={open || analyzing}
         onToggle={(event) => setOpen(event.currentTarget.open)}
       >
@@ -80,7 +91,10 @@ export function ScopeAiPanel({
 
   return (
     <details
-      className="scope-collapsible-card group overflow-hidden rounded-lg bg-surface"
+      className={cn(
+        "scope-collapsible-card group overflow-hidden rounded-lg bg-surface",
+        presentation && "scope-presentation-section",
+      )}
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >

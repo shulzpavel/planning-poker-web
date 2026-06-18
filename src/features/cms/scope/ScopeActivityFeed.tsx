@@ -97,7 +97,7 @@ export function ScopeActivityFeed({ snapshot }: { snapshot: ScopeBoardSnapshot }
   }
 
   return (
-    <details className="scope-collapsible-card group overflow-hidden rounded-lg bg-surface">
+    <details className="scope-collapsible-card scope-presentation-section group overflow-hidden rounded-lg bg-surface">
       <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
         <div>
           <h3 className="text-base font-semibold text-ink">Что изменилось</h3>

@@ -45,7 +45,7 @@ export function ScopeTopItemsSection({
   }
 
   return (
-    <details className="scope-collapsible-card group overflow-hidden rounded-2xl">
+    <details className="scope-collapsible-card scope-presentation-section group overflow-hidden rounded-2xl">
       <summary className="scope-section-header cursor-pointer list-none rounded-2xl px-4 py-3 marker:content-none sm:px-5 group-open:rounded-b-none">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">

@@ -1,4 +1,5 @@
-import { Badge, Surface } from "../../../design-system";
+import { Badge, Surface, cn } from "../../../design-system";
+import type { CSSProperties } from "react";
 import type { ScopeBoardMetrics, ScopeWorkloadMode } from "../api/cmsClient";
 import { formatScopeSp, intakeStatusMeta } from "./scopeBoardHelpers";
 import {
@@ -9,7 +10,7 @@ import {
   type ScopeDataQualityDetails,
   type ScopeDataQualityIssue,
 } from "./scopeAlerts";
-import { buildCapacityVisual, buildTrackCapacityVisual, donutArcs } from "./scopeBoardVisuals";
+import { buildCapacityVisual, buildTrackCapacityVisual, donutArcs, type CapacityVisualModel } from "./scopeBoardVisuals";
 import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
 import { useIncrementalList } from "./scopeListPaging";
 import { DEFAULT_SCOPE_WORKLOAD_MODE } from "./WorkloadModePicker";
@@ -27,12 +28,14 @@ export function ScopeVisualDashboard({
   reportSummary,
   dataQualityDetails,
   jiraFetchTruncated = 0,
+  presentation = false,
 }: {
   metrics: ScopeBoardMetrics;
   workloadMode?: ScopeWorkloadMode;
   reportSummary?: ScopeReportSummary;
   dataQualityDetails?: ScopeDataQualityDetails;
   jiraFetchTruncated?: number;
+  presentation?: boolean;
 }) {
   const splitMode = workloadMode === "sp_dev_test";
   const intake = intakeStatusMeta(metrics.intake_status, metrics, splitMode);
@@ -52,40 +55,85 @@ export function ScopeVisualDashboard({
     : metrics.unestimated_count;
 
   return (
-    <Surface className="overflow-hidden border-transparent bg-surface/80 p-0 shadow-card">
-      <div className="space-y-5 p-4 sm:p-6 lg:p-7">
+    <Surface
+      className={cn(
+        "overflow-hidden border-transparent bg-surface/80 p-0 shadow-card",
+        presentation && "scope-capacity-presentation border-line/50 bg-surface shadow-none",
+      )}
+    >
+      <div
+        className={cn(
+          "space-y-5 p-4 sm:p-6 lg:p-7",
+          presentation && "scope-capacity-presentation-body",
+        )}
+      >
         {splitMode && devVisual && testVisual ? (
-          <div className="grid gap-5 xl:grid-cols-2">
-            <TrackCapacityPanel title="SP Dev" visual={devVisual} intake={intake} />
-            <TrackCapacityPanel title="SP Test" visual={testVisual} intake={intake} />
+          presentation ? (
+            <div className="scope-capacity-hero-split">
+              <TrackCapacityPanel title="SP Dev" visual={devVisual} intake={intake} presentation trackIndex={0} />
+              <TrackCapacityPanel title="SP Test" visual={testVisual} intake={intake} presentation trackIndex={1} />
+            </div>
+          ) : (
+            <div className="grid gap-5 xl:grid-cols-2">
+              <TrackCapacityPanel title="SP Dev" visual={devVisual} intake={intake} />
+              <TrackCapacityPanel title="SP Test" visual={testVisual} intake={intake} />
+            </div>
+          )
+        ) : presentation ? (
+          <div className="scope-capacity-hero">
+            <div className="scope-capacity-donut-panel">
+              <CapacityDonut visual={visual} arcs={arcs} presentation />
+              <div className="mt-5 w-full space-y-3 text-center">
+                <p className="text-sm font-medium text-ink3 lg:text-base">{visual.subtitle}</p>
+                <div className="scope-capacity-segment-row">
+                  {visual.segments.map((segment) => (
+                    <CapacitySegmentChip
+                      key={segment.key}
+                      color={segment.color}
+                      label={segment.label}
+                      value={visual.mode === "sp" ? `${formatScopeSp(segment.value)} SP` : String(segment.value)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="scope-capacity-metrics-panel gap-4">
+              <CapacityLoadPanel visual={visual} intake={intake} metrics={metrics} presentation />
+              <div className="scope-capacity-metric-grid">
+                <MetricChip presentation index={0} label="План" value={formatScopeSp(metrics.plan_sp)} meta={`${metrics.plan_count} задач`} tone="info" />
+                <MetricChip
+                  presentation
+                  index={1}
+                  label="Выполнено"
+                  value={formatScopeSp(reportSummary?.doneSp ?? 0)}
+                  meta="SP задач в «Готово»"
+                  tone="neutral"
+                />
+                <MetricChip
+                  presentation
+                  index={2}
+                  label="В работе"
+                  value={formatScopeSp(reportSummary?.inWorkSp ?? 0)}
+                  meta="SP в work-колонке"
+                  tone="warning"
+                />
+                <MetricChip
+                  presentation
+                  index={3}
+                  label="Буфер"
+                  value={formatScopeSp(metrics.buffer_sp)}
+                  meta={`${unestimatedCount} без оценки`}
+                  tone={metrics.buffer_sp < 0 || unestimatedCount > 0 ? "warning" : "neutral"}
+                />
+              </div>
+            </div>
           </div>
         ) : (
         <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.15fr)]">
           <div className="rounded-2xl bg-bg/70 p-5 sm:p-6">
             <div className="flex flex-col items-center gap-5">
-              <div className="relative h-52 w-52 sm:h-60 sm:w-60 xl:h-64 xl:w-64">
-                <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="10" className="text-line2" />
-                  {arcs.map((arc) => (
-                    <circle
-                      key={arc.key}
-                      cx="50"
-                      cy="50"
-                      r="38"
-                      fill="none"
-                      stroke={arc.color}
-                      strokeWidth="10"
-                      strokeDasharray={arc.dasharray}
-                      strokeDashoffset={arc.dashoffset}
-                      strokeLinecap="butt"
-                    />
-                  ))}
-                </svg>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <p className="text-4xl font-bold text-ink sm:text-5xl">{visual.centerValue}</p>
-                  <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-ink3">{visual.centerLabel}</p>
-                </div>
-              </div>
+              <CapacityDonut visual={visual} arcs={arcs} />
               <div className="w-full space-y-3 text-center">
                 <p className="text-sm font-medium text-ink3">{visual.subtitle}</p>
                 <div className="grid auto-rows-fr gap-2 sm:grid-cols-3">
@@ -103,34 +151,7 @@ export function ScopeVisualDashboard({
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="rounded-2xl bg-bg/70 p-5 sm:p-6">
-              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-base font-semibold text-ink">Нагрузка на capacity</p>
-                  <p className="mt-1 text-sm text-ink3">План, внеплановая работа и доступный буфер в одном срезе.</p>
-                </div>
-                <Badge tone={intake.tone}>{intake.label}</Badge>
-              </div>
-              <div className="space-y-3">
-                <div className="h-4 overflow-hidden rounded-full bg-line2">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      metrics.intake_status === "stop"
-                        ? "bg-red"
-                        : metrics.intake_status === "warning"
-                          ? "bg-amber"
-                          : "bg-emerald-500"
-                    }`}
-                    style={{ width: `${Math.min(100, visual.loadPercent)}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-3 text-sm font-medium text-ink2">
-                  <span>{visual.committedLabel}</span>
-                  <span>{visual.mode === "sp" ? visual.loadLabel : `${visual.loadLabel} задач`}</span>
-                </div>
-              </div>
-            </div>
-
+            <CapacityLoadPanel visual={visual} intake={intake} metrics={metrics} />
             <div className="grid flex-1 grid-cols-2 gap-3 text-center">
               <MetricChip label="План" value={formatScopeSp(metrics.plan_sp)} meta={`${metrics.plan_count} задач`} tone="info" />
               <MetricChip
@@ -156,7 +177,7 @@ export function ScopeVisualDashboard({
         </div>
         )}
 
-        <div className="rounded-2xl p-4 sm:p-5">
+        <div className={cn("rounded-2xl p-4 sm:p-5", presentation && "scope-capacity-alerts-panel bg-bg/40")}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-base font-semibold text-ink">Предупреждения и ошибки</p>
@@ -290,63 +311,153 @@ function QualityIssueList({
   );
 }
 
+function CapacityDonut({
+  visual,
+  arcs,
+  presentation = false,
+  compact = false,
+}: {
+  visual: CapacityVisualModel;
+  arcs: ReturnType<typeof donutArcs>;
+  presentation?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative",
+        presentation
+          ? compact
+            ? "scope-capacity-donut scope-capacity-donut--compact"
+            : "scope-capacity-donut"
+          : "mx-auto h-52 w-52 sm:h-60 sm:w-60 xl:h-64 xl:w-64",
+      )}
+    >
+      <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+        <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="10" className="text-line2" />
+        {arcs.map((arc, index) => (
+          <circle
+            key={arc.key}
+            cx="50"
+            cy="50"
+            r="38"
+            fill="none"
+            stroke={arc.color}
+            strokeWidth="10"
+            strokeDasharray={presentation ? undefined : arc.dasharray}
+            strokeDashoffset={presentation ? undefined : arc.dashoffset}
+            strokeLinecap="butt"
+            className={presentation ? "scope-donut-segment" : undefined}
+            style={
+              presentation
+                ? ({
+                    "--seg-index": index,
+                    "--seg-dasharray": arc.dasharray,
+                    "--seg-dashoffset": arc.dashoffset,
+                  } as CSSProperties)
+                : undefined
+            }
+          />
+        ))}
+      </svg>
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+        <p className={cn("font-bold text-ink", presentation ? "scope-capacity-donut-center-value" : "text-4xl sm:text-5xl")}>
+          {visual.centerValue}
+        </p>
+        <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-ink3">{visual.centerLabel}</p>
+      </div>
+    </div>
+  );
+}
+
+function CapacityLoadPanel({
+  visual,
+  intake,
+  metrics,
+  presentation = false,
+}: {
+  visual: CapacityVisualModel;
+  intake: ReturnType<typeof intakeStatusMeta>;
+  metrics: ScopeBoardMetrics;
+  presentation?: boolean;
+}) {
+  return (
+    <div className={cn(!presentation && "rounded-2xl bg-bg/70 p-5 sm:p-6")}>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className={cn("font-semibold text-ink", presentation ? "text-lg" : "text-base")}>Нагрузка на capacity</p>
+          <p className="mt-1 text-sm text-ink3 lg:text-base">
+            План, внеплановая работа и доступный буфер в одном срезе.
+          </p>
+        </div>
+        <Badge tone={intake.tone}>{intake.label}</Badge>
+      </div>
+      <div className="space-y-3">
+        <div className={cn("overflow-hidden rounded-full bg-line2", presentation ? "h-5" : "h-4")}>
+          <div
+            className={`h-full rounded-full transition-all duration-700 ease-out ${
+              metrics.intake_status === "stop"
+                ? "bg-red"
+                : metrics.intake_status === "warning"
+                  ? "bg-amber"
+                  : "bg-emerald-500"
+            }`}
+            style={{ width: `${Math.min(100, visual.loadPercent)}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-3 text-sm font-medium text-ink2 lg:text-base">
+          <span>{visual.committedLabel}</span>
+          <span>{visual.mode === "sp" ? visual.loadLabel : `${visual.loadLabel} задач`}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TrackCapacityPanel({
   title,
   visual,
   intake,
+  presentation = false,
+  trackIndex = 0,
 }: {
   title: string;
   visual: ReturnType<typeof buildTrackCapacityVisual>;
   intake: ReturnType<typeof intakeStatusMeta>;
+  presentation?: boolean;
+  trackIndex?: number;
 }) {
   const arcs = donutArcs(visual.segments);
   return (
-    <div className="rounded-2xl bg-bg/70 p-5 sm:p-6">
+    <div
+      className={cn(
+        presentation ? "scope-capacity-track-panel" : "rounded-2xl bg-bg/70 p-5 sm:p-6",
+      )}
+      style={presentation ? ({ "--track-index": trackIndex } as CSSProperties) : undefined}
+    >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-base font-semibold text-ink">{title}</p>
-          <p className="mt-1 text-sm text-ink3">{visual.subtitle}</p>
+          <p className={cn("font-semibold text-ink", presentation ? "text-lg" : "text-base")}>{title}</p>
+          <p className="mt-1 text-sm text-ink3 lg:text-base">{visual.subtitle}</p>
         </div>
         <Badge tone={intake.tone}>{intake.label}</Badge>
       </div>
       <div className="flex flex-col items-center gap-5">
-        <div className="relative h-44 w-44 sm:h-48 sm:w-48">
-          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-            <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="10" className="text-line2" />
-            {arcs.map((arc) => (
-              <circle
-                key={arc.key}
-                cx="50"
-                cy="50"
-                r="38"
-                fill="none"
-                stroke={arc.color}
-                strokeWidth="10"
-                strokeDasharray={arc.dasharray}
-                strokeDashoffset={arc.dashoffset}
-                strokeLinecap="butt"
-              />
-            ))}
-          </svg>
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-            <p className="text-3xl font-bold text-ink sm:text-4xl">{visual.centerValue}</p>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-ink3">{visual.centerLabel}</p>
-          </div>
-        </div>
+        <CapacityDonut visual={visual} arcs={arcs} presentation={presentation} compact={presentation} />
         <div className="w-full space-y-3">
-          <div className="h-3 overflow-hidden rounded-full bg-line2">
+          <div className={cn("overflow-hidden rounded-full bg-line2", presentation ? "h-4" : "h-3")}>
             <div
-              className={`h-full rounded-full transition-all ${
+              className={`h-full rounded-full transition-all duration-700 ease-out ${
                 visual.loadPercent > 100 ? "bg-red" : visual.loadPercent > 80 ? "bg-amber" : "bg-emerald-500"
               }`}
               style={{ width: `${Math.min(100, visual.loadPercent)}%` }}
             />
           </div>
-          <div className="flex items-center justify-between gap-3 text-sm font-medium text-ink2">
+          <div className="flex items-center justify-between gap-3 text-sm font-medium text-ink2 lg:text-base">
             <span>{visual.committedLabel}</span>
             <span>{visual.loadLabel}</span>
           </div>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className={cn(presentation ? "scope-capacity-segment-row" : "grid gap-2 sm:grid-cols-3")}>
             {visual.segments.map((segment) => (
               <CapacitySegmentChip
                 key={segment.key}
@@ -464,19 +575,29 @@ function MetricChip({
   value,
   meta,
   tone,
+  presentation = false,
+  index = 0,
 }: {
   label: string;
   value: string;
   meta: string;
   tone: "neutral" | "info" | "warning";
+  presentation?: boolean;
+  index?: number;
 }) {
   const toneClass =
     tone === "info" ? "text-blue" : tone === "warning" ? "text-amber" : "text-ink3";
   return (
-    <div className="flex min-h-28 flex-col justify-center rounded-2xl border border-line/70 bg-bg/70 px-4 py-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink3">{label}</p>
-      <p className="mt-1 text-3xl font-bold text-ink">{value}</p>
-      <p className={`mt-1 text-sm ${toneClass}`}>{meta}</p>
+    <div
+      className={cn(
+        "flex flex-col justify-center rounded-2xl border border-line/70 bg-bg/70 px-4 py-4",
+        presentation ? "scope-capacity-metric-chip min-h-[7.5rem] lg:min-h-[8.5rem]" : "min-h-28",
+      )}
+      style={presentation ? ({ "--metric-index": index } as CSSProperties) : undefined}
+    >
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink3 lg:text-sm">{label}</p>
+      <p className={cn("mt-1 font-bold text-ink", presentation ? "text-3xl lg:text-4xl" : "text-3xl")}>{value}</p>
+      <p className={cn("mt-1 text-sm lg:text-base", toneClass)}>{meta}</p>
     </div>
   );
 }
