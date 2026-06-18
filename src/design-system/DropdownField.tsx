@@ -159,8 +159,7 @@ export function DropdownField({
 
   const layoutPopover = useCallback(() => {
     const root = rootRef.current;
-    const popover = popoverRef.current;
-    if (!root || !popover) return;
+    if (!root) return;
 
     const margin = 8;
     const viewportWidth = window.innerWidth;
@@ -301,16 +300,23 @@ export function DropdownField({
         </span>
       </button>
 
-      {open && popoverLayout
+      {open
         ? createPortal(
             <div
               ref={popoverRef}
-              style={{
-                left: popoverLayout.left,
-                top: popoverLayout.top,
-                width: popoverLayout.width,
-              }}
-              className="fixed z-[110] rounded-2xl border border-line bg-surface p-2 shadow-xl"
+              style={
+                popoverLayout
+                  ? {
+                      left: popoverLayout.left,
+                      top: popoverLayout.top,
+                      width: popoverLayout.width,
+                    }
+                  : undefined
+              }
+              className={cn(
+                "fixed z-[110] rounded-2xl border border-line bg-surface p-2 shadow-xl",
+                !popoverLayout && "pointer-events-none opacity-0",
+              )}
               onKeyDown={handleControlKeyDown}
             >
               {searchable ? (
