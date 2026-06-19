@@ -211,6 +211,19 @@ export function groupableCards(state: Pick<RetroLiveState, "cards">): RetroCardV
   return state.cards.filter((card) => !card.group_id && !card.is_grouped);
 }
 
+/** Whether the manager may create, rename, or dissolve card groups. */
+export function canManageGroups(state: Pick<RetroLiveState, "phase">): boolean {
+  return state.phase !== "done";
+}
+
+/** Explains why grouping controls are hidden, or null when grouping is allowed. */
+export function groupingLockedMessage(phase: RetroPhase): string | null {
+  if (phase === "done") {
+    return "Ретро завершено — карточки и группы только для просмотра.";
+  }
+  return null;
+}
+
 export const MIN_GROUP_CARDS = 2;
 
 /**

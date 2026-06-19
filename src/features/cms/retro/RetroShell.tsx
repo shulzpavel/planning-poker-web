@@ -40,8 +40,10 @@ import {
   DEFAULT_RETRO_SECTIONS,
   MIN_GROUP_CARDS,
   allRetroSectionsOpened,
+  canManageGroups,
   formatCountdown,
   groupableCards,
+  groupingLockedMessage,
   nextUnopenedSection,
   phaseLabel,
   type RetroAiSummary,
@@ -698,11 +700,16 @@ function RetroCockpit({
 
   useEffect(() => {
     if (!state) return;
-    const selectable = new Set(groupableCards(state).map((card) => card.card_id));
+    const selectable = canManageGroups(state)
+      ? new Set(groupableCards(state).map((card) => card.card_id))
+      : new Set<string>();
     setSelectedCardIds((prev) => {
       const next = new Set([...prev].filter((cardId) => selectable.has(cardId)));
       return next.size === prev.size ? prev : next;
     });
+    if (!canManageGroups(state)) {
+      setGroupTitle("");
+    }
   }, [state]);
 
   if (!state) return <Spinner />;
@@ -711,6 +718,8 @@ function RetroCockpit({
   const effectiveAi = state.ai_summary ?? ai;
   const selectedCardsCount = selectedCardIds.size;
   const groupableCount = groupableCards(state).length;
+  const groupingEnabled = canManage && canManageGroups(state);
+  const groupingLocked = groupingLockedMessage(state.phase);
 
   function toggleCardSelection(cardId: string) {
     setSelectedCardIds((prev) => {
@@ -722,6 +731,10 @@ function RetroCockpit({
   }
 
   async function createGroup() {
+    if (!groupingEnabled) {
+      toast.error(groupingLocked ?? "Группировка недоступна на этой фазе");
+      return;
+    }
     const title = groupTitle.trim();
     if (!title || selectedCardIds.size < 2) return;
     setBusy(true);
@@ -802,20 +815,22 @@ function RetroCockpit({
         />
       ) : null}
 
-      {canManage && groupableCount >= MIN_GROUP_CARDS ? (
+      {groupingEnabled && groupableCount >= MIN_GROUP_CARDS ? (
         <p className="text-xs text-ink3">
           Похожие карточки можно объединить: отметьте их чекбоксами — внизу появится панель группировки.
         </p>
       ) : null}
 
+      {canManage && groupingLocked ? <Alert tone="info">{groupingLocked}</Alert> : null}
+
       <RetroBoard
         state={state}
         countdown={countdown}
-        selectableCards={canManage && groupableCount > 0}
+        selectableCards={groupingEnabled && groupableCount > 0}
         selectedCardIds={selectedCardIds}
         onToggleCardSelection={toggleCardSelection}
         groupActions={
-          canManage
+          groupingEnabled
             ? {
                 busy,
                 onRename: (groupId, title) =>
@@ -828,7 +843,7 @@ function RetroCockpit({
       />
       <RetroOutcomesPanel state={state} showAi={false} />
 
-      {canManage ? (
+      {groupingEnabled ? (
         <GroupingSelectionBar
           selectedCount={selectedCardsCount}
           title={groupTitle}

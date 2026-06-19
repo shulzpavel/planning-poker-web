@@ -4,8 +4,10 @@ import {
   canAddToSection,
   cardsBySection,
   formatCountdown,
+  canManageGroups,
   groupableCards,
   groupCreationHint,
+  groupingLockedMessage,
   isCountdownExpired,
   mergeRetroState,
   nextSectionId,
@@ -141,6 +143,28 @@ describe("groupableCards", () => {
       cards: [{ card_id: "c1", section_id: "a", text: "x", group_id: "g1", vote_count: 0 }],
     });
     expect(groupableCards(state)).toEqual([]);
+  });
+});
+
+describe("canManageGroups", () => {
+  it("allows grouping until the retro is finalized", () => {
+    for (const phase of ["lobby", "collecting", "voting", "discussing"] as const) {
+      expect(canManageGroups(makeState({ phase }))).toBe(true);
+    }
+  });
+
+  it("blocks grouping on the done phase", () => {
+    expect(canManageGroups(makeState({ phase: "done" }))).toBe(false);
+  });
+});
+
+describe("groupingLockedMessage", () => {
+  it("explains why grouping is disabled after finalize", () => {
+    expect(groupingLockedMessage("done")).toMatch(/только для просмотра/);
+  });
+
+  it("returns null while the retro is still live", () => {
+    expect(groupingLockedMessage("discussing")).toBeNull();
   });
 });
 
