@@ -34,38 +34,6 @@ import {
 import { donutArcs } from "./scopeBoardVisuals";
 import { flowBucketLabel, flowBucketTone } from "./scopeFlowPaceHelpers";
 
-function FlowPaceStatusCatalogTable({ chart }: { chart: ScopeFlowPaceChart }) {
-  const catalog = chart.status_catalog ?? [];
-  if (catalog.length === 0) return null;
-
-  return (
-    <div className="overflow-x-auto rounded-xl border border-line/70 bg-surface shadow-sm">
-      <table className="min-w-full text-left text-xs">
-        <thead className="border-b border-line/70 bg-bg/70 text-ink3">
-          <tr>
-            <th className="px-4 py-3 font-semibold">Статус Jira</th>
-            <th className="px-4 py-3 font-semibold">Группа</th>
-            <th className="px-4 py-3 font-semibold text-right">Дней</th>
-            <th className="px-4 py-3 font-semibold text-right">Доля</th>
-            <th className="px-4 py-3 font-semibold text-right">Задач</th>
-          </tr>
-        </thead>
-        <tbody>
-          {catalog.map((row) => (
-            <tr key={row.segment_key} className="border-b border-line/50 last:border-0">
-              <td className="px-4 py-3 font-medium text-ink">{row.status}</td>
-              <td className="px-4 py-3 text-ink2">{flowBucketLabel(row.flow_bucket)}</td>
-              <td className="px-4 py-3 text-right tabular-nums text-ink">{row.total_days.toFixed(1)}</td>
-              <td className="px-4 py-3 text-right tabular-nums text-ink2">{row.share_pct.toFixed(1)}%</td>
-              <td className="px-4 py-3 text-right tabular-nums text-ink2">{row.issue_count}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 export function FlowPaceChartDetail({
   chart,
   browseBase,
@@ -95,61 +63,74 @@ export function FlowPaceChartDetail({
         </p>
       ) : null}
 
-      {isStatusTime ? <FlowPaceStatusCatalogTable chart={chart} /> : null}
-
-      {segments.map((segment: ScopeFlowPaceChartDetailSegment) => {
-        const signalSeverity = isSignals ? severityFromSegmentKey(segment.key) : null;
-        const tone = signalSeverity ?? (isStatusTime ? "low" : segmentDetailTone(segment.key));
-        const alertItems = segment.items
-          .map((item) => item.alert)
-          .filter((alert): alert is ScopeFlowAlert => Boolean(alert));
-
-        if (isSignals && signalSeverity) {
-          return (
-            <FlowPaceAlertGroup
-              key={segment.key}
-              severity={signalSeverity}
-              title={segment.label}
-              count={alertItems.length}
-              alerts={alertItems}
-              browseBase={browseBase}
+      {isStatusTime ? (
+        <ul className="space-y-3">
+          {segments.flatMap((segment) => segment.items).map((item, index) => (
+            <FlowPaceDetailCard
+              key={`${item.issue_key}-${index}`}
+              tone="low"
+              badgeLabel={item.issue_key}
+              issueKey={item.issue_key}
+              issueUrl={item.issue_url}
+              title={item.summary || item.issue_key}
+              detail={item.detail}
+              metricValue={item.metric_value}
+              detailPrimary
             />
-          );
-        }
+          ))}
+        </ul>
+      ) : (
+        segments.map((segment: ScopeFlowPaceChartDetailSegment) => {
+          const signalSeverity = isSignals ? severityFromSegmentKey(segment.key) : null;
+          const tone = signalSeverity ?? segmentDetailTone(segment.key);
+          const alertItems = segment.items
+            .map((item) => item.alert)
+            .filter((alert): alert is ScopeFlowAlert => Boolean(alert));
 
-        return (
-          <FlowPaceDetailGroup key={segment.key} tone={tone} title={segment.label} count={segment.items.length}>
-            {segment.items.length === 0 ? (
-              <li className="px-1 text-sm text-ink4">Нет задач в этой группе.</li>
-            ) : (
-              segment.items.map((item, index) =>
-                item.alert ? (
-                  <FlowPaceAlertCard
-                    key={`${item.issue_key}-${index}`}
-                    alert={item.alert}
-                    browseBase={browseBase}
-                  />
-                ) : (
-                  <FlowPaceDetailCard
-                    key={`${item.issue_key}-${index}`}
-                    tone={item.flow_bucket ? flowBucketTone(item.flow_bucket) : tone}
-                    badgeLabel={
-                      isStatusTime ? item.metric_label || segment.label : item.flow_bucket ? flowBucketLabel(item.flow_bucket) : segment.label
-                    }
-                    issueKey={item.issue_key}
-                    issueUrl={item.issue_url}
-                    title={isStatusTime ? item.summary || item.issue_key : item.metric_label || segment.label}
-                    summary={isStatusTime ? undefined : item.summary}
-                    detail={item.detail}
-                    metricValue={item.metric_value}
-                    detailPrimary={isStatusTime}
-                  />
-                ),
-              )
-            )}
-          </FlowPaceDetailGroup>
-        );
-      })}
+          if (isSignals && signalSeverity) {
+            return (
+              <FlowPaceAlertGroup
+                key={segment.key}
+                severity={signalSeverity}
+                title={segment.label}
+                count={alertItems.length}
+                alerts={alertItems}
+                browseBase={browseBase}
+              />
+            );
+          }
+
+          return (
+            <FlowPaceDetailGroup key={segment.key} tone={tone} title={segment.label} count={segment.items.length}>
+              {segment.items.length === 0 ? (
+                <li className="px-1 text-sm text-ink4">Нет задач в этой группе.</li>
+              ) : (
+                segment.items.map((item, index) =>
+                  item.alert ? (
+                    <FlowPaceAlertCard
+                      key={`${item.issue_key}-${index}`}
+                      alert={item.alert}
+                      browseBase={browseBase}
+                    />
+                  ) : (
+                    <FlowPaceDetailCard
+                      key={`${item.issue_key}-${index}`}
+                      tone={item.flow_bucket ? flowBucketTone(item.flow_bucket) : tone}
+                      badgeLabel={item.flow_bucket ? flowBucketLabel(item.flow_bucket) : segment.label}
+                      issueKey={item.issue_key}
+                      issueUrl={item.issue_url}
+                      title={item.metric_label || segment.label}
+                      summary={item.summary}
+                      detail={item.detail}
+                      metricValue={item.metric_value}
+                    />
+                  ),
+                )
+              )}
+            </FlowPaceDetailGroup>
+          );
+        })
+      )}
 
       {segments.every((segment) => segment.items.length === 0) && !isSignals ? (
         <p className="text-center text-sm text-ink3">Нет данных для детализации.</p>

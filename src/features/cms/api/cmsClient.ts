@@ -816,15 +816,6 @@ export interface ScopeFlowPaceChartDetailItem {
   flow_bucket?: string;
 }
 
-export interface ScopeFlowPaceStatusCatalogEntry {
-  status: string;
-  segment_key: string;
-  total_days: number;
-  issue_count: number;
-  flow_bucket: string;
-  share_pct: number;
-}
-
 export interface ScopeFlowPaceChartDetailSegment {
   key: string;
   label: string;
@@ -840,7 +831,6 @@ export interface ScopeFlowPaceChart {
   segments: ScopeFlowPaceDonutSegment[];
   methodology?: string;
   detail_segments?: ScopeFlowPaceChartDetailSegment[];
-  status_catalog?: ScopeFlowPaceStatusCatalogEntry[];
 }
 
 export interface ScopeFlowPaceCharts {
