@@ -10,25 +10,9 @@ import {
 
 vi.mock("../api/cmsClient", () => ({
   cmsScopeApi: {
-    get: vi.fn(),
+    getAiJiraExportStatus: vi.fn(),
   },
 }));
-
-const baseSummary: ScopeAiSummary = {
-  health: "green",
-  summary: "ok",
-  capacity_assessment: "ok",
-  buffer_status: "ok",
-  delivery_snapshot: "ok",
-  blockers: [],
-  scope_risks: [],
-  queue_insights: { todo: "todo", test: "test" },
-  recommendations: [],
-  focus_now: [],
-  watch_list: [],
-  generated_at: "2026-06-19T12:00:00+00:00",
-  source: "anthropic",
-};
 
 describe("normalizePlanEpicKey", () => {
   it("accepts valid Jira keys", () => {
@@ -43,30 +27,26 @@ describe("normalizePlanEpicKey", () => {
 
 describe("pollScopeAiJiraExport", () => {
   beforeEach(() => {
-    vi.mocked(cmsScopeApi.get).mockReset();
+    vi.mocked(cmsScopeApi.getAiJiraExportStatus).mockReset();
   });
 
-  it("returns summary when jira_export reaches a terminal status", async () => {
-    vi.mocked(cmsScopeApi.get)
-      .mockResolvedValueOnce({
-        ai_summary: { ...baseSummary, jira_export: { status: undefined } },
-      } as Awaited<ReturnType<typeof cmsScopeApi.get>>)
-      .mockResolvedValueOnce({
-        ai_summary: { ...baseSummary, jira_export: { status: "ok" } },
-      } as Awaited<ReturnType<typeof cmsScopeApi.get>>);
+  it("returns export when jira_export reaches a terminal status", async () => {
+    vi.mocked(cmsScopeApi.getAiJiraExportStatus)
+      .mockResolvedValueOnce({ jira_export: { status: undefined } })
+      .mockResolvedValueOnce({ jira_export: { status: "ok" } });
 
-    const summary = await pollScopeAiJiraExport(7, { intervalMs: 1, timeoutMs: 100 });
-    expect(summary?.jira_export?.status).toBe("ok");
-    expect(cmsScopeApi.get).toHaveBeenCalledTimes(2);
+    const jiraExport = await pollScopeAiJiraExport(7, { intervalMs: 1, timeoutMs: 100 });
+    expect(jiraExport?.status).toBe("ok");
+    expect(cmsScopeApi.getAiJiraExportStatus).toHaveBeenCalledTimes(2);
   });
 
   it("returns null on timeout", async () => {
-    vi.mocked(cmsScopeApi.get).mockResolvedValue({
-      ai_summary: { ...baseSummary, jira_export: { status: undefined } },
-    } as Awaited<ReturnType<typeof cmsScopeApi.get>>);
+    vi.mocked(cmsScopeApi.getAiJiraExportStatus).mockResolvedValue({
+      jira_export: { status: undefined },
+    });
 
-    const summary = await pollScopeAiJiraExport(7, { intervalMs: 1, timeoutMs: 5 });
-    expect(summary).toBeNull();
+    const jiraExport = await pollScopeAiJiraExport(7, { intervalMs: 1, timeoutMs: 5 });
+    expect(jiraExport).toBeNull();
   });
 });
 

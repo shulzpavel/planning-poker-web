@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, memo, useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -121,7 +121,7 @@ function QueueNewArrivalsLabel({ count }: { count: number }) {
   );
 }
 
-export function ScopePriorityQueuesSection({
+export const ScopePriorityQueuesSection = memo(function ScopePriorityQueuesSection({
   snapshot,
   todoJql,
   testJql,
@@ -160,7 +160,7 @@ export function ScopePriorityQueuesSection({
       />
     </div>
   );
-}
+});
 
 function PriorityQueueBlock({
   kind,

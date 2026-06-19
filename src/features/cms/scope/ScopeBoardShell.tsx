@@ -85,6 +85,7 @@ import { ScopeTopItemsSection } from "./ScopeTopItemsSection";
 import { ScopeSectionEditor } from "./ScopeSectionEditor";
 import { ScopeAssigneeCharts } from "./ScopeAssigneeCharts";
 import { ScopePlanInsights, planChangeReasonLabel } from "./scopePlanInsights";
+import { mergeScopeBoardRecord } from "./scopeBoardMerge";
 import { ScopeFlowPaceSection } from "./ScopeFlowPaceSection";
 import { shouldShowFlowPaceBlock } from "./scopeFlowPaceHelpers";
 import { ScopeVisualDashboard, type ScopeDataQualityDetails, type ScopeReportSummary } from "./ScopeVisualDashboard";
@@ -876,6 +877,10 @@ function ScopeBoardEditorPage({
   const isReleaseTemplate = inferredReportType === "release";
 
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(savedForm), [form, savedForm]);
+
+  const applyBoardMutation = useCallback((record: ScopeBoardRecord) => {
+    setBoard((previous) => mergeScopeBoardRecord(previous, record));
+  }, []);
   const planEpicKey = useMemo(
     () => normalizePlanEpicKey(board?.plan_epic_key ?? savedForm.plan_epic_key),
     [board?.plan_epic_key, savedForm.plan_epic_key],
@@ -1019,12 +1024,16 @@ function ScopeBoardEditorPage({
 
       setJiraExportPending(true);
       try {
-        const polled = await pollScopeAiJiraExport(boardId);
-        if (!polled) return;
-        setAiSummary(polled);
-        setBoard((prev) => (prev ? { ...prev, ai_summary: polled } : prev));
-        if (polled.jira_export?.status === "error") {
-          toast.error(polled.jira_export.error ?? "Не удалось сохранить комментарий в Jira", {
+        const polledExport = await pollScopeAiJiraExport(boardId);
+        if (!polledExport) return;
+        setAiSummary((previous) => (previous ? { ...previous, jira_export: polledExport } : previous));
+        setBoard((prev) =>
+          prev?.ai_summary
+            ? { ...prev, ai_summary: { ...prev.ai_summary, jira_export: polledExport } }
+            : prev,
+        );
+        if (polledExport.status === "error") {
+          toast.error(polledExport.error ?? "Не удалось сохранить комментарий в Jira", {
             title: "Jira",
           });
         }
@@ -1106,40 +1115,40 @@ function ScopeBoardEditorPage({
     async (text: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.addQuestion(boardId, text);
-      setBoard(record);
+      applyBoardMutation(record);
       toast.success("Вопрос добавлен");
     },
-    [boardId, toast]
+    [applyBoardMutation, boardId, toast]
   );
 
   const resolveQuestion = useCallback(
     async (questionId: string, comment: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.resolveQuestion(boardId, questionId, comment);
-      setBoard(record);
+      applyBoardMutation(record);
       toast.success("Вопрос закрыт");
     },
-    [boardId, toast]
+    [applyBoardMutation, boardId, toast]
   );
 
   const addTopItem = useCallback(
     async (text: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.addTopItem(boardId, text);
-      setBoard(record);
+      applyBoardMutation(record);
       toast.success("Пункт добавлен");
     },
-    [boardId, toast]
+    [applyBoardMutation, boardId, toast]
   );
 
   const removeTopItem = useCallback(
     async (itemId: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.deleteTopItem(boardId, itemId);
-      setBoard(record);
+      applyBoardMutation(record);
       toast.success("Пункт удалён");
     },
-    [boardId, toast]
+    [applyBoardMutation, boardId, toast]
   );
 
   const saveReleaseComment = useCallback(
@@ -1158,10 +1167,13 @@ function ScopeBoardEditorPage({
       if (slot === "custom") payload.custom_release_comment = trimmed;
 
       const record = await cmsScopeApi.updateReleaseComments(boardId, payload);
-      setBoard(record);
-      const nextForm = boardToForm(record);
-      setForm(nextForm);
-      setSavedForm(nextForm);
+      setBoard((previous) => {
+        const merged = mergeScopeBoardRecord(previous, record);
+        const nextForm = boardToForm(merged);
+        setForm(nextForm);
+        setSavedForm(nextForm);
+        return merged;
+      });
       toast.success("Комментарий сохранён");
     },
     [
@@ -1182,67 +1194,67 @@ function ScopeBoardEditorPage({
     async (text: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.addTodoItem(boardId, text);
-      setBoard(record);
+      applyBoardMutation(record);
     },
-    [boardId]
+    [applyBoardMutation, boardId]
   );
 
   const toggleTodoItem = useCallback(
     async (itemId: string, done: boolean) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.updateTodoItem(boardId, itemId, done);
-      setBoard(record);
+      applyBoardMutation(record);
     },
-    [boardId]
+    [applyBoardMutation, boardId]
   );
 
   const deleteTodoItem = useCallback(
     async (itemId: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.deleteTodoItem(boardId, itemId);
-      setBoard(record);
+      applyBoardMutation(record);
     },
-    [boardId]
+    [applyBoardMutation, boardId]
   );
 
   const reorderQueue = useCallback(
     async (queue: ScopePriorityQueueKind, order: string[], movedKey: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.reorderQueue(boardId, queue, order, movedKey);
-      setBoard(record);
+      applyBoardMutation(record);
       toast.success("Порядок и значимость сохранены");
     },
-    [boardId, toast]
+    [applyBoardMutation, boardId, toast]
   );
 
   const addQueueComment = useCallback(
     async (queue: ScopePriorityQueueKind, issueKey: string, text: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.addQueueIssueComment(boardId, queue, issueKey, text);
-      setBoard(record);
+      applyBoardMutation(record);
       toast.success("Комментарий отправлен в Jira");
     },
-    [boardId, toast]
+    [applyBoardMutation, boardId, toast]
   );
 
   const saveReportComment = useCallback(
     async (issueKey: string, text: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.updateReportComment(boardId, issueKey, text);
-      setBoard(record);
+      applyBoardMutation(record);
       toast.success(text.trim() ? "Комментарий сохранён" : "Комментарий удалён");
     },
-    [boardId, toast]
+    [applyBoardMutation, boardId, toast]
   );
 
   const updateQueueDueDate = useCallback(
     async (queue: ScopePriorityQueueKind, issueKey: string, dueDate: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
       const record = await cmsScopeApi.updateQueueIssueDueDate(boardId, queue, issueKey, dueDate);
-      setBoard(record);
+      applyBoardMutation(record);
       toast.success("Срок исполнения сохранён в Jira");
     },
-    [boardId, toast]
+    [applyBoardMutation, boardId, toast]
   );
 
   async function handleSave() {
@@ -1361,7 +1373,7 @@ function ScopeBoardEditorPage({
 
       try {
         const updated = await cmsScopeApi.updateLayout(boardId, nextOrder);
-        setBoard(updated);
+        applyBoardMutation(updated);
         setLayoutOrder(mergeScopeLayoutOrder(updated.layout_order));
       } catch (err) {
         setLayoutOrder(previousOrder);
@@ -1407,7 +1419,7 @@ function ScopeBoardEditorPage({
             boardId={boardId}
             canManage={canManage}
             chartOrder={board?.flow_pace_chart_order}
-            onBoardUpdated={setBoard}
+            onBoardUpdated={applyBoardMutation}
             onChartOrderError={(message) => toast.error(message)}
             presentation={presentationOpen}
           />

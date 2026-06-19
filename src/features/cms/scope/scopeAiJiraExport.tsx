@@ -13,17 +13,16 @@ export function normalizePlanEpicKey(value: string | null | undefined): string {
 export async function pollScopeAiJiraExport(
   boardId: number,
   options?: { timeoutMs?: number; intervalMs?: number },
-): Promise<ScopeAiSummary | null> {
+): Promise<ScopeAiSummary["jira_export"] | null> {
   const timeoutMs = options?.timeoutMs ?? 20_000;
   const intervalMs = options?.intervalMs ?? 1_000;
   const started = Date.now();
 
   while (Date.now() - started < timeoutMs) {
-    const record = await cmsScopeApi.get(boardId);
-    const summary = record.ai_summary;
-    const status = summary?.jira_export?.status;
+    const payload = await cmsScopeApi.getAiJiraExportStatus(boardId);
+    const status = payload.jira_export?.status;
     if (status === "ok" || status === "error") {
-      return summary ?? null;
+      return payload.jira_export ?? null;
     }
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }

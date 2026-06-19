@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { Badge, Surface, cn } from "../../../design-system";
 import type { ScopeBoardRecord, ScopeFlowPace } from "../api/cmsClient";
 import { flowPaceStatusLabel, flowPaceStatusTone } from "./scopeFlowPaceHelpers";
 import { ScopeFlowPaceDonuts } from "./ScopeFlowPaceDonuts";
 
-export function ScopeFlowPaceSection({
+export const ScopeFlowPaceSection = memo(function ScopeFlowPaceSection({
   flowPace,
   boardId,
   canManage = false,
@@ -63,4 +64,4 @@ export function ScopeFlowPaceSection({
       </details>
     </Surface>
   );
-}
+});

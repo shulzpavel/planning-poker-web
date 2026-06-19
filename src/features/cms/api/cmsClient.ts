@@ -1006,6 +1006,12 @@ export interface ScopeBoardRecord {
   created_by_display_name: string | null;
   created_at: string;
   updated_at: string;
+  snapshot_partial?: boolean;
+}
+
+export interface ScopeAiJiraExportStatus {
+  jira_export?: ScopeAiSummary["jira_export"] | null;
+  health?: ScopeAiSummary["health"] | null;
 }
 
 export const cmsScopeApi = {
@@ -1014,6 +1020,8 @@ export const cmsScopeApi = {
     return cmsFetch<{ items: ScopeBoardRecord[] }>(`/scope-boards?${query}`);
   },
   get: (boardId: number) => cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}`),
+  getAiJiraExportStatus: (boardId: number) =>
+    cmsFetch<ScopeAiJiraExportStatus>(`/scope-boards/${boardId}/ai-summary/jira-export`),
   create: (body: {
     name: string;
     month: string;
