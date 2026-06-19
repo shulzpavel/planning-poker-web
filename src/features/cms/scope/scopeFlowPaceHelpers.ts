@@ -75,6 +75,37 @@ export function highlightRoleLabel(role: string | undefined): string {
   }
 }
 
+export function flowBucketLabel(bucket: string | undefined): string {
+  switch (bucket) {
+    case "dev":
+      return "Dev";
+    case "test":
+      return "Test/Release";
+    case "pause":
+      return "Пауза";
+    case "todo":
+      return "Очередь";
+    case "done":
+      return "Закрыто";
+    default:
+      return bucket?.trim() || "—";
+  }
+}
+
+export function flowBucketTone(bucket: string | undefined): ScopeFlowAlert["severity"] {
+  switch (bucket) {
+    case "test":
+      return "high";
+    case "pause":
+      return "medium";
+    case "todo":
+    case "done":
+      return "low";
+    default:
+      return "low";
+  }
+}
+
 export function formatFlowDays(value: number | null | undefined): string {
   if (value == null || Number.isNaN(value)) return "—";
   return `${Math.round(value * 10) / 10} дн.`;

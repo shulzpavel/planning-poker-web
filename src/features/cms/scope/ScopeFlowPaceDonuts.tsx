@@ -32,6 +32,39 @@ import {
   sortFlowPaceCharts,
 } from "./scopeFlowPaceChartOrder";
 import { donutArcs } from "./scopeBoardVisuals";
+import { flowBucketLabel, flowBucketTone } from "./scopeFlowPaceHelpers";
+
+function FlowPaceStatusCatalogTable({ chart }: { chart: ScopeFlowPaceChart }) {
+  const catalog = chart.status_catalog ?? [];
+  if (catalog.length === 0) return null;
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-line/70 bg-surface shadow-sm">
+      <table className="min-w-full text-left text-xs">
+        <thead className="border-b border-line/70 bg-bg/70 text-ink3">
+          <tr>
+            <th className="px-4 py-3 font-semibold">Статус Jira</th>
+            <th className="px-4 py-3 font-semibold">Группа</th>
+            <th className="px-4 py-3 font-semibold text-right">Дней</th>
+            <th className="px-4 py-3 font-semibold text-right">Доля</th>
+            <th className="px-4 py-3 font-semibold text-right">Задач</th>
+          </tr>
+        </thead>
+        <tbody>
+          {catalog.map((row) => (
+            <tr key={row.segment_key} className="border-b border-line/50 last:border-0">
+              <td className="px-4 py-3 font-medium text-ink">{row.status}</td>
+              <td className="px-4 py-3 text-ink2">{flowBucketLabel(row.flow_bucket)}</td>
+              <td className="px-4 py-3 text-right tabular-nums text-ink">{row.total_days.toFixed(1)}</td>
+              <td className="px-4 py-3 text-right tabular-nums text-ink2">{row.share_pct.toFixed(1)}%</td>
+              <td className="px-4 py-3 text-right tabular-nums text-ink2">{row.issue_count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export function FlowPaceChartDetail({
   chart,
@@ -44,6 +77,7 @@ export function FlowPaceChartDetail({
 }) {
   const segments = chart.detail_segments ?? [];
   const isSignals = chart.id === "active_signals";
+  const isStatusTime = chart.id === "phase_time";
 
   if (!chart.methodology && segments.length === 0) {
     return (
@@ -56,14 +90,16 @@ export function FlowPaceChartDetail({
   return (
     <div className={cn("space-y-4 px-4 py-4 sm:px-6 sm:py-5", className)}>
       {chart.methodology ? (
-        <p className="rounded-xl border border-line/60 bg-bg/70 px-4 py-3 text-xs leading-relaxed text-ink3">
+        <p className="rounded-xl border border-line/60 bg-bg/70 px-4 py-3 text-xs leading-relaxed text-ink3 whitespace-pre-wrap">
           {chart.methodology}
         </p>
       ) : null}
 
+      {isStatusTime ? <FlowPaceStatusCatalogTable chart={chart} /> : null}
+
       {segments.map((segment: ScopeFlowPaceChartDetailSegment) => {
         const signalSeverity = isSignals ? severityFromSegmentKey(segment.key) : null;
-        const tone = signalSeverity ?? segmentDetailTone(segment.key);
+        const tone = signalSeverity ?? (isStatusTime ? "low" : segmentDetailTone(segment.key));
         const alertItems = segment.items
           .map((item) => item.alert)
           .filter((alert): alert is ScopeFlowAlert => Boolean(alert));
@@ -96,8 +132,8 @@ export function FlowPaceChartDetail({
                 ) : (
                   <FlowPaceDetailCard
                     key={`${item.issue_key}-${index}`}
-                    tone={tone}
-                    badgeLabel={segment.label}
+                    tone={item.flow_bucket ? flowBucketTone(item.flow_bucket) : tone}
+                    badgeLabel={item.flow_bucket ? flowBucketLabel(item.flow_bucket) : segment.label}
                     issueKey={item.issue_key}
                     issueUrl={item.issue_url}
                     title={item.metric_label || segment.label}
