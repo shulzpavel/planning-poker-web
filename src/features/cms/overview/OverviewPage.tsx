@@ -5,8 +5,7 @@ import { cmsFetch } from "../api/cmsClient";
 import type { CmsPrincipal, Overview } from "../api/cmsTypes";
 import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
 import { useCmsTeams } from "../hooks/useCmsTeams";
-import { Toolbar } from "../components/CmsPrimitives";
-import { HelpCallout, InlineError, SectionHeader, Skeleton } from "../components/CmsPrimitives";
+import { HelpCallout, InlineError, SectionHeader, Skeleton, Toolbar } from "../components/CmsPrimitives";
 import { formatNumber } from "../../../shared/lib/format";
 
 interface OverviewTile {
@@ -43,19 +42,30 @@ export default function OverviewPage({ principal }: { principal: CmsPrincipal })
     <section className="space-y-4">
       <SectionHeader
         title="Сводка"
-        description="Быстрый взгляд на рабочий контур: калькулятор, planning sessions, ретро, участники и invite-ссылки."
+        description="KPI по четырём модулям delivery hub: калькулятор, отчёты месяца, planning sessions и ретро — плюс участники и активные invite-ссылки."
         actions={
           <>
-            <Button variant="primary" size="sm" onClick={() => navigate("/cms/planner")}>
-              Открыть калькулятор
+            <Button variant="primary" size="sm" onClick={() => navigate("/cms/scope")}>
+              Открыть отчёты
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={loadOverview}>Обновить</Button>
+            <Button variant="secondary" size="sm" onClick={() => navigate("/cms/planner")}>
+              Калькулятор
+            </Button>
+            <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={loadOverview}>
+              Обновить
+            </Button>
           </>
         }
       />
       <HelpCallout title="Что здесь">
-        <p>Тайл-карточки кликабельны и идут в основном порядке работы: калькулятор → сессии → ретро.</p>
-        <p>Цифры обновляются вручную — кнопкой «Обновить». Удалённые из истории сессии в счётчики не входят.</p>
+        <p>
+          Карточки идут в порядке типичного контура: калькулятор → отчёт месяца → planning poker → ретро.
+          Клик открывает соответствующий раздел CMS.
+        </p>
+        <p>
+          Цифры обновляются вручную. Удалённые из истории сессии не учитываются. Супер-админ может сузить
+          сводку фильтром «Команда» — как в списках planner / scope / sessions / retro.
+        </p>
       </HelpCallout>
       {principal.is_superuser ? (
         <Toolbar>
@@ -79,16 +89,23 @@ function OverviewCards({
     {
       label: "Калькулятор",
       value: overview.total_sprint_plans,
-      caption: "сохранённых расчётов",
+      caption: "сохранённых расчётов SP",
       to: "/cms/planner",
       hint: "Открыть калькулятор capacity",
     },
     {
+      label: "Отчёты",
+      value: overview.total_scope_boards ?? 0,
+      caption: "досок scope / месяца",
+      to: "/cms/scope",
+      hint: "Открыть отчёты месяца и релиза",
+    },
+    {
       label: "Сессии",
       value: overview.total_sessions,
-      caption: `${overview.active_sessions} идёт сейчас`,
+      caption: `${overview.active_sessions} идёт · ${overview.total_tasks} задач`,
       to: "/cms/sessions",
-      hint: "Открыть список сессий",
+      hint: "Открыть planning sessions",
     },
     {
       label: "Ретро",
@@ -102,25 +119,19 @@ function OverviewCards({
       value: overview.total_users,
       caption: `${overview.web_users} с веба`,
       to: "/cms/users",
-      hint: "Открыть участников",
+      hint: "Открыть справочник участников",
     },
     {
-      label: "Голоса",
-      value: overview.total_votes,
-      caption: `${overview.votes_rows} записей`,
+      label: "Invite-ссылки",
+      value: overview.active_web_tokens,
+      caption: `${overview.total_web_tokens} всего · голоса ${formatNumber(overview.total_votes)}`,
       to: "/cms/sessions",
-      hint: "Перейти к сессиям",
-    },
-    {
-      label: "Задачи",
-      value: overview.total_tasks,
-      caption: "во всех сессиях",
-      to: "/cms/sessions",
-      hint: "Перейти к сессиям",
+      hint: "Перейти к сессиям с invite-ссылками",
     },
   ];
+
   return (
-    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
       {tiles.map((tile) => (
         <button
           key={tile.label}

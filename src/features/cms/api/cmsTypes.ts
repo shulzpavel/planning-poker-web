@@ -91,6 +91,7 @@ export interface CmsAdmin {
 
 export interface Overview {
   total_sprint_plans: number;
+  total_scope_boards: number;
   total_sessions: number;
   active_sessions: number;
   total_retros: number;
