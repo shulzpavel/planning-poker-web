@@ -1,7 +1,10 @@
+import { LIST_PAGE_SIZE } from "../shared/listPaging";
+
 export const API_BASE = import.meta.env.VITE_API_URL ?? "";
 export const WS_BASE = import.meta.env.VITE_WS_URL ?? "";
 
-export const CMS_PAGE_LIMIT = 50;
+/** Default `limit` query param for CMS cursor list requests. */
+export const CMS_PAGE_LIMIT = LIST_PAGE_SIZE;
 
 export function apiUrl(path: string): string {
   return `${API_BASE}/api/v1${path}`;

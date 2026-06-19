@@ -1,15 +1,19 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Badge, cn } from "../../../design-system";
-import type { ScopeFlowAlert } from "../api/cmsClient";
+import type { ScopeFlowAlert, ScopeFlowPaceChartDetailItem } from "../api/cmsClient";
 import {
   buildJiraBrowseUrl,
   flowAlertSeverityLabel,
   flowAlertSeverityTone,
   formatFlowDays,
   formatStatusDurations,
+  flowBucketLabel,
+  flowBucketTone,
   highlightRoleLabel,
   resolveFlowIssueUrl,
 } from "./scopeFlowPaceHelpers";
+import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
+import { useIncrementalList } from "./scopeListPaging";
 
 function alertGroupPanelClass(severity: ScopeFlowAlert["severity"]) {
   switch (severity) {
@@ -183,12 +187,119 @@ export function FlowPaceAlertGroup({
       {alerts.length === 0 ? (
         <p className="mt-3 text-sm text-ink4">Нет сигналов в этой группе.</p>
       ) : (
-        <ul className="mt-3 space-y-3">
-          {alerts.map((alert, index) => (
-            <FlowPaceAlertCard key={`${alert.kind}-${alert.issue_key || "team"}-${index}`} alert={alert} browseBase={browseBase} />
-          ))}
-        </ul>
+        <FlowPacePaginatedAlerts alerts={alerts} browseBase={browseBase} />
       )}
+    </section>
+  );
+}
+
+function FlowPacePaginatedAlerts({
+  alerts,
+  browseBase,
+}: {
+  alerts: ScopeFlowAlert[];
+  browseBase?: string | null;
+}) {
+  const { visibleItems, hasMore, loadMore, loadedCount, total } = useIncrementalList(alerts);
+
+  return (
+    <>
+      <ul className="mt-3 space-y-3">
+        {visibleItems.map((alert, index) => (
+          <FlowPaceAlertCard key={`${alert.kind}-${alert.issue_key || "team"}-${index}`} alert={alert} browseBase={browseBase} />
+        ))}
+      </ul>
+      <ScopeIncrementalFooter
+        loadedCount={loadedCount}
+        total={total}
+        hasMore={hasMore}
+        onMore={loadMore}
+        itemNoun="сигналов"
+      />
+    </>
+  );
+}
+
+function FlowPacePaginatedDetailItems({
+  items,
+  browseBase,
+  tone,
+  segmentLabel,
+  renderItem,
+}: {
+  items: ScopeFlowPaceChartDetailItem[];
+  browseBase?: string | null;
+  tone: ScopeFlowAlert["severity"];
+  segmentLabel: string;
+  renderItem?: (item: ScopeFlowPaceChartDetailItem, index: number) => ReactNode;
+}) {
+  const { visibleItems, hasMore, loadMore, loadedCount, total } = useIncrementalList(items);
+
+  if (total === 0) {
+    return <p className="mt-3 text-sm text-ink4">Нет задач в этой группе.</p>;
+  }
+
+  return (
+    <>
+      <ul className="mt-3 space-y-3">
+        {visibleItems.map((item, index) =>
+          renderItem ? (
+            <Fragment key={`${item.issue_key}-${index}`}>{renderItem(item, index)}</Fragment>
+          ) : item.alert ? (
+            <FlowPaceAlertCard key={`${item.issue_key}-${index}`} alert={item.alert} browseBase={browseBase} />
+          ) : (
+            <FlowPaceDetailCard
+              key={`${item.issue_key}-${index}`}
+              tone={item.flow_bucket ? flowBucketTone(item.flow_bucket) : tone}
+              badgeLabel={item.flow_bucket ? flowBucketLabel(item.flow_bucket) : segmentLabel}
+              issueKey={item.issue_key}
+              issueUrl={item.issue_url}
+              title={item.metric_label || segmentLabel}
+              summary={item.summary}
+              detail={item.detail}
+              metricValue={item.metric_value}
+            />
+          ),
+        )}
+      </ul>
+      <ScopeIncrementalFooter
+        loadedCount={loadedCount}
+        total={total}
+        hasMore={hasMore}
+        onMore={loadMore}
+        itemNoun="задач"
+      />
+    </>
+  );
+}
+
+export function FlowPaceDetailGroup({
+  tone,
+  title,
+  count,
+  items,
+  browseBase,
+  renderItem,
+}: {
+  tone: ScopeFlowAlert["severity"];
+  title: string;
+  count: number;
+  items: ScopeFlowPaceChartDetailItem[];
+  browseBase?: string | null;
+  renderItem?: (item: ScopeFlowPaceChartDetailItem, index: number) => ReactNode;
+}) {
+  return (
+    <section className={alertGroupPanelClass(tone)}>
+      <h4 className={cn("text-xs font-bold uppercase tracking-wide", alertGroupTitleClass(tone))}>
+        {title} · {count}
+      </h4>
+      <FlowPacePaginatedDetailItems
+        items={items}
+        browseBase={browseBase}
+        tone={tone}
+        segmentLabel={title}
+        renderItem={renderItem}
+      />
     </section>
   );
 }
@@ -202,27 +313,6 @@ export function segmentDetailTone(segmentKey: string): ScopeFlowAlert["severity"
   if (["high", "slow", "qa_heavy", "older", "late"].includes(segmentKey)) return "high";
   if (["medium", "normal", "last_14d", "unplan"].includes(segmentKey)) return "medium";
   return "low";
-}
-
-export function FlowPaceDetailGroup({
-  tone,
-  title,
-  count,
-  children,
-}: {
-  tone: ScopeFlowAlert["severity"];
-  title: string;
-  count: number;
-  children: ReactNode;
-}) {
-  return (
-    <section className={alertGroupPanelClass(tone)}>
-      <h4 className={cn("text-xs font-bold uppercase tracking-wide", alertGroupTitleClass(tone))}>
-        {title} · {count}
-      </h4>
-      <ul className="mt-3 space-y-3">{children}</ul>
-    </section>
-  );
 }
 
 export function FlowPaceDetailCard({

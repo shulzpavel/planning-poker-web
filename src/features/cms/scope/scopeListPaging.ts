@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LIST_PAGE_SIZE } from "../../../shared/listPaging";
 
-export const SCOPE_LIST_PAGE_SIZE = 10;
+/** @deprecated Use LIST_PAGE_SIZE from `shared/listPaging`. */
+export const SCOPE_LIST_PAGE_SIZE = LIST_PAGE_SIZE;
 
 function itemIdentity(item: unknown, index: number): string {
   if (item && typeof item === "object") {
@@ -22,7 +24,15 @@ export function listDatasetKey(items: unknown[]): string {
     .join("\n");
 }
 
-export function useIncrementalList<T>(items: T[], pageSize = SCOPE_LIST_PAGE_SIZE) {
+/**
+ * Display window over an in-memory array (snapshot-embedded lists).
+ *
+ * Does **not** fetch from the API — the full `items` array must already be
+ * loaded. For server-backed lists use `useCmsList` / `useProgressiveList`.
+ *
+ * @see shared/listPaging.ts and planning-poker-dev/docs/development/LISTS.md
+ */
+export function useListDisplayWindow<T>(items: T[], pageSize = LIST_PAGE_SIZE) {
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const total = items.length;
   const datasetKey = useMemo(() => listDatasetKey(items), [items]);
@@ -45,3 +55,6 @@ export function useIncrementalList<T>(items: T[], pageSize = SCOPE_LIST_PAGE_SIZ
     total,
   };
 }
+
+/** @deprecated Renamed to `useListDisplayWindow` — snapshot DOM window only, not API pagination. */
+export const useIncrementalList = useListDisplayWindow;

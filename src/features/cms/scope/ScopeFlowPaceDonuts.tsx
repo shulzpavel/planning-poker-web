@@ -19,7 +19,6 @@ import { cn } from "../../../design-system";
 import type { ScopeBoardRecord, ScopeFlowAlert, ScopeFlowPaceChart, ScopeFlowPaceChartDetailSegment } from "../api/cmsClient";
 import { cmsScopeApi } from "../api/cmsClient";
 import {
-  FlowPaceAlertCard,
   FlowPaceAlertGroup,
   FlowPaceDetailCard,
   FlowPaceDetailGroup,
@@ -31,8 +30,49 @@ import {
   reorderFlowPaceChartOrder,
   sortFlowPaceCharts,
 } from "./scopeFlowPaceChartOrder";
+import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
+import { useIncrementalList } from "./scopeListPaging";
 import { donutArcs } from "./scopeBoardVisuals";
-import { flowBucketLabel, flowBucketTone } from "./scopeFlowPaceHelpers";
+
+function FlowPaceStatusTimeDetail({
+  segments,
+}: {
+  segments: ScopeFlowPaceChartDetailSegment[];
+}) {
+  const items = useMemo(() => segments.flatMap((segment) => segment.items), [segments]);
+  const { visibleItems, hasMore, loadMore, loadedCount, total } = useIncrementalList(items);
+
+  if (total === 0) {
+    return <p className="text-center text-sm text-ink3">Нет задач для детализации.</p>;
+  }
+
+  return (
+    <>
+      <ul className="space-y-3">
+        {visibleItems.map((item, index) => (
+          <FlowPaceDetailCard
+            key={`${item.issue_key}-${index}`}
+            tone="low"
+            badgeLabel={item.issue_key}
+            issueKey={item.issue_key}
+            issueUrl={item.issue_url}
+            title={item.summary || item.issue_key}
+            detail={item.detail}
+            metricValue={item.metric_value}
+            detailPrimary
+          />
+        ))}
+      </ul>
+      <ScopeIncrementalFooter
+        loadedCount={loadedCount}
+        total={total}
+        hasMore={hasMore}
+        onMore={loadMore}
+        itemNoun="задач"
+      />
+    </>
+  );
+}
 
 export function FlowPaceChartDetail({
   chart,
@@ -64,30 +104,17 @@ export function FlowPaceChartDetail({
       ) : null}
 
       {isStatusTime ? (
-        <ul className="space-y-3">
-          {segments.flatMap((segment) => segment.items).map((item, index) => (
-            <FlowPaceDetailCard
-              key={`${item.issue_key}-${index}`}
-              tone="low"
-              badgeLabel={item.issue_key}
-              issueKey={item.issue_key}
-              issueUrl={item.issue_url}
-              title={item.summary || item.issue_key}
-              detail={item.detail}
-              metricValue={item.metric_value}
-              detailPrimary
-            />
-          ))}
-        </ul>
+        <FlowPaceStatusTimeDetail segments={segments} />
       ) : (
         segments.map((segment: ScopeFlowPaceChartDetailSegment) => {
           const signalSeverity = isSignals ? severityFromSegmentKey(segment.key) : null;
           const tone = signalSeverity ?? segmentDetailTone(segment.key);
-          const alertItems = segment.items
-            .map((item) => item.alert)
-            .filter((alert): alert is ScopeFlowAlert => Boolean(alert));
 
           if (isSignals && signalSeverity) {
+            const alertItems = segment.items
+              .map((item) => item.alert)
+              .filter((alert): alert is ScopeFlowAlert => Boolean(alert));
+
             return (
               <FlowPaceAlertGroup
                 key={segment.key}
@@ -101,33 +128,14 @@ export function FlowPaceChartDetail({
           }
 
           return (
-            <FlowPaceDetailGroup key={segment.key} tone={tone} title={segment.label} count={segment.items.length}>
-              {segment.items.length === 0 ? (
-                <li className="px-1 text-sm text-ink4">Нет задач в этой группе.</li>
-              ) : (
-                segment.items.map((item, index) =>
-                  item.alert ? (
-                    <FlowPaceAlertCard
-                      key={`${item.issue_key}-${index}`}
-                      alert={item.alert}
-                      browseBase={browseBase}
-                    />
-                  ) : (
-                    <FlowPaceDetailCard
-                      key={`${item.issue_key}-${index}`}
-                      tone={item.flow_bucket ? flowBucketTone(item.flow_bucket) : tone}
-                      badgeLabel={item.flow_bucket ? flowBucketLabel(item.flow_bucket) : segment.label}
-                      issueKey={item.issue_key}
-                      issueUrl={item.issue_url}
-                      title={item.metric_label || segment.label}
-                      summary={item.summary}
-                      detail={item.detail}
-                      metricValue={item.metric_value}
-                    />
-                  ),
-                )
-              )}
-            </FlowPaceDetailGroup>
+            <FlowPaceDetailGroup
+              key={segment.key}
+              tone={tone}
+              title={segment.label}
+              count={segment.items.length}
+              items={segment.items}
+              browseBase={browseBase}
+            />
           );
         })
       )}
@@ -367,7 +375,7 @@ export function ScopeFlowPaceDonuts({
               Свернуть
             </button>
           </div>
-          <FlowPaceChartDetail chart={activeChart} browseBase={browseBase} />
+          <FlowPaceChartDetail key={activeChart.id} chart={activeChart} browseBase={browseBase} />
         </section>
       ) : null}
     </div>

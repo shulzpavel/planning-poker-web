@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useProgressiveList } from "../../../hooks/useProgressiveList";
 import type { ProgressiveListResult } from "../../../hooks/useProgressiveList";
 import type { ParamValue } from "../../../shared/types/pagination";
+import { LIST_PAGE_SIZE } from "../../../shared/listPaging";
 import { cmsList } from "../api/cmsClient";
 
 interface UseCmsListOptions {
@@ -51,7 +52,7 @@ export function useCmsList<T>(
   );
 
   return useProgressiveList<T, Record<string, ParamValue>>(fetchPage, params, {
-    pageSize: options.pageSize,
+    pageSize: options.pageSize ?? LIST_PAGE_SIZE,
     softCap: options.softCap,
     scrollKey: options.scrollKey,
   });

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { LIST_PAGE_SIZE } from "../shared/listPaging";
 
 /**
  * Progressive list hook. Renders the first page, kicks off a prefetch of the
@@ -40,7 +41,7 @@ export interface ProgressiveListSeed<T> {
 }
 
 export interface ProgressiveListOptions<T> {
-  /** Page size to request and treat as the prefetch chunk. Default 20. */
+  /** Page size to request and treat as the prefetch chunk. Default LIST_PAGE_SIZE (10). */
   pageSize?: number;
   /**
    * Stop auto-loading after the visible list grows past this many items.
@@ -194,7 +195,7 @@ export function useProgressiveList<T, TParams>(
   options: ProgressiveListOptions<T> = {},
 ): ProgressiveListResult<T> {
   const {
-    pageSize = 20,
+    pageSize = LIST_PAGE_SIZE,
     softCap = 200,
     enabled = true,
     scrollKey,

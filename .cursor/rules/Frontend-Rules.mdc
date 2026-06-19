@@ -15,6 +15,19 @@ alwaysApply: true
 - Reuse existing UI components and patterns.
 - Handle loading, error, empty, and success states.
 
+## List pagination
+
+See `planning-poker-dev/docs/development/LISTS.md`.
+
+| Data source | Hook | Network on «Показать ещё» |
+|---|---|---|
+| CMS list API (`/cms/...?limit&cursor`) | `useCmsList` → `useProgressiveList` | Yes — next page only |
+| Snapshot / board JSON already loaded | `useListDisplayWindow` | No — reveals next slice in memory |
+
+- First page size: **`LIST_PAGE_SIZE` (10)** — `src/shared/listPaging.ts`.
+- UI footer: `LoadMoreFooter` or `ScopeIncrementalFooter`.
+- Do not auto-fetch all pages; only explicit user action (or documented print/export).
+
 ## Output
 
 1. UI behavior implemented

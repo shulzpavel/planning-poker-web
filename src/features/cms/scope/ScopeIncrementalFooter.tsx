@@ -1,5 +1,5 @@
 import { LoadMoreFooter } from "../components/CmsPrimitives";
-import { SCOPE_LIST_PAGE_SIZE } from "./scopeListPaging";
+import { LIST_PAGE_SIZE } from "../../../shared/listPaging";
 
 export function ScopeIncrementalFooter({
   loadedCount,
@@ -14,7 +14,7 @@ export function ScopeIncrementalFooter({
   onMore: () => void;
   itemNoun?: string;
 }) {
-  if (total <= SCOPE_LIST_PAGE_SIZE) {
+  if (total <= LIST_PAGE_SIZE) {
     return null;
   }
 
