@@ -38,6 +38,17 @@ describe("splitPriorityQueue", () => {
     expect(split.warehouseIssues.map((item) => item.key)).toEqual(["INC-3"]);
     expect(totalWarehouseNewCounts(split.warehouseNewCounts)).toBe(1);
   });
+
+  it("does not treat legacy order as ranked when ranked_order is empty", () => {
+    const queue: ScopePriorityQueue = {
+      order: ["FLEX-1", "FLEX-2"],
+      issues: [issue("FLEX-1"), issue("FLEX-2"), issue("INC-3", "Incident")],
+      history: [],
+    };
+    const split = splitPriorityQueue(queue);
+    expect(split.rankedIssues).toEqual([]);
+    expect(split.warehouseIssues.map((item) => item.key)).toEqual(["FLEX-1", "FLEX-2", "INC-3"]);
+  });
 });
 
 describe("groupWarehouseIssues", () => {

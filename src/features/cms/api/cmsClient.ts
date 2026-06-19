@@ -395,6 +395,7 @@ export interface ScopeBoardIssue {
   status_changed_at?: string | null;
   status_entered_at?: string | null;
   epic_linked_at?: string | null;
+  start_date?: string | null;
   due_date?: string | null;
   resolution?: string;
   resolution_date?: string | null;
@@ -750,6 +751,138 @@ export interface ScopeTodoItem {
   done_at?: string;
 }
 
+export type ScopeFlowPaceStatus = "ok" | "attention" | "critical";
+
+export type ScopeFlowAlertSeverity = "high" | "medium" | "low";
+
+export type ScopeFlowAlertKind =
+  | "stalled"
+  | "stuck_in_test"
+  | "stuck_in_dev"
+  | "stuck_before_release"
+  | "waiting_for_test"
+  | "stuck_in_review"
+  | "paused"
+  | "missing_story_points"
+  | "due_date_at_risk"
+  | "returned_from_qa"
+  | "qa_phase_heavy"
+  | "excessive_pause_history"
+  | "status_churn"
+  | "slow_throughput"
+  | "missing_start_date"
+  | "long_cycle"
+  | "unassigned"
+  | "test_heavy"
+  | "assignee_overloaded"
+  | "epic_stalled"
+  | "handoff_stuck";
+
+export interface ScopeFlowAlert {
+  kind: ScopeFlowAlertKind;
+  severity: ScopeFlowAlertSeverity;
+  issue_key: string;
+  summary: string;
+  title: string;
+  detail: string;
+  criteria?: string;
+  status?: string;
+  days?: number;
+  highlight_name?: string;
+  highlight_role?: string;
+  epic_key?: string;
+  section_kind?: string;
+  section_name?: string;
+  status_durations?: Record<string, number>;
+  issue_url?: string;
+}
+
+export interface ScopeFlowPaceDonutSegment {
+  key: string;
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface ScopeFlowPaceChartDetailItem {
+  segment_key: string;
+  issue_key: string;
+  summary: string;
+  metric_label: string;
+  metric_value: string;
+  detail: string;
+  issue_url?: string | null;
+  alert?: ScopeFlowAlert;
+}
+
+export interface ScopeFlowPaceChartDetailSegment {
+  key: string;
+  label: string;
+  items: ScopeFlowPaceChartDetailItem[];
+}
+
+export interface ScopeFlowPaceChart {
+  id: string;
+  title: string;
+  subtitle: string;
+  center_value: string;
+  center_label: string;
+  segments: ScopeFlowPaceDonutSegment[];
+  methodology?: string;
+  detail_segments?: ScopeFlowPaceChartDetailSegment[];
+}
+
+export interface ScopeFlowPaceCharts {
+  donuts: ScopeFlowPaceChart[];
+}
+
+export interface ScopeFlowPaceSummary {
+  total: number;
+  done: number;
+  active: number;
+  in_work: number;
+  in_test: number;
+  not_started: number;
+  done_last_7d: number;
+  done_sp_last_7d: number;
+  done_last_14d: number;
+  avg_cycle_days: number | null;
+  median_cycle_days: number | null;
+  target_done_per_week: number;
+  min_done_per_week: number;
+  high_count?: number;
+  medium_count?: number;
+  low_count?: number;
+}
+
+export interface ScopeFlowEpicScope {
+  epic_key: string;
+  section_kind: string;
+  section_name: string;
+  jql: string;
+}
+
+export interface ScopeFlowPace {
+  enabled: boolean;
+  team_slug: string;
+  pace_status: ScopeFlowPaceStatus;
+  jira_browse_base?: string;
+  epic_scope?: ScopeFlowEpicScope[];
+  team_profile: {
+    label: string;
+    dev_count: number;
+    qa_count: number;
+    min_done_per_week: number;
+    target_done_per_week: number;
+  };
+  summary: ScopeFlowPaceSummary;
+  charts?: ScopeFlowPaceCharts;
+  chart_order?: string[];
+  alerts: ScopeFlowAlert[];
+  hints: string[];
+  computed_at: string;
+}
+
 export interface ScopeBoardSnapshot {
   sections?: ScopeSnapshotSection[];
   plan_issues: ScopeBoardIssue[];
@@ -769,6 +902,7 @@ export interface ScopeBoardSnapshot {
   events?: ScopeRefreshEvent[];
   refresh_log?: ScopeRefreshLogEntry[];
   jira_fetch_warnings?: ScopeJiraFetchWarning[];
+  flow_pace?: ScopeFlowPace | null;
 }
 
 export type ScopeReleaseContext = {
@@ -863,6 +997,7 @@ export interface ScopeBoardRecord {
   ai_summary: ScopeAiSummary | null;
   ai_summary_history?: ScopeAiHistoryEntry[];
   layout_order?: string[];
+  flow_pace_chart_order?: string[];
   team_id: number | null;
   team: { id: number; slug?: string; name?: string } | null;
   created_by: number | null;
@@ -949,6 +1084,11 @@ export const cmsScopeApi = {
     cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}/layout`, {
       method: "PATCH",
       body: JSON.stringify({ layout_order: layoutOrder }),
+    }),
+  updateFlowPaceChartOrder: (boardId: number, chartOrder: string[]) =>
+    cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}/flow-pace-chart-order`, {
+      method: "PATCH",
+      body: JSON.stringify({ chart_order: chartOrder }),
     }),
   refresh: (boardId: number) =>
     cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}/refresh`, {

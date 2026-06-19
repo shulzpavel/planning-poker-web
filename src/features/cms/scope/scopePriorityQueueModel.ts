@@ -50,9 +50,7 @@ export function totalWarehouseNewCounts(counts: WarehouseNewCounts): number {
 }
 
 function normalizeRankedOrder(queue: ScopePriorityQueue): string[] {
-  const ranked = queue.ranked_order ?? [];
-  if (ranked.length > 0) return ranked;
-  return queue.order ?? [];
+  return queue.ranked_order ?? [];
 }
 
 export function splitPriorityQueue(queue: ScopePriorityQueue): SplitPriorityQueue {

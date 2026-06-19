@@ -5,6 +5,7 @@ export const SCOPE_LAYOUT_BLOCK_KEYS = [
   "capacity",
   "roleWorkload",
   "planInsights",
+  "flowPace",
   "aiSummary",
   "report",
   "priorityQueues",

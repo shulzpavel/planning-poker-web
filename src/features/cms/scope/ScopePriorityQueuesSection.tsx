@@ -78,8 +78,8 @@ function resolveQueue(snapshot: ScopeBoardSnapshot, kind: ScopePriorityQueueKind
   const queue = snapshot.priority_queues?.[kind];
   if (!queue) return emptyQueue();
   return {
-    order: queue.order ?? queue.ranked_order ?? [],
-    ranked_order: queue.ranked_order ?? queue.order ?? [],
+    order: queue.order ?? [],
+    ranked_order: queue.ranked_order ?? [],
     issues: queue.issues ?? [],
     history: queue.history ?? [],
     warehouse_new_counts: queue.warehouse_new_counts ?? {},
@@ -106,6 +106,19 @@ function formatHistoryTime(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+function QueueNewArrivalsLabel({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <Badge
+      tone="warning"
+      className="motion-safe:animate-new-badge-bob min-h-5 px-2 text-[10px] uppercase tracking-wide"
+      aria-label={`${count} новых задач после обновления из Jira`}
+    >
+      +{count} new
+    </Badge>
+  );
 }
 
 export function ScopePriorityQueuesSection({
@@ -210,9 +223,12 @@ function PriorityQueueBlock({
     <details className="min-w-0 overflow-hidden rounded-2xl bg-surface shadow-card">
       <summary className={cn("cursor-pointer list-none px-4 py-4 marker:content-none sm:px-5", blockTone.header)}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-base font-semibold text-ink">{meta.title}</p>
-            <p className="mt-0.5 text-xs text-ink3">{meta.jqlHint}</p>
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
+            <div>
+              <p className="text-base font-semibold text-ink">{meta.title}</p>
+              <p className="mt-0.5 text-xs text-ink3">{meta.jqlHint}</p>
+            </div>
+            <QueueNewArrivalsLabel count={warehouseNewTotal} />
           </div>
           <span className={cn("rounded-full px-3 py-1 text-sm font-semibold tabular-nums shadow-sm", blockTone.count)}>
             {queue.issues.length} задач
@@ -258,7 +274,6 @@ function PriorityQueueBlock({
               history={queue.history}
               canManage={canManage}
               reordering={reordering}
-              hasNewArrivals={warehouseNewTotal > 0}
               newKeys={split.warehouseNewKeys}
               onAddComment={(issueKey, text) => onAddQueueComment(kind, issueKey, text)}
               onUpdateDueDate={(issueKey, dueDate) => onUpdateQueueDueDate(kind, issueKey, dueDate)}
@@ -355,7 +370,6 @@ function WarehouseSection({
   history,
   canManage,
   reordering,
-  hasNewArrivals,
   newKeys,
   onAddComment,
   onUpdateDueDate,
@@ -364,7 +378,6 @@ function WarehouseSection({
   history: ScopePriorityQueueHistoryEntry[];
   canManage: boolean;
   reordering: boolean;
-  hasNewArrivals: boolean;
   newKeys: Set<string>;
   onAddComment: (issueKey: string, text: string) => Promise<void>;
   onUpdateDueDate: (issueKey: string, dueDate: string) => Promise<void>;
@@ -375,17 +388,13 @@ function WarehouseSection({
     <section
       ref={setNodeRef}
       className={cn(
-        "rounded-2xl border bg-bg/20 p-4 transition-colors",
-        hasNewArrivals ? "border-amber/50 ring-2 ring-amber/25 shadow-[0_0_0_1px_rgba(245,158,11,0.15)]" : "border-line",
+        "rounded-2xl border border-line bg-bg/20 p-4 transition-colors",
         isOver && "border-amber/60 bg-amber/[0.03]"
       )}
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold text-ink">Склад задач</p>
-          <p className="text-xs text-ink3">Новые поступления — перетащите в очередь</p>
-        </div>
-        {hasNewArrivals ? <Badge tone="warning">NEW</Badge> : null}
+      <div className="mb-4">
+        <p className="text-sm font-semibold text-ink">Склад задач</p>
+        <p className="text-xs text-ink3">Новые поступления — перетащите в очередь</p>
       </div>
 
       {groups.length === 0 ? (
@@ -614,10 +623,16 @@ function QueueIssueCard({
     <div
       className={cn(
         "relative min-w-0 max-w-full rounded-xl bg-surface px-3 py-5 shadow-card ring-1 sm:px-5",
-        isNew ? "ring-amber/45" : "ring-line/50"
+        isNew ? "bg-amber/[0.05] ring-amber/55" : "ring-line/50"
       )}
     >
-      <span className={cn("absolute inset-y-5 left-0 w-1 rounded-r-full", toneClasses.rail)} aria-hidden="true" />
+      <span
+        className={cn(
+          "absolute inset-y-5 left-0 w-1 rounded-r-full",
+          isNew ? "bg-amber/70" : toneClasses.rail
+        )}
+        aria-hidden="true"
+      />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]">
         <div className="flex min-w-0 gap-4">
           <div className="flex shrink-0 flex-col items-center gap-1.5 pt-0.5">
@@ -650,7 +665,10 @@ function QueueIssueCard({
               <div className="flex flex-wrap items-center gap-2">
                 <IssueLink issue={issue} className="text-sm" />
                 {isNew ? (
-                  <Badge tone="warning" className="min-h-5 px-1.5 text-[10px] uppercase tracking-wide">
+                  <Badge
+                    tone="warning"
+                    className="motion-safe:animate-new-badge-bob min-h-5 px-1.5 text-[10px] uppercase tracking-wide"
+                  >
                     NEW
                   </Badge>
                 ) : null}

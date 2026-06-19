@@ -84,6 +84,8 @@ import { ScopeTopItemsSection } from "./ScopeTopItemsSection";
 import { ScopeSectionEditor } from "./ScopeSectionEditor";
 import { ScopeAssigneeCharts } from "./ScopeAssigneeCharts";
 import { ScopePlanInsights, planChangeReasonLabel } from "./scopePlanInsights";
+import { ScopeFlowPaceSection } from "./ScopeFlowPaceSection";
+import { shouldShowFlowPaceBlock } from "./scopeFlowPaceHelpers";
 import { ScopeVisualDashboard, type ScopeDataQualityDetails, type ScopeReportSummary } from "./ScopeVisualDashboard";
 import { SortableScopeBlock } from "./SortableScopeBlock";
 import {
@@ -1290,6 +1292,10 @@ function ScopeBoardEditorPage({
   const snapshotRefreshedLabel = snapshot?.refreshed_at
     ? new Date(snapshot.refreshed_at).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })
     : null;
+  const showFlowPace = shouldShowFlowPaceBlock(
+    board?.team ?? selectedTeam ?? (board?.name ? { name: board.name } : null),
+    snapshot?.flow_pace,
+  );
 
   const visibleBlockKeys = useMemo((): ScopeLayoutBlockKey[] => {
     if (mode !== "edit" || !snapshot || !metrics) return [];
@@ -1297,9 +1303,12 @@ function ScopeBoardEditorPage({
     if (!isReleaseTemplate) {
       keys.push("roleWorkload", "planInsights");
     }
+    if (showFlowPace) {
+      keys.push("flowPace");
+    }
     keys.push("aiSummary", "report", "priorityQueues", "activity", "snapshotSections", "settings");
     return keys;
-  }, [isReleaseTemplate, metrics, mode, snapshot]);
+  }, [isReleaseTemplate, metrics, mode, showFlowPace, snapshot]);
 
   const visibleLayoutOrder = useMemo(
     () => mergeScopeLayoutOrder(layoutOrder, visibleBlockKeys),
@@ -1389,6 +1398,22 @@ function ScopeBoardEditorPage({
         return <ScopeAssigneeCharts metrics={metrics} presentation={presentationOpen} />;
       case "planInsights":
         return <ScopePlanInsights metrics={metrics} presentation={presentationOpen} />;
+      case "flowPace":
+        return snapshot.flow_pace ? (
+          <ScopeFlowPaceSection
+            flowPace={snapshot.flow_pace}
+            boardId={boardId}
+            canManage={canManage}
+            chartOrder={board?.flow_pace_chart_order}
+            onBoardUpdated={setBoard}
+            onChartOrderError={(message) => toast.error(message)}
+            presentation={presentationOpen}
+          />
+        ) : (
+          <Alert tone="info" title="AI пульс спринта">
+            Обновите snapshot из Jira — блок доступен для команды iGaming Rip.
+          </Alert>
+        );
       case "aiSummary":
         return (
           <div ref={aiReportRef} className="scroll-mt-24 space-y-3">

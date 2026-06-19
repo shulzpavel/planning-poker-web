@@ -57,10 +57,15 @@ export default {
         "fade-up":   "fadeUp .35s ease both",
         "scale-in":  "scaleIn .2s ease both",
         "spin-slow": "spin 1s linear infinite",
+        "new-badge-bob": "newBadgeBob 2.6s ease-in-out infinite",
       },
       keyframes: {
         fadeUp:  { "0%": { opacity: 0, transform: "translateY(14px)" }, "100%": { opacity: 1, transform: "translateY(0)" } },
         scaleIn: { "0%": { opacity: 0, transform: "scale(.88)" },        "100%": { opacity: 1, transform: "scale(1)" } },
+        newBadgeBob: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-3px)" },
+        },
       },
     },
   },

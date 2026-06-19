@@ -11,6 +11,7 @@ export const SCOPE_PRESENTATION_BLOCK_KEYS = [
   "capacity",
   "roleWorkload",
   "planInsights",
+  "flowPace",
   "aiSummary",
   "report",
   "priorityQueues",
@@ -34,6 +35,7 @@ export function scopePresentationGridClass(key: ScopeLayoutBlockKey): string {
     case "topItems":
     case "aiSummary":
     case "report":
+    case "flowPace":
     case "priorityQueues":
       return "scope-presentation-tile--full";
     default:
