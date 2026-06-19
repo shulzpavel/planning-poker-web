@@ -63,8 +63,8 @@ export function ScrollArea({
   }, []);
 
   return (
-    <Component className={cn("min-h-0", className)}>
-      <div ref={viewportRef} className={cn("min-h-0 overflow-auto", viewportClassName)}>
+    <Component className={cn("flex min-h-0 flex-col", className)}>
+      <div ref={viewportRef} className={cn("min-h-0 flex-1 overflow-auto", viewportClassName)}>
         {children}
         <div
           role="status"

@@ -221,7 +221,7 @@ export function BottomSheet({
           // Edge-to-edge below md (looks broken otherwise — see the
           // narrow centered "rectangle in the middle of the screen"
           // bug). On md+ this becomes a normal centered dialog.
-          "relative w-full outline-none md:max-w-md",
+          "relative flex w-full flex-col outline-none md:max-w-md",
           "rounded-t-sheet border border-line border-b-0 bg-surface shadow-card md:rounded-sheet md:border-b",
           "motion-safe:animate-scale-in",
           // Keep the sheet above the on-screen keyboard on mobile.
@@ -229,7 +229,7 @@ export function BottomSheet({
           className,
         )}
       >
-        <div className="flex justify-center px-5 pt-2.5 md:hidden">
+        <div className="flex shrink-0 justify-center px-5 pt-2.5 md:hidden">
           <button
             type="button"
             aria-label="Закрыть меню"
@@ -246,26 +246,26 @@ export function BottomSheet({
         </div>
 
         {(title || description) ? (
-          <div className="px-5 pb-2 pt-3">
+          <div className="shrink-0 px-5 pb-2 pt-3">
             {title ? <h2 id={titleId} className="text-base font-bold text-ink">{title}</h2> : null}
             {description ? <p id={descriptionId} className="mt-1 text-base text-ink3 sm:text-sm">{description}</p> : null}
           </div>
         ) : null}
 
         <ScrollArea
-          className="max-h-[calc(100dvh-var(--keyboard-bottom-inset)-11rem)] md:max-h-[min(520px,calc(100dvh-15rem))]"
-          viewportClassName="max-h-[calc(100dvh-var(--keyboard-bottom-inset)-11rem)] px-2 pb-2 pt-1 md:max-h-[min(520px,calc(100dvh-15rem))]"
+          className="min-h-0 flex-1"
+          viewportClassName="px-2 pb-2 pt-1"
           hint="Ещё пункты"
         >
           {children}
         </ScrollArea>
 
         {footer ? (
-          <div className="border-t border-line bg-surface px-5 pb-safe-4 pt-3 md:pb-5">
+          <div className="shrink-0 border-t border-line bg-surface px-5 pb-safe-4 pt-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] md:pb-5">
             {footer}
           </div>
         ) : (
-          <div className="pb-safe-4 md:pb-5" />
+          <div className="shrink-0 pb-safe-4 md:pb-5" />
         )}
       </div>
     </div>,
