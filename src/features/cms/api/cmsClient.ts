@@ -993,10 +993,10 @@ export const cmsScopeApi = {
     cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}/todo-items/${encodeURIComponent(itemId)}`, {
       method: "DELETE",
     }),
-  reorderQueue: (boardId: number, queue: ScopePriorityQueueKind, order: string[], comment: string, movedKey: string) =>
+  reorderQueue: (boardId: number, queue: ScopePriorityQueueKind, order: string[], movedKey: string) =>
     cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}/queues/${queue}/reorder`, {
       method: "POST",
-      body: JSON.stringify({ order, comment, moved_key: movedKey }),
+      body: JSON.stringify({ order, comment: "", moved_key: movedKey }),
     }),
   addQueueIssueComment: (boardId: number, queue: ScopePriorityQueueKind, issueKey: string, text: string) =>
     cmsFetch<ScopeBoardRecord>(`/scope-boards/${boardId}/queues/${queue}/issues/${encodeURIComponent(issueKey)}/comment`, {

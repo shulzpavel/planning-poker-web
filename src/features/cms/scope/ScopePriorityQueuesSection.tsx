@@ -19,7 +19,6 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Badge,
   Button,
-  ConfirmDialog,
   DatePickerPopover,
   EmptyState,
   Spinner,
@@ -109,7 +108,7 @@ export function ScopePriorityQueuesSection({
   todoJql: string;
   testJql: string;
   canManage: boolean;
-  onReorderQueue: (queue: ScopePriorityQueueKind, order: string[], comment: string, movedKey: string) => Promise<void>;
+  onReorderQueue: (queue: ScopePriorityQueueKind, order: string[], movedKey: string) => Promise<void>;
   onAddQueueComment: (queue: ScopePriorityQueueKind, issueKey: string, text: string) => Promise<void>;
   onUpdateQueueDueDate: (queue: ScopePriorityQueueKind, issueKey: string, dueDate: string) => Promise<void>;
 }) {
@@ -150,15 +149,12 @@ function PriorityQueueBlock({
   queue: ScopePriorityQueue;
   jql: string;
   canManage: boolean;
-  onReorderQueue: (queue: ScopePriorityQueueKind, order: string[], comment: string, movedKey: string) => Promise<void>;
+  onReorderQueue: (queue: ScopePriorityQueueKind, order: string[], movedKey: string) => Promise<void>;
   onAddQueueComment: (queue: ScopePriorityQueueKind, issueKey: string, text: string) => Promise<void>;
   onUpdateQueueDueDate: (queue: ScopePriorityQueueKind, issueKey: string, dueDate: string) => Promise<void>;
 }) {
   const meta = QUEUE_META[kind];
   const blockTone = queueBlockToneClasses(kind);
-  const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
-  const [pendingMovedKey, setPendingMovedKey] = useState<string | null>(null);
-  const [reorderComment, setReorderComment] = useState("");
   const [reordering, setReordering] = useState(false);
   const [reorderError, setReorderError] = useState<string | null>(null);
   const listTopRef = useRef<HTMLDivElement | null>(null);
@@ -186,26 +182,14 @@ function PriorityQueueBlock({
     if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
 
     const nextOrder = arrayMove(groupedIssues, oldIndex, newIndex).map((issue) => issue.key);
-    setPendingOrder(nextOrder);
-    setPendingMovedKey(activeId);
-    setReorderComment("");
-    setReorderError(null);
+    void saveReorder(nextOrder, activeId);
   }
 
-  async function confirmReorder() {
-    if (!pendingOrder || !pendingMovedKey) return;
-    const comment = reorderComment.trim();
-    if (!comment) {
-      setReorderError("Комментарий обязателен — зафиксируйте решение груминга.");
-      return;
-    }
+  async function saveReorder(nextOrder: string[], movedKey: string) {
     setReordering(true);
     setReorderError(null);
     try {
-      await onReorderQueue(kind, pendingOrder, comment, pendingMovedKey);
-      setPendingOrder(null);
-      setPendingMovedKey(null);
-      setReorderComment("");
+      await onReorderQueue(kind, nextOrder, movedKey);
     } catch (err) {
       setReorderError(err instanceof Error ? err.message : "Не удалось сохранить порядок.");
     } finally {
@@ -249,6 +233,14 @@ function PriorityQueueBlock({
             <p className="text-xs text-ink3">JQL не задан — добавьте в «Настройки и JQL» и нажмите «Обновить из Jira».</p>
           )}
 
+          {reorderError ? <p className="text-sm text-danger">{reorderError}</p> : null}
+          {reordering ? (
+            <p className="flex items-center gap-2 text-sm text-ink3">
+              <Spinner size="sm" />
+              Сохраняем порядок и значимость в Jira…
+            </p>
+          ) : null}
+
           {issues.length === 0 ? (
             <EmptyState title="Список пуст" description={`Задайте JQL (${meta.jqlHint}) и обновите board из Jira.`} />
           ) : (
@@ -266,7 +258,7 @@ function PriorityQueueBlock({
                           index={issueIndex}
                           history={queue.history}
                           canManage={canManage}
-                          draggable={canManage}
+                          draggable={canManage && !reordering}
                           onAddComment={(text) => onAddQueueComment(kind, issue.key, text)}
                           onUpdateDueDate={(dueDate) => onUpdateQueueDueDate(kind, issue.key, dueDate)}
                         />
@@ -293,39 +285,6 @@ function PriorityQueueBlock({
           )}
         </div>
       </details>
-
-      <ConfirmDialog
-        open={pendingOrder !== null}
-        title="Сохранить новый порядок?"
-        tone="primary"
-        confirmLabel="Сохранить"
-        cancelLabel="Отмена"
-        busy={reordering}
-        confirmDisabled={reorderComment.trim().length === 0}
-        description={
-          <div className="space-y-3 text-left">
-            <p className="text-sm text-ink2">
-              Комментарий обязателен: он сохранится в истории и уйдёт в Jira для перемещённой задачи.
-            </p>
-            <TextareaField
-              label="Комментарий груминга"
-              rows={3}
-              value={reorderComment}
-              disabled={reordering}
-              onChange={(event) => setReorderComment(event.target.value)}
-            />
-            {reorderError ? <p className="text-sm text-danger">{reorderError}</p> : null}
-          </div>
-        }
-        onCancel={() => {
-          if (reordering) return;
-          setPendingOrder(null);
-          setPendingMovedKey(null);
-          setReorderComment("");
-          setReorderError(null);
-        }}
-        onConfirm={() => void confirmReorder()}
-      />
     </>
   );
 }

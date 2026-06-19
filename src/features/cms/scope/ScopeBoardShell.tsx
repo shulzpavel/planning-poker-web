@@ -1202,11 +1202,11 @@ function ScopeBoardEditorPage({
   );
 
   const reorderQueue = useCallback(
-    async (queue: ScopePriorityQueueKind, order: string[], comment: string, movedKey: string) => {
+    async (queue: ScopePriorityQueueKind, order: string[], movedKey: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
-      const record = await cmsScopeApi.reorderQueue(boardId, queue, order, comment, movedKey);
+      const record = await cmsScopeApi.reorderQueue(boardId, queue, order, movedKey);
       setBoard(record);
-      toast.success("Порядок сохранён");
+      toast.success("Порядок и значимость сохранены");
     },
     [boardId, toast]
   );
