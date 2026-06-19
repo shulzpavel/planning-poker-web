@@ -133,13 +133,16 @@ export function FlowPaceChartDetail({
                   <FlowPaceDetailCard
                     key={`${item.issue_key}-${index}`}
                     tone={item.flow_bucket ? flowBucketTone(item.flow_bucket) : tone}
-                    badgeLabel={item.flow_bucket ? flowBucketLabel(item.flow_bucket) : segment.label}
+                    badgeLabel={
+                      isStatusTime ? item.metric_label || segment.label : item.flow_bucket ? flowBucketLabel(item.flow_bucket) : segment.label
+                    }
                     issueKey={item.issue_key}
                     issueUrl={item.issue_url}
-                    title={item.metric_label || segment.label}
-                    summary={item.summary}
+                    title={isStatusTime ? item.summary || item.issue_key : item.metric_label || segment.label}
+                    summary={isStatusTime ? undefined : item.summary}
                     detail={item.detail}
                     metricValue={item.metric_value}
+                    detailPrimary={isStatusTime}
                   />
                 ),
               )

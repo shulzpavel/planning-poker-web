@@ -234,6 +234,7 @@ export function FlowPaceDetailCard({
   summary,
   detail,
   metricValue,
+  detailPrimary = false,
 }: {
   tone: ScopeFlowAlert["severity"];
   badgeLabel: string;
@@ -243,6 +244,7 @@ export function FlowPaceDetailCard({
   summary?: string;
   detail?: string;
   metricValue?: string;
+  detailPrimary?: boolean;
 }) {
   const hasIssueKey = Boolean(issueKey);
 
@@ -272,7 +274,11 @@ export function FlowPaceDetailCard({
           {hasIssueKey && summary ? <p className="mt-1.5 text-sm leading-relaxed text-ink2">{summary}</p> : null}
         </div>
 
-        {detail ? <p className="text-sm leading-relaxed text-ink3">{detail}</p> : null}
+        {detail ? (
+          <p className={cn("text-sm leading-relaxed", detailPrimary ? "font-medium text-ink" : "text-ink3")}>
+            {detail}
+          </p>
+        ) : null}
       </div>
     </li>
   );
