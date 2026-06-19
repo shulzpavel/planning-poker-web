@@ -53,6 +53,7 @@ import {
   TeamSelect,
   useTeamIdState,
 } from "../components/TeamSelect";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useCmsTeams } from "../hooks/useCmsTeams";
 import { ListTableSurface, TeamGroupedSections } from "../components/TeamGroupedSections";
 import { useUnsavedChangesGuard } from "../hooks/useUnsavedChangesGuard";
@@ -413,6 +414,7 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
   const navigate = useNavigate();
   const { teams } = useCmsTeams(principal);
   const [teamFilter, setTeamFilter] = useState("");
+  const debouncedTeamFilter = useDebouncedValue(teamFilter, 300);
   const [items, setItems] = useState<ScopeBoardRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -424,7 +426,7 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
     setError(null);
     try {
       const res = await cmsScopeApi.list({
-        ...teamFilterParams(teamFilter),
+        ...teamFilterParams(debouncedTeamFilter),
       });
       setItems(res.items);
     } catch (err) {
@@ -432,7 +434,7 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
     } finally {
       setLoading(false);
     }
-  }, [teamFilter]);
+  }, [debouncedTeamFilter]);
 
   useEffect(() => {
     void reload();

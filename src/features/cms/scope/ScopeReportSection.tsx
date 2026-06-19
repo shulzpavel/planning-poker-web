@@ -73,9 +73,12 @@ export function ScopeReportSection({
   onResolveQuestion: (questionId: string, comment: string) => Promise<void>;
   presentation?: boolean;
 }) {
-  const report = snapshot.report ? normalizeScopeReport(snapshot.report) : computeScopeReport(snapshot);
-  const openQuestions = resolveOpenQuestions(snapshot);
-  const closedQuestions = resolvedQuestions(snapshot);
+  const report = useMemo(
+    () => (snapshot.report ? normalizeScopeReport(snapshot.report) : computeScopeReport(snapshot)),
+    [snapshot],
+  );
+  const openQuestions = useMemo(() => resolveOpenQuestions(snapshot), [snapshot]);
+  const closedQuestions = useMemo(() => resolvedQuestions(snapshot), [snapshot]);
   const releaseContext = snapshot.release_context;
   const releaseMode = Boolean(releaseContext) || isReleaseReport;
 

@@ -2,6 +2,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cmsTeamsApi } from "../api/cmsClient";
 import type { CmsPrincipal, CmsTeam } from "../api/cmsTypes";
 
+const TEAMS_CACHE_TTL_MS = 60_000;
+
+type TeamsCacheEntry = {
+  principalId: string;
+  teams: CmsTeam[];
+  fetchedAt: number;
+};
+
+let sharedTeamsCache: TeamsCacheEntry | null = null;
+let inflightTeamsRequest: Promise<CmsTeam[]> | null = null;
+
 function teamsFromPrincipal(principal: CmsPrincipal | null): CmsTeam[] {
   if (!principal) return [];
   const assigned = principal.teams ?? [];
@@ -20,6 +31,44 @@ function teamsFromPrincipal(principal: CmsPrincipal | null): CmsTeam[] {
 function mergeTeams(apiTeams: CmsTeam[], fallback: CmsTeam[]): CmsTeam[] {
   if (apiTeams.length > 0) return apiTeams;
   return fallback;
+}
+
+function principalCacheKey(principal: CmsPrincipal): string {
+  return String(principal.id ?? principal.username ?? "unknown");
+}
+
+async function fetchTeamsForPrincipal(principal: CmsPrincipal): Promise<CmsTeam[]> {
+  const cacheKey = principalCacheKey(principal);
+  const now = Date.now();
+  if (
+    sharedTeamsCache &&
+    sharedTeamsCache.principalId === cacheKey &&
+    now - sharedTeamsCache.fetchedAt < TEAMS_CACHE_TTL_MS
+  ) {
+    return sharedTeamsCache.teams;
+  }
+
+  if (inflightTeamsRequest) {
+    return inflightTeamsRequest;
+  }
+
+  const fallback = teamsFromPrincipal(principal);
+  inflightTeamsRequest = cmsTeamsApi
+    .list()
+    .then((result) => {
+      const next = mergeTeams(result.items, fallback);
+      sharedTeamsCache = { principalId: cacheKey, teams: next, fetchedAt: Date.now() };
+      return next;
+    })
+    .catch((err) => {
+      sharedTeamsCache = { principalId: cacheKey, teams: fallback, fetchedAt: Date.now() };
+      throw err;
+    })
+    .finally(() => {
+      inflightTeamsRequest = null;
+    });
+
+  return inflightTeamsRequest;
 }
 
 export function useCmsTeams(principal: CmsPrincipal | null) {
@@ -41,8 +90,8 @@ export function useCmsTeams(principal: CmsPrincipal | null) {
     setLoading(true);
     setError(null);
     try {
-      const result = await cmsTeamsApi.list();
-      const next = mergeTeams(result.items, fallback);
+      sharedTeamsCache = null;
+      const next = await fetchTeamsForPrincipal(current);
       setTeams(next);
       return next;
     } catch (err) {
@@ -61,8 +110,37 @@ export function useCmsTeams(principal: CmsPrincipal | null) {
       setError(null);
       return;
     }
-    setTeams(teamsFromPrincipal(principal));
-    void reload();
+    const fallback = teamsFromPrincipal(principal);
+    const cacheKey = principalCacheKey(principal);
+    const cached =
+      sharedTeamsCache &&
+      sharedTeamsCache.principalId === cacheKey &&
+      Date.now() - sharedTeamsCache.fetchedAt < TEAMS_CACHE_TTL_MS
+        ? sharedTeamsCache.teams
+        : null;
+    setTeams(cached ?? fallback);
+    if (cached) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    void fetchTeamsForPrincipal(principal)
+      .then((next) => {
+        if (!cancelled) setTeams(next);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : "Не удалось загрузить команды";
+        setError(message);
+        setTeams(fallback);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [principal?.id, reload]);
 
   return { teams, loading, error, reload };
