@@ -45,7 +45,6 @@ import { useCmsTeams } from "../hooks/useCmsTeams";
 import { Alert, Badge, BottomSheet, Button, ConfirmDialog, DropdownField, EmptyState, ScrollArea, Surface, TextField } from "../../../design-system";
 import {
   CompactList,
-  DataTable,
   HelpCallout,
   InlineError,
   LoadMoreFooter,
@@ -56,6 +55,7 @@ import {
   Status,
   Toolbar,
 } from "../components/CmsPrimitives";
+import { GroupedDataTableList } from "../components/TeamGroupedSections";
 import { useCmsList } from "../hooks/useCmsList";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { formatDate, shortHash } from "../../../shared/lib/format";
@@ -75,7 +75,6 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
   const [q, setQ] = useState("");
   const [active, setActive] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
-  const [teamSort, setTeamSort] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<
     | { kind: "close"; item: SessionItem }
@@ -107,9 +106,8 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
       q: debouncedQ,
       active: active === "" ? undefined : active === "true",
       ...teamFilterParams(teamFilter),
-      sort: teamSort && principal.is_superuser ? "team_then_updated" : undefined,
     }),
-    [active, debouncedQ, principal.is_superuser, teamFilter, teamSort]
+    [active, debouncedQ, teamFilter]
   );
   const list = useCmsList<SessionItem>("/sessions", params, { scrollKey: "cms-sessions" });
   const navigate = useNavigate();
@@ -231,24 +229,14 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
           onChange={setActive}
         />
         {principal.is_superuser ? (
-          <>
-            <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-            <DropdownField
-              className="md:max-w-[220px]"
-              aria-label="Сортировка"
-              value={teamSort ? "team" : "updated"}
-              options={[
-                { value: "updated", label: "По дате обновления" },
-                { value: "team", label: "По команде" },
-              ]}
-              onChange={(value) => setTeamSort(value === "team")}
-            />
-          </>
+          <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
         ) : null}
         <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
       </Toolbar>
 
-      <DataTable
+      <GroupedDataTableList
+        items={list.items}
+        teamFilter={teamFilter}
         error={list.error}
         loading={list.loading}
         loadingMore={list.loadingMore}
@@ -262,10 +250,6 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
         columns={["Сессия", "Участники", "Задачи", "Голоса", "Статус", "Обновлена", "Действия"]}
         empty={
           list.items.length === 0 && !list.loading ? (
-            // Branching on filter state: with active filters the next
-            // logical action is to clear them; on a clean slate the
-            // next logical action is to create the very first session.
-            // Either way the user always has a CTA — no dead-end.
             (q.trim() || active) ? (
               <EmptyState
                 title="Ничего не найдено"
@@ -301,7 +285,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
             )
           ) : null
         }
-        mobileCards={list.items.map((item) => (
+        renderMobileCard={(item, grouped) => (
           <MobileRecordCard
             key={item.id}
             title={
@@ -315,7 +299,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
             }
             meta={
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink3">
-                <TeamBadge teamId={item.team_id} team={item.team} />
+                {!grouped ? <TeamBadge teamId={item.team_id} team={item.team} /> : null}
                 <span>id {item.id}</span>
                 <span aria-hidden>·</span>
                 <span>{sessionKeyChip(item)}</span>
@@ -325,11 +309,6 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
             }
             status={<Status active={item.is_active} done={item.batch_completed} />}
             footer={
-              // Simplified list-card: one primary CTA "Открыть" that
-              // routes by status. Detailed actions (Закрыть / Удалить
-              // / Переименовать) moved into the drawer below — same
-              // place where the full session preview lives, so the
-              // list stays scannable.
               <>
                 <Button
                   size="sm"
@@ -354,9 +333,8 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
             <MobileRecordField label="Задачи" value={item.total_tasks} />
             <MobileRecordField label="Голоса" value={item.total_votes} />
           </MobileRecordCard>
-        ))}
-      >
-        {list.items.map((item) => (
+        )}
+        renderRow={(item, grouped) => (
           <tr key={item.id} className="border-t border-line hover:bg-line2/60">
             <td className="px-3 py-2 align-top">
               <button
@@ -367,7 +345,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
                 {displaySessionTitle(item)}
               </button>
               <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink3">
-                <TeamBadge teamId={item.team_id} team={item.team} />
+                {!grouped ? <TeamBadge teamId={item.team_id} team={item.team} /> : null}
                 <span>id {item.id} · {sessionKeyChip(item)}</span>
               </p>
             </td>
@@ -377,11 +355,6 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
             <td className="px-3 py-2 align-top"><Status active={item.is_active} done={item.batch_completed} /></td>
             <td className="px-3 py-2 align-top text-ink3 whitespace-nowrap">{formatDate(item.updated_at)}</td>
             <td className="px-3 py-2 align-top">
-              {/* List rows: one primary action + a quieter "Подробнее"
-                  that opens the drawer with everything else (rename,
-                  close, delete, participants, queue editor). This
-                  removes 2–3 duplicate buttons per row that were
-                  competing for the user's attention. */}
               <div className="flex flex-wrap gap-1.5">
                 <Button size="sm" variant="primary" onClick={() => openCockpit(item)}>
                   {item.batch_completed && !item.is_active ? "Открыть отчёт" : "Открыть"}
@@ -392,8 +365,8 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
               </div>
             </td>
           </tr>
-        ))}
-      </DataTable>
+        )}
+      />
 
       <ConfirmDialog
         open={confirmAction?.kind === "close"}

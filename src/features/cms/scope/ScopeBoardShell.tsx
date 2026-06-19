@@ -54,6 +54,7 @@ import {
   useTeamIdState,
 } from "../components/TeamSelect";
 import { useCmsTeams } from "../hooks/useCmsTeams";
+import { ListTableSurface, TeamGroupedSections } from "../components/TeamGroupedSections";
 import { useUnsavedChangesGuard } from "../hooks/useUnsavedChangesGuard";
 import {
   buildWorkloadAttentionIssues,
@@ -412,7 +413,6 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
   const navigate = useNavigate();
   const { teams } = useCmsTeams(principal);
   const [teamFilter, setTeamFilter] = useState("");
-  const [teamSort, setTeamSort] = useState(false);
   const [items, setItems] = useState<ScopeBoardRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -425,7 +425,6 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
     try {
       const res = await cmsScopeApi.list({
         ...teamFilterParams(teamFilter),
-        sort: teamSort && principal.is_superuser ? "team_then_updated" : undefined,
       });
       setItems(res.items);
     } catch (err) {
@@ -433,7 +432,7 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
     } finally {
       setLoading(false);
     }
-  }, [principal.is_superuser, teamFilter, teamSort]);
+  }, [teamFilter]);
 
   useEffect(() => {
     void reload();
@@ -479,15 +478,6 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
       {principal.is_superuser ? (
         <Toolbar>
           <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-          <DropdownField
-            aria-label="Сортировка boards"
-            value={teamSort ? "team" : "updated"}
-            options={[
-              { value: "updated", label: "По дате обновления" },
-              { value: "team", label: "По команде" },
-            ]}
-            onChange={(value) => setTeamSort(value === "team")}
-          />
         </Toolbar>
       ) : null}
 
@@ -506,7 +496,13 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
           }
         />
       ) : (
-        <ScopeBoardList items={items} canManage={canManage} onOpen={(id) => navigate(`${id}`)} onDelete={setPendingDelete} />
+        <ScopeBoardList
+          items={items}
+          teamFilter={teamFilter}
+          canManage={canManage}
+          onOpen={(id) => navigate(`${id}`)}
+          onDelete={setPendingDelete}
+        />
       )}
 
       <ConfirmDialog
@@ -534,11 +530,13 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
 
 function ScopeBoardList({
   items,
+  teamFilter,
   canManage,
   onOpen,
   onDelete,
 }: {
   items: ScopeBoardRecord[];
+  teamFilter: string;
   canManage: boolean;
   onOpen: (id: number) => void;
   onDelete: (record: ScopeBoardRecord) => void;
@@ -546,99 +544,109 @@ function ScopeBoardList({
   const { visibleItems, hasMore, loadMore, loadedCount, total } = useIncrementalList(items);
 
   return (
-    <div className="space-y-3 lg:space-y-0">
-      <div className="grid grid-cols-1 gap-3 lg:hidden">
-        {visibleItems.map((item) => {
-          const metrics = item.snapshot?.metrics;
-          const intake = metrics ? intakeStatusMeta(metrics.intake_status, metrics) : null;
-          return (
-            <MobileRecordCard
-              key={item.id}
-              title={item.name}
-              meta={
-                <span className="flex flex-wrap items-center gap-2">
-                  <TeamBadge teamId={item.team_id} team={item.team} />
-                  <span>{formatScopeDisplayMonth(item.month)}</span>
-                  {intake ? <Badge tone={intake.tone}>{intake.label}</Badge> : null}
-                </span>
-              }
-              footer={
-                <>
-                  <Button size="sm" variant="primary" className="w-full min-[420px]:w-auto" onClick={() => onOpen(item.id)}>
-                    Открыть
-                  </Button>
-                  {canManage ? (
-                    <Button size="sm" variant="ghost" className="w-full min-[420px]:w-auto" onClick={() => onDelete(item)}>
-                      Удалить
-                    </Button>
-                  ) : null}
-                </>
-              }
-            >
-              <MobileRecordField label="Capacity" value={metrics ? `${formatScopeSp(metrics.capacity_sp)} SP` : "—"} />
-              <MobileRecordField label="Буфер" value={metrics ? `${formatScopeSp(metrics.buffer_sp)} SP` : "—"} />
-              <MobileRecordField label="Обновлён" value={formatDate(item.updated_at)} />
-            </MobileRecordCard>
-          );
-        })}
-      </div>
-
-      <div className="hidden overflow-hidden rounded-lg border border-line bg-surface shadow-card lg:block">
-        <table className="w-full table-auto text-sm">
-          <thead className="bg-line2 text-xs uppercase text-ink3">
-            <tr>
-              <th className="px-3 py-2 text-left font-bold">Название</th>
-              <th className="px-3 py-2 text-left font-bold">Месяц</th>
-              <th className="px-3 py-2 text-left font-bold">Буфер</th>
-              <th className="px-3 py-2 text-left font-bold">Intake</th>
-              <th className="px-3 py-2 text-left font-bold">Обновлён</th>
-              <th className="px-3 py-2 text-right font-bold">Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleItems.map((item) => {
+    <>
+      <TeamGroupedSections
+        items={visibleItems}
+        teamFilter={teamFilter}
+        renderSection={(sectionItems, grouped) => (
+        <div className="space-y-3 lg:space-y-0">
+          <div className="grid grid-cols-1 gap-3 lg:hidden">
+            {sectionItems.map((item) => {
               const metrics = item.snapshot?.metrics;
               const intake = metrics ? intakeStatusMeta(metrics.intake_status, metrics) : null;
               return (
-                <tr key={item.id} className="border-t border-line">
-                  <td className="px-3 py-2 align-top">
-                    <button
-                      type="button"
-                      onClick={() => onOpen(item.id)}
-                      className="text-left font-semibold text-ink hover:text-blue focus-visible:outline-none focus-visible:underline"
-                    >
-                      {item.name}
-                    </button>
-                    <p className="mt-1">
-                      <TeamBadge teamId={item.team_id} team={item.team} />
-                    </p>
-                  </td>
-                  <td className="px-3 py-2 align-top text-ink2">{formatScopeDisplayMonth(item.month)}</td>
-                  <td className="px-3 py-2 align-top text-ink2">
-                    {metrics ? `${formatScopeSp(metrics.buffer_sp)} SP` : "—"}
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    {intake ? <Badge tone={intake.tone}>{intake.label}</Badge> : "—"}
-                  </td>
-                  <td className="px-3 py-2 align-top text-ink3">{formatDate(item.updated_at)}</td>
-                  <td className="px-3 py-2 align-top text-right">
-                    <div className="inline-flex gap-1.5">
-                      <Button size="sm" variant="ghost" onClick={() => onOpen(item.id)}>
+                <MobileRecordCard
+                  key={item.id}
+                  title={item.name}
+                  meta={
+                    <span className="flex flex-wrap items-center gap-2">
+                      {!grouped ? <TeamBadge teamId={item.team_id} team={item.team} /> : null}
+                      <span>{formatScopeDisplayMonth(item.month)}</span>
+                      {intake ? <Badge tone={intake.tone}>{intake.label}</Badge> : null}
+                    </span>
+                  }
+                  footer={
+                    <>
+                      <Button size="sm" variant="primary" className="w-full min-[420px]:w-auto" onClick={() => onOpen(item.id)}>
                         Открыть
                       </Button>
                       {canManage ? (
-                        <Button size="sm" variant="danger" onClick={() => onDelete(item)}>
+                        <Button size="sm" variant="ghost" className="w-full min-[420px]:w-auto" onClick={() => onDelete(item)}>
                           Удалить
                         </Button>
                       ) : null}
-                    </div>
-                  </td>
-                </tr>
+                    </>
+                  }
+                >
+                  <MobileRecordField label="Capacity" value={metrics ? `${formatScopeSp(metrics.capacity_sp)} SP` : "—"} />
+                  <MobileRecordField label="Буфер" value={metrics ? `${formatScopeSp(metrics.buffer_sp)} SP` : "—"} />
+                  <MobileRecordField label="Обновлён" value={formatDate(item.updated_at)} />
+                </MobileRecordCard>
               );
             })}
-          </tbody>
-        </table>
-      </div>
+          </div>
+
+          <ListTableSurface>
+            <table className="hidden w-full table-auto text-sm lg:table">
+              <thead className="bg-line2 text-xs uppercase text-ink3">
+                <tr>
+                  <th className="px-3 py-2 text-left font-bold">Название</th>
+                  <th className="px-3 py-2 text-left font-bold">Месяц</th>
+                  <th className="px-3 py-2 text-left font-bold">Буфер</th>
+                  <th className="px-3 py-2 text-left font-bold">Intake</th>
+                  <th className="px-3 py-2 text-left font-bold">Обновлён</th>
+                  <th className="px-3 py-2 text-right font-bold">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sectionItems.map((item) => {
+                  const metrics = item.snapshot?.metrics;
+                  const intake = metrics ? intakeStatusMeta(metrics.intake_status, metrics) : null;
+                  return (
+                    <tr key={item.id} className="border-t border-line">
+                      <td className="px-3 py-2 align-top">
+                        <button
+                          type="button"
+                          onClick={() => onOpen(item.id)}
+                          className="text-left font-semibold text-ink hover:text-blue focus-visible:outline-none focus-visible:underline"
+                        >
+                          {item.name}
+                        </button>
+                        {!grouped ? (
+                          <p className="mt-1">
+                            <TeamBadge teamId={item.team_id} team={item.team} />
+                          </p>
+                        ) : null}
+                      </td>
+                      <td className="px-3 py-2 align-top text-ink2">{formatScopeDisplayMonth(item.month)}</td>
+                      <td className="px-3 py-2 align-top text-ink2">
+                        {metrics ? `${formatScopeSp(metrics.buffer_sp)} SP` : "—"}
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        {intake ? <Badge tone={intake.tone}>{intake.label}</Badge> : "—"}
+                      </td>
+                      <td className="px-3 py-2 align-top text-ink3">{formatDate(item.updated_at)}</td>
+                      <td className="px-3 py-2 align-top text-right">
+                        <div className="inline-flex gap-1.5">
+                          <Button size="sm" variant="ghost" onClick={() => onOpen(item.id)}>
+                            Открыть
+                          </Button>
+                          {canManage ? (
+                            <Button size="sm" variant="danger" onClick={() => onDelete(item)}>
+                              Удалить
+                            </Button>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </ListTableSurface>
+        </div>
+      )}
+    />
       <ScopeIncrementalFooter
         loadedCount={loadedCount}
         total={total}
@@ -646,7 +654,7 @@ function ScopeBoardList({
         onMore={loadMore}
         itemNoun="отчётов"
       />
-    </div>
+    </>
   );
 }
 

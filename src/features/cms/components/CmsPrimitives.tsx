@@ -134,6 +134,7 @@ export function DataTable({
   onFocusSearch,
   itemNoun,
   showSkeleton = true,
+  showFooter = true,
 }: {
   columns: string[];
   children: ReactNode;
@@ -156,6 +157,7 @@ export function DataTable({
    * empty body. Pages that prefer their own placeholder can opt out.
    */
   showSkeleton?: boolean;
+  showFooter?: boolean;
 }) {
   const showInitialSkeleton = showSkeleton && loading && loadedCount === 0;
   const mobileListClass = mobileUntil === "lg" ? "lg:hidden" : "md:hidden";
@@ -193,7 +195,7 @@ export function DataTable({
               {mobileCards}
             </div>
           )}
-          {renderFooter()}
+          {showFooter ? renderFooter() : null}
         </div>
 
         <div className={desktopTableClass}>
@@ -216,7 +218,7 @@ export function DataTable({
               <tbody>{children}</tbody>
             </table>
           ) : null}
-          {renderFooter()}
+          {showFooter ? renderFooter() : null}
         </div>
       </>
     );
@@ -249,7 +251,7 @@ export function DataTable({
           </table>
         </div>
       ) : null}
-      {renderFooter()}
+      {showFooter ? renderFooter() : null}
     </div>
   );
 }
