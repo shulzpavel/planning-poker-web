@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Children, FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { apiUrl } from "../../app/config";
 import TaskTextBlock from "../../components/TaskTextBlock";
 import JiraDescriptionPanel from "../../components/JiraDescriptionPanel";
@@ -29,7 +29,13 @@ import { ManagerTopBar } from "./ManagerTopBar";
 import { ManagerBottomDock } from "./ManagerBottomDock";
 import { ManagerSessionChrome } from "./ManagerSessionChrome";
 import { managerApi, type SessionAiSummaryResult, type SessionAiSummaryStartResponse } from "./api/managerClient";
-import type { CompletedTask, JiraPreview, ManagerSession, ManagerSessionRef, NamedVote, TaskItem, TaskMutation } from "./api/managerTypes";
+import type { CompletedTask, JiraPreview, ManagerInvite, ManagerSession, ManagerSessionRef, NamedVote, TaskItem, TaskMutation } from "./api/managerTypes";
+import {
+  managerInviteFromSession,
+  persistManagerSessionRef,
+  readStoredManagerSession,
+  storeManagerSession,
+} from "./managerSessionStorage";
 import { pollAiJob } from "../../shared/lib/pollAiJob";
 import { useReconnectOnVisible } from "../../shared/lib/useReconnectOnVisible";
 import EstimationModePicker, { DEFAULT_ESTIMATION_MODE } from "./components/EstimationModePicker";
@@ -64,8 +70,11 @@ function useIsMobileViewport(): boolean {
   return isMobile;
 }
 
-const STORAGE_KEY = "pp_manager_session";
 const ESTIMATE_VALUES = [1, 2, 3, 5, 8, 13, 21];
+
+type ManagerNavigationState = {
+  managerInvite?: ManagerInvite | null;
+};
 
 function canManage(principal: CmsPrincipal | null): boolean {
   return Boolean(principal?.is_superuser || principal?.permissions.includes("app.sessions.manage"));
@@ -109,44 +118,14 @@ function useCmsPrincipalThemeSync(principal: CmsPrincipal | null): void {
   }, [themeMode, principal]);
 }
 
-function readStoredSession(): ManagerSessionRef | null {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as ManagerSessionRef;
-    return typeof parsed.chatId === "number" ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function storeSession(session: ManagerSession): ManagerSessionRef {
-  const ref: ManagerSessionRef = {
-    chatId: session.chat_id,
-    topicId: session.topic_id,
-    title: session.title,
-    token: session.token,
-    inviteUrl: session.invite_url,
-    teamId: session.team_id ?? null,
-  };
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(ref));
-  return ref;
-}
-
-/**
- * Public helper for callers outside ManagerPage who just created a
- * session and want the cockpit to pick it up *without* regenerating a
- * fresh invite token on first render. Used by `/cms/sessions` "Новая
- * сессия" flow — we already have the token, no need to throw it away.
- */
-export function storeManagerSession(session: ManagerSession): void {
-  storeSession(session);
-}
+export { storeManagerSession } from "./managerSessionStorage";
 
 export default function ManagerPage() {
   const [principal, setPrincipal] = useState<CmsPrincipal | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [sessionRef, setSessionRef] = useState<ManagerSessionRef | null>(() => readStoredSession());
+  const [sessionRef, setSessionRef] = useState<ManagerSessionRef | null>(() => readStoredManagerSession());
+  const [invite, setInvite] = useState<ManagerInvite | null>(null);
+  const location = useLocation();
   // When the deep-link to /cms/sessions/<id>/cockpit references a
   // session that no longer exists (deleted from CMS history, mistyped
   // id, etc.) the `regenerateInvite` call below fails — we capture it
@@ -185,12 +164,20 @@ export default function ManagerPage() {
   useCmsPrincipalThemeSync(principal);
 
   useEffect(() => {
+    const navInvite = (location.state as ManagerNavigationState | null)?.managerInvite;
+    if (!navInvite?.token || !navInvite.inviteUrl) return;
+    setInvite(navInvite);
+    window.history.replaceState({}, document.title);
+  }, [location.state]);
+
+  useEffect(() => {
     if (!wantsDemo || authLoading || !principal || !canManage(principal)) return;
     let alive = true;
     managerApi.demoSession(false)
       .then((demo) => {
         if (!alive) return;
-        setSessionRef(storeSession(demo));
+        setSessionRef(storeManagerSession(demo));
+        setInvite(managerInviteFromSession(demo));
       })
       .catch(() => {});
     return () => { alive = false; };
@@ -219,11 +206,10 @@ export default function ManagerPage() {
           chatId: requestedChatId as number,
           topicId: null,
           title: "Planning Poker",
-          token: fresh.token,
-          inviteUrl: fresh.invite_url,
         };
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextRef));
+        persistManagerSessionRef(nextRef);
         setSessionRef(nextRef);
+        setInvite({ token: fresh.token, inviteUrl: fresh.invite_url });
       } catch (err) {
         if (!alive) return;
         // Surface the failure so the user sees a recoverable "session
@@ -331,6 +317,8 @@ export default function ManagerPage() {
       principal={principal}
       sessionRef={sessionRef}
       onSessionRef={setSessionRef}
+      invite={invite}
+      onInvite={setInvite}
     />
   );
 }
@@ -437,10 +425,14 @@ function ManagerWorkspace({
   principal,
   sessionRef,
   onSessionRef,
+  invite,
+  onInvite,
 }: {
   principal: CmsPrincipal;
   sessionRef: ManagerSessionRef | null;
   onSessionRef: (value: ManagerSessionRef | null) => void;
+  invite: ManagerInvite | null;
+  onInvite: (value: ManagerInvite | null) => void;
 }) {
   const navigate = useNavigate();
   const [session, setSession] = useState<ManagerSession | null>(null);
@@ -524,8 +516,8 @@ function ManagerWorkspace({
       setSession((prev) => {
         const merged = mergePaginatedRefresh(prev, {
           ...next,
-          token: sessionRef.token,
-          invite_url: sessionRef.inviteUrl,
+          token: invite?.token ?? null,
+          invite_url: invite?.inviteUrl ?? null,
         });
         // Schedule a prefetch of the next history page (best-effort) so
         // "Show more" feels instant. We only do this when the user is on
@@ -547,7 +539,7 @@ function ManagerWorkspace({
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [loadTasks, prefetchHistoryPage, sessionRef]);
+  }, [invite, loadTasks, prefetchHistoryPage, sessionRef]);
 
   const loadMoreHistory = useCallback(async () => {
     if (!sessionRef || !session) return;
@@ -606,12 +598,12 @@ function ManagerWorkspace({
     void refresh(true);
   });
 
-  // Validate the cached invite token once per session reference. Web tokens
+  // Validate the in-memory invite token once per session reference. Web tokens
   // live in Redis with an 8h TTL and may have been evicted (volume reset,
   // manager comes back the next day, etc.); without this, the manager would
   // happily copy a dead invite URL and participants would see "Session token
   // not found or expired" on /s/<token>.
-  const cachedToken = sessionRef?.token ?? null;
+  const cachedToken = invite?.token ?? null;
   const cachedChatId = sessionRef?.chatId ?? null;
   const cachedTopicId = sessionRef?.topicId ?? null;
   const cachedTitle = sessionRef?.title ?? "Planning Poker";
@@ -623,15 +615,7 @@ function ManagerWorkspace({
       try {
         const fresh = await managerApi.regenerateInvite(cachedChatId, cachedTitle, cachedTopicId);
         if (!alive) return;
-        const nextRef: ManagerSessionRef = {
-          chatId: cachedChatId,
-          topicId: cachedTopicId,
-          title: cachedTitle,
-          token: fresh.token,
-          inviteUrl: fresh.invite_url,
-        };
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextRef));
-        onSessionRef(nextRef);
+        onInvite({ token: fresh.token, inviteUrl: fresh.invite_url });
       } catch {
         // Surfacing handled by the regular refresh path.
       }
@@ -655,15 +639,16 @@ function ManagerWorkspace({
       });
 
     return () => { alive = false; };
-  }, [cachedChatId, cachedTopicId, cachedToken, cachedTitle, onSessionRef]);
+  }, [cachedChatId, cachedTopicId, cachedToken, cachedTitle, onInvite]);
 
   async function createSession(title: string, mode: EstimationMode = estimationMode, teamId?: number) {
     setBusy("create");
     setError(null);
     try {
       const created = await managerApi.createSession(title, teamId, mode);
-      const ref = storeSession(created);
+      const ref = storeManagerSession(created);
       onSessionRef(ref);
+      onInvite(managerInviteFromSession(created));
       setSession(normalizeFullSession(created));
       setTasks([]);
       setCursor(null);
@@ -678,7 +663,7 @@ function ManagerWorkspace({
 
   /**
    * Rename the active session. The new title is persisted to the CMS read
-   * model so /cms shows the same name; locally we update sessionRef +
+   * model so /cms shows the same name; locally we update sessionRef in
    * localStorage so refreshes and child screens (FinishedSessionPage,
    * invite-regenerate paths) pick it up without a full reload.
    */
@@ -691,7 +676,7 @@ function ManagerWorkspace({
     try {
       const result = await managerApi.renameSession(sessionRef.chatId, trimmed, sessionRef.topicId);
       const nextRef: ManagerSessionRef = { ...sessionRef, title: result.title };
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextRef));
+      persistManagerSessionRef(nextRef);
       onSessionRef(nextRef);
       setSession((prev) => (prev ? { ...prev, title: result.title } : prev));
       toast.success(`Сессия переименована в «${result.title}»`);
@@ -719,8 +704,8 @@ function ManagerWorkspace({
         setSession((prev) =>
           mergePaginatedRefresh(prev, {
             ...result,
-            token: sessionRef.token,
-            invite_url: sessionRef.inviteUrl,
+            token: invite?.token ?? null,
+            invite_url: invite?.inviteUrl ?? null,
             title: sessionRef.title,
           }),
         );
@@ -751,8 +736,8 @@ function ManagerWorkspace({
         setSession((prev) =>
           mergePaginatedRefresh(prev, {
             ...started,
-            token: sessionRef.token,
-            invite_url: sessionRef.inviteUrl,
+            token: invite?.token ?? null,
+            invite_url: invite?.inviteUrl ?? null,
             title: sessionRef.title,
           }),
         );
@@ -777,8 +762,8 @@ function ManagerWorkspace({
       setSession((prev) =>
         mergePaginatedRefresh(prev, {
           ...result.session,
-          token: sessionRef.token,
-          invite_url: sessionRef.inviteUrl,
+          token: invite?.token ?? null,
+          invite_url: invite?.inviteUrl ?? null,
           title: sessionRef.title,
         }),
       );
@@ -813,8 +798,8 @@ function ManagerWorkspace({
       setSession((prev) =>
         mergePaginatedRefresh(prev, {
           ...advanced,
-          token: sessionRef.token,
-          invite_url: sessionRef.inviteUrl,
+          token: invite?.token ?? null,
+          invite_url: invite?.inviteUrl ?? null,
           title: sessionRef.title,
         }),
       );
@@ -842,8 +827,8 @@ function ManagerWorkspace({
       setSession((prev) =>
         mergePaginatedRefresh(prev, {
           ...advanced,
-          token: sessionRef.token,
-          invite_url: sessionRef.inviteUrl,
+          token: invite?.token ?? null,
+          invite_url: invite?.inviteUrl ?? null,
           title: sessionRef.title,
         }),
       );
@@ -871,8 +856,8 @@ function ManagerWorkspace({
       setSession((prev) =>
         mergePaginatedRefresh(prev, {
           ...updated,
-          token: sessionRef.token,
-          invite_url: sessionRef.inviteUrl,
+          token: invite?.token ?? null,
+          invite_url: invite?.inviteUrl ?? null,
           title: sessionRef.title,
         }),
       );
@@ -895,8 +880,8 @@ function ManagerWorkspace({
       setSession((prev) =>
         mergePaginatedRefresh(prev, {
           ...finished,
-          token: sessionRef.token,
-          invite_url: sessionRef.inviteUrl,
+          token: invite?.token ?? null,
+          invite_url: invite?.inviteUrl ?? null,
           title: sessionRef.title,
         }),
       );
@@ -934,8 +919,9 @@ function ManagerWorkspace({
                 setBusy("demo");
                 managerApi.demoSession(false)
                   .then((demo) => {
-                    const ref = storeSession(demo);
+                    const ref = storeManagerSession(demo);
                     onSessionRef(ref);
+                    onInvite(managerInviteFromSession(demo));
                     setSession(normalizeFullSession(demo));
                   })
                   .catch((err) => setError(err instanceof Error ? err.message : "Demo session failed"))
@@ -952,7 +938,7 @@ function ManagerWorkspace({
 
   const phase = session.state.phase;
   const currentTask = session.state.task;
-  const inviteUrl = session.invite_url ?? sessionRef.inviteUrl ?? "";
+  const inviteUrl = session.invite_url ?? invite?.inviteUrl ?? "";
 
   // Wizard mode: queue is empty. Shown every time queue=0 (even after history)
   // so the manager always lands on a clear "add tasks" call-to-action.

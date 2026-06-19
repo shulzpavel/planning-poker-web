@@ -24,7 +24,7 @@ import { ManagerSessionChrome } from "./ManagerSessionChrome";
 
 /** Page size for the completed-tasks list. Mirrors backend default of 20. */
 const TASKS_PAGE_SIZE = 20;
-const MANAGER_SESSION_STORAGE_KEY = "pp_manager_session";
+import { managerInviteFromSession, persistManagerSessionRef } from "./managerSessionStorage";
 
 function toSafeNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -523,17 +523,14 @@ function FinishedSummaryBody({
           taskId,
           summary.topic_id,
         );
-        window.localStorage.setItem(
-          MANAGER_SESSION_STORAGE_KEY,
-          JSON.stringify({
-            chatId: updated.chat_id,
-            topicId: updated.topic_id,
-            title: updated.title,
-            token: updated.token,
-            inviteUrl: updated.invite_url,
-          }),
-        );
-        navigate("/manage");
+        persistManagerSessionRef({
+          chatId: updated.chat_id,
+          topicId: updated.topic_id,
+          title: updated.title,
+        });
+        navigate("/manage", {
+          state: { managerInvite: managerInviteFromSession(updated) },
+        });
       } catch (err) {
         setReopenError(err instanceof Error ? err.message : "Не удалось переоткрыть задачу");
       } finally {
