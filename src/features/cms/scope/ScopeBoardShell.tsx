@@ -71,6 +71,10 @@ import {
 } from "./scopeBoardHelpers";
 import { ScopeActivityFeed } from "./ScopeActivityFeed";
 import { ScopeAiPanel } from "./ScopeAiPanel";
+import {
+  normalizePlanEpicKey,
+  pollScopeAiJiraExport,
+} from "./scopeAiJiraExport";
 import { ScopeBoardHeader, ScopeBoardMetaSeparator } from "./ScopeBoardHeader";
 import { ScopeFloatingTodo } from "./ScopeFloatingTodo";
 import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
@@ -264,12 +268,6 @@ function defaultForm(): ScopeBoardForm {
     custom_release_comment: "",
     plan_epic_key: "",
   };
-}
-
-function normalizePlanEpicKey(value: string): string {
-  const raw = value.trim().toUpperCase();
-  if (!raw) return "";
-  return /^[A-Z][A-Z0-9]+-\d+$/.test(raw) ? raw : "";
 }
 
 function parseCapacity(raw: string): number | null {
@@ -857,6 +855,7 @@ function ScopeBoardEditorPage({
   const [aiSummaryHistory, setAiSummaryHistory] = useState<ScopeAiHistoryEntry[]>([]);
   const [selectedAiHistoryId, setSelectedAiHistoryId] = useState<string | null>(null);
   const [aiPanelOpenSignal, setAiPanelOpenSignal] = useState(0);
+  const [jiraExportPending, setJiraExportPending] = useState(false);
   const [form, setForm] = useState<ScopeBoardForm>(defaultForm);
   const [savedForm, setSavedForm] = useState<ScopeBoardForm>(defaultForm);
   const [layoutOrder, setLayoutOrder] = useState<ScopeLayoutBlockKey[]>(DEFAULT_SCOPE_LAYOUT_ORDER);
@@ -873,6 +872,10 @@ function ScopeBoardEditorPage({
   const isReleaseTemplate = inferredReportType === "release";
 
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(savedForm), [form, savedForm]);
+  const planEpicKey = useMemo(
+    () => normalizePlanEpicKey(board?.plan_epic_key ?? savedForm.plan_epic_key),
+    [board?.plan_epic_key, savedForm.plan_epic_key],
+  );
   const unsavedGuard = useUnsavedChangesGuard({ when: dirty && canManage });
 
   const loadBoard = useCallback(async () => {
@@ -1004,6 +1007,30 @@ function ScopeBoardEditorPage({
     [boardId, canManage, dirty, mode, persistBoardConfig, savedForm, toast]
   );
 
+  const pollJiraExportIfNeeded = useCallback(
+    async (summary: ScopeAiSummary, epicKey: string) => {
+      if (boardId === null || Number.isNaN(boardId) || !epicKey) return;
+      const status = summary.jira_export?.status;
+      if (status === "ok" || status === "error") return;
+
+      setJiraExportPending(true);
+      try {
+        const polled = await pollScopeAiJiraExport(boardId);
+        if (!polled) return;
+        setAiSummary(polled);
+        setBoard((prev) => (prev ? { ...prev, ai_summary: polled } : prev));
+        if (polled.jira_export?.status === "error") {
+          toast.error(polled.jira_export.error ?? "Не удалось сохранить комментарий в Jira", {
+            title: "Jira",
+          });
+        }
+      } finally {
+        setJiraExportPending(false);
+      }
+    },
+    [boardId, toast],
+  );
+
   const analyzeScope = useCallback(async () => {
     if (boardId === null || Number.isNaN(boardId)) return;
     setAnalyzing(true);
@@ -1035,6 +1062,10 @@ function ScopeBoardEditorPage({
       if (isScopeAnalyzeResult(started)) {
         applyResult(started);
         toast.success(started.cached ? "AI-сводка уже актуальна" : "AI-анализ готов");
+        await pollJiraExportIfNeeded(
+          started.ai_summary,
+          normalizePlanEpicKey(started.board.plan_epic_key),
+        );
         return;
       }
 
@@ -1053,6 +1084,10 @@ function ScopeBoardEditorPage({
       );
       applyResult(result);
       toast.success(result.cached ? "AI-сводка уже актуальна" : "AI-анализ готов");
+      await pollJiraExportIfNeeded(
+        result.ai_summary,
+        normalizePlanEpicKey(result.board.plan_epic_key),
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "AI-анализ не выполнен";
       setError(message);
@@ -1061,7 +1096,7 @@ function ScopeBoardEditorPage({
       setAnalyzing(false);
       setAiProgress(null);
     }
-  }, [boardId, toast]);
+  }, [boardId, pollJiraExportIfNeeded, toast]);
 
   const addManualQuestion = useCallback(
     async (text: string) => {
@@ -1368,6 +1403,8 @@ function ScopeBoardEditorPage({
               openQuestionsCount={resolveOpenQuestions(snapshot).length}
               autoOpenSignal={aiPanelOpenSignal}
               analyzing={analyzing}
+              planEpicKey={planEpicKey}
+              jiraExportPending={jiraExportPending}
               presentation={presentationOpen}
             />
           </div>

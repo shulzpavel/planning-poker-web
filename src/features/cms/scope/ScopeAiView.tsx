@@ -1,4 +1,5 @@
 import { AiIntelligenceSurface, Badge, cn } from "../../../design-system";
+import { ScopeAiJiraExportBadge } from "./scopeAiJiraExport";
 import type { ScopeBoardMetrics, ScopeWorkloadMode } from "../api/cmsClient";
 import { formatScopeSp, intakeStatusMeta } from "./scopeBoardHelpers";
 import { DEFAULT_SCOPE_WORKLOAD_MODE } from "./WorkloadModePicker";
@@ -50,6 +51,8 @@ export function ScopeAiView({
   metrics,
   workloadMode = DEFAULT_SCOPE_WORKLOAD_MODE,
   openQuestionsCount = 0,
+  planEpicKey,
+  jiraExportPending = false,
 }: {
   summary: ScopeAiSummary;
   generatedLabel?: string | null;
@@ -58,6 +61,8 @@ export function ScopeAiView({
   metrics?: ScopeBoardMetrics | null;
   workloadMode?: ScopeWorkloadMode;
   openQuestionsCount?: number;
+  planEpicKey?: string | null;
+  jiraExportPending?: boolean;
 }) {
   const splitMode = workloadMode === "sp_dev_test";
   const whatsGood = summary.whats_good ?? [];
@@ -83,14 +88,11 @@ export function ScopeAiView({
             <div className="flex flex-wrap items-center gap-2">
               {isHistorical ? <Badge tone="neutral">из истории</Badge> : null}
               <Badge tone={HEALTH_TONE[summary.health]}>{HEALTH_LABELS[summary.health]}</Badge>
-              {summary.jira_export?.status === "ok" ? (
-                <span className="text-xs text-green">Сохранено в Jira</span>
-              ) : null}
-              {summary.jira_export?.status === "error" ? (
-                <span className="text-xs text-red" title={summary.jira_export.error}>
-                  Ошибка сохранения в Jira
-                </span>
-              ) : null}
+              <ScopeAiJiraExportBadge
+                jiraExport={summary.jira_export}
+                pending={jiraExportPending}
+                planEpicKey={planEpicKey}
+              />
             </div>
             <p className="max-w-3xl text-sm text-ink2">{HEALTH_HINT[summary.health]}</p>
             {generatedLabel || snapshotLabel ? (

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Badge, cn } from "../../../design-system";
 import { normalizeAiHistory } from "./scopeAiHistory";
+import { ScopeAiJiraExportBadge } from "./scopeAiJiraExport";
 import { ScopeAiView, formatAiTime, HEALTH_LABELS, HEALTH_TONE } from "./ScopeAiView";
 import type { ScopeAiHistoryEntry, ScopeAiSummary } from "./scopeAiTypes";
 import type { ScopeBoardMetrics, ScopeWorkloadMode } from "../api/cmsClient";
@@ -16,6 +17,8 @@ export function ScopeAiPanel({
   openQuestionsCount = 0,
   autoOpenSignal = 0,
   analyzing = false,
+  jiraExportPending = false,
+  planEpicKey,
   presentation = false,
 }: {
   summary: ScopeAiSummary | null;
@@ -27,6 +30,8 @@ export function ScopeAiPanel({
   openQuestionsCount?: number;
   autoOpenSignal?: number;
   analyzing?: boolean;
+  jiraExportPending?: boolean;
+  planEpicKey?: string | null;
   presentation?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -103,6 +108,11 @@ export function ScopeAiPanel({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-base font-semibold text-ink">AI-сводка для бизнеса</span>
             <Badge tone={HEALTH_TONE[activeEntry.health]}>{HEALTH_LABELS[activeEntry.health]}</Badge>
+            <ScopeAiJiraExportBadge
+              jiraExport={activeEntry.analysis.jira_export}
+              pending={jiraExportPending}
+              planEpicKey={planEpicKey}
+            />
             {generatedLabel ? <span className="scope-section-header-subtitle text-sm">{generatedLabel}</span> : null}
           </div>
           <span className="scope-print-hide inline-flex items-center gap-2 text-xs font-semibold text-ink">
@@ -128,6 +138,8 @@ export function ScopeAiPanel({
               metrics={metrics}
               workloadMode={workloadMode}
               openQuestionsCount={openQuestionsCount}
+              planEpicKey={planEpicKey}
+              jiraExportPending={jiraExportPending}
             />
 
             {entries.length > 1 ? (
