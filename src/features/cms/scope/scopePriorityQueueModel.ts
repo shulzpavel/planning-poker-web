@@ -102,7 +102,7 @@ export interface WarehouseGroup {
 
 export function groupWarehouseIssues(
   issues: ScopeBoardIssue[],
-  newKeys: Set<string>,
+  _newKeys: Set<string>,
   newCounts: WarehouseNewCounts
 ): WarehouseGroup[] {
   return WAREHOUSE_TYPE_ORDER.map((type) => {
