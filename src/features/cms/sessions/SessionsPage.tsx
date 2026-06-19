@@ -22,7 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { cmsFetch, cmsSessionsApi, cmsTasksApi, type CmsTaskBody } from "../api/cmsClient";
 import { managerApi } from "../../manager/api/managerClient";
 import EstimationModePicker, { DEFAULT_ESTIMATION_MODE } from "../../manager/components/EstimationModePicker";
-import { storeManagerSession } from "../../manager/ManagerPage";
+import { managerInviteFromSession, storeManagerSession } from "../../manager/managerSessionStorage";
 import type { EstimationMode } from "../../../shared/lib/estimationModes";
 import type {
   CmsPrincipal,
@@ -140,14 +140,13 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
     }
     try {
       const session = await managerApi.createSession(title, teamId, createEstimationMode);
-      // Cache the just-minted invite token so the cockpit doesn't
-      // immediately call regenerate-invite (which would burn the
-      // token we just got from the create response).
       storeManagerSession(session);
       setCreateOpen(false);
       setCreateTitle("");
       setCreateEstimationMode(DEFAULT_ESTIMATION_MODE);
-      navigate(`/cms/sessions/${session.chat_id}/cockpit`);
+      navigate(`/cms/sessions/${session.chat_id}/cockpit`, {
+        state: { managerInvite: managerInviteFromSession(session) },
+      });
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Не удалось создать сессию");
     } finally {

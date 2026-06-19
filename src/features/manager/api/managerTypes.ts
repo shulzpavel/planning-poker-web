@@ -152,13 +152,18 @@ export interface JiraStoryPointsSyncResult {
   skipped: string[];
 }
 
+/** Persisted manager cockpit reference — no invite secrets in localStorage. */
 export interface ManagerSessionRef {
   chatId: number;
   topicId: number | null;
   title: string;
-  token: string | null;
-  inviteUrl: string | null;
   teamId?: number | null;
+}
+
+/** In-memory invite credentials minted via POST /sessions/{chatId}/invite. */
+export interface ManagerInvite {
+  token: string;
+  inviteUrl: string;
 }
 
 export interface TaskMutation {
