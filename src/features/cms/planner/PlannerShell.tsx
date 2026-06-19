@@ -53,6 +53,7 @@ import {
   useTeamIdState,
 } from "../components/TeamSelect";
 import { useCmsTeams } from "../hooks/useCmsTeams";
+import { ListTableSurface, TeamGroupedSections } from "../components/TeamGroupedSections";
 
 interface PlannerShellProps {
   principal: CmsPrincipal;
@@ -82,7 +83,6 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
   const navigate = useNavigate();
   const { teams } = useCmsTeams(principal);
   const [teamFilter, setTeamFilter] = useState("");
-  const [teamSort, setTeamSort] = useState(false);
   const [items, setItems] = useState<SprintPlanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +95,6 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
     try {
       const res = await cmsPlannerApi.list({
         ...teamFilterParams(teamFilter),
-        sort: teamSort && principal.is_superuser ? "team_then_updated" : undefined,
       });
       setItems(res.items);
     } catch (err) {
@@ -103,7 +102,7 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
     } finally {
       setLoading(false);
     }
-  }, [principal.is_superuser, teamFilter, teamSort]);
+  }, [teamFilter]);
 
   useEffect(() => {
     void reload();
@@ -150,15 +149,6 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
       {principal.is_superuser ? (
         <Toolbar>
           <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-          <DropdownField
-            aria-label="Сортировка планов"
-            value={teamSort ? "team" : "updated"}
-            options={[
-              { value: "updated", label: "По дате обновления" },
-              { value: "team", label: "По команде" },
-            ]}
-            onChange={(value) => setTeamSort(value === "team")}
-          />
         </Toolbar>
       ) : null}
 
@@ -177,7 +167,13 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
           }
         />
       ) : (
-        <PlannerList items={items} canManage={canManage} onEdit={(id) => navigate(`${id}`)} onDelete={setPendingDelete} />
+        <PlannerList
+          items={items}
+          teamFilter={teamFilter}
+          canManage={canManage}
+          onEdit={(id) => navigate(`${id}`)}
+          onDelete={setPendingDelete}
+        />
       )}
 
       <ConfirmDialog
@@ -205,100 +201,110 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
 
 function PlannerList({
   items,
+  teamFilter,
   canManage,
   onEdit,
   onDelete,
 }: {
   items: SprintPlanRecord[];
+  teamFilter: string;
   canManage: boolean;
   onEdit: (id: number) => void;
   onDelete: (record: SprintPlanRecord) => void;
 }) {
   return (
-    <div className="space-y-3 lg:space-y-0">
-      <div className="grid grid-cols-1 gap-3 lg:hidden">
-        {items.map((item) => {
-          const summary = item.payload.result_summary ?? "—";
-          return (
-            <MobileRecordCard
-              key={item.id}
-              title={item.name}
-              meta={
-                <span className="flex flex-wrap items-center gap-2">
-                  <TeamBadge teamId={item.team_id} team={item.team} />
-                  <span>{summary}</span>
-                </span>
-              }
-              footer={
-                <>
-                  <Button size="sm" variant="primary" className="w-full min-[420px]:w-auto" onClick={() => onEdit(item.id)}>
-                    Открыть
-                  </Button>
-                  {canManage ? (
-                    <Button size="sm" variant="ghost" className="w-full min-[420px]:w-auto" onClick={() => onDelete(item)}>
-                      Удалить
-                    </Button>
-                  ) : null}
-                </>
-              }
-            >
-              <MobileRecordField label="Создан" value={formatDate(item.created_at)} />
-              <MobileRecordField label="Обновлён" value={formatDate(item.updated_at)} />
-              <MobileRecordField label="Автор" value={item.created_by_display_name || item.created_by_username || "—"} />
-            </MobileRecordCard>
-          );
-        })}
-      </div>
-
-      <div className="hidden overflow-hidden rounded-lg border border-line bg-surface shadow-card lg:block">
-        <table className="w-full table-auto text-sm">
-          <thead className="bg-line2 text-xs uppercase text-ink3">
-            <tr>
-              <th className="px-3 py-2 text-left font-bold">Название</th>
-              <th className="px-3 py-2 text-left font-bold">Результат</th>
-              <th className="px-3 py-2 text-left font-bold">Обновлён</th>
-              <th className="px-3 py-2 text-left font-bold">Автор</th>
-              <th className="px-3 py-2 text-right font-bold">Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="border-t border-line">
-                <td className="px-3 py-2 align-top">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(item.id)}
-                    className="text-left font-semibold text-ink hover:text-blue focus-visible:outline-none focus-visible:underline"
-                  >
-                    {item.name}
-                  </button>
-                  <p className="mt-1">
-                    <TeamBadge teamId={item.team_id} team={item.team} />
-                  </p>
-                </td>
-                <td className="px-3 py-2 align-top text-ink2">{item.payload.result_summary ?? "—"}</td>
-                <td className="px-3 py-2 align-top text-ink3">{formatDate(item.updated_at)}</td>
-                <td className="px-3 py-2 align-top text-ink3">
-                  {item.created_by_display_name || item.created_by_username || "—"}
-                </td>
-                <td className="px-3 py-2 align-top text-right">
-                  <div className="inline-flex gap-1.5">
-                    <Button size="sm" variant="ghost" onClick={() => onEdit(item.id)}>
-                      Открыть
-                    </Button>
-                    {canManage ? (
-                      <Button size="sm" variant="danger" onClick={() => onDelete(item)}>
-                        Удалить
+    <TeamGroupedSections
+      items={items}
+      teamFilter={teamFilter}
+      renderSection={(sectionItems, grouped) => (
+        <div className="space-y-3 lg:space-y-0">
+          <div className="grid grid-cols-1 gap-3 lg:hidden">
+            {sectionItems.map((item) => {
+              const summary = item.payload.result_summary ?? "—";
+              return (
+                <MobileRecordCard
+                  key={item.id}
+                  title={item.name}
+                  meta={
+                    <span className="flex flex-wrap items-center gap-2">
+                      {!grouped ? <TeamBadge teamId={item.team_id} team={item.team} /> : null}
+                      <span>{summary}</span>
+                    </span>
+                  }
+                  footer={
+                    <>
+                      <Button size="sm" variant="primary" className="w-full min-[420px]:w-auto" onClick={() => onEdit(item.id)}>
+                        Открыть
                       </Button>
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                      {canManage ? (
+                        <Button size="sm" variant="ghost" className="w-full min-[420px]:w-auto" onClick={() => onDelete(item)}>
+                          Удалить
+                        </Button>
+                      ) : null}
+                    </>
+                  }
+                >
+                  <MobileRecordField label="Создан" value={formatDate(item.created_at)} />
+                  <MobileRecordField label="Обновлён" value={formatDate(item.updated_at)} />
+                  <MobileRecordField label="Автор" value={item.created_by_display_name || item.created_by_username || "—"} />
+                </MobileRecordCard>
+              );
+            })}
+          </div>
+
+          <ListTableSurface>
+            <table className="hidden w-full table-auto text-sm lg:table">
+              <thead className="bg-line2 text-xs uppercase text-ink3">
+                <tr>
+                  <th className="px-3 py-2 text-left font-bold">Название</th>
+                  <th className="px-3 py-2 text-left font-bold">Результат</th>
+                  <th className="px-3 py-2 text-left font-bold">Обновлён</th>
+                  <th className="px-3 py-2 text-left font-bold">Автор</th>
+                  <th className="px-3 py-2 text-right font-bold">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sectionItems.map((item) => (
+                  <tr key={item.id} className="border-t border-line">
+                    <td className="px-3 py-2 align-top">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(item.id)}
+                        className="text-left font-semibold text-ink hover:text-blue focus-visible:outline-none focus-visible:underline"
+                      >
+                        {item.name}
+                      </button>
+                      {!grouped ? (
+                        <p className="mt-1">
+                          <TeamBadge teamId={item.team_id} team={item.team} />
+                        </p>
+                      ) : null}
+                    </td>
+                    <td className="px-3 py-2 align-top text-ink2">{item.payload.result_summary ?? "—"}</td>
+                    <td className="px-3 py-2 align-top text-ink3">{formatDate(item.updated_at)}</td>
+                    <td className="px-3 py-2 align-top text-ink3">
+                      {item.created_by_display_name || item.created_by_username || "—"}
+                    </td>
+                    <td className="px-3 py-2 align-top text-right">
+                      <div className="inline-flex gap-1.5">
+                        <Button size="sm" variant="ghost" onClick={() => onEdit(item.id)}>
+                          Открыть
+                        </Button>
+                        {canManage ? (
+                          <Button size="sm" variant="danger" onClick={() => onDelete(item)}>
+                            Удалить
+                          </Button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ListTableSurface>
+        </div>
+      )}
+    />
   );
 }
 

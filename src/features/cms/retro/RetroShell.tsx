@@ -16,13 +16,13 @@ import {
 } from "../../../design-system";
 import { ApiError } from "../../../shared/api/http";
 import {
-  DataTable,
   InlineError,
   MobileRecordCard,
   MobileRecordField,
   SectionHeader,
   Toolbar,
 } from "../components/CmsPrimitives";
+import { GroupedDataTableList } from "../components/TeamGroupedSections";
 import {
   cmsRetroApi,
   type RetroAiAnalyzeResult,
@@ -92,7 +92,6 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
   const toast = useToast();
   const { teams } = useCmsTeams(principal);
   const [teamFilter, setTeamFilter] = useState("");
-  const [teamSort, setTeamSort] = useState(false);
   const [items, setItems] = useState<RetroRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<RetroRecord | null>(null);
@@ -102,11 +101,10 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
     cmsRetroApi
       .list({
         ...teamFilterParams(teamFilter),
-        sort: teamSort && principal.is_superuser ? "team_then_updated" : undefined,
       })
       .then((res) => setItems(res.items))
       .catch((e) => setError(e instanceof Error ? e.message : "Не удалось загрузить ретро"));
-  }, [principal.is_superuser, teamFilter, teamSort]);
+  }, [teamFilter]);
 
   useEffect(() => {
     reload();
@@ -146,18 +144,11 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
       {principal.is_superuser ? (
         <Toolbar>
           <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-          <DropdownField
-            aria-label="Сортировка ретро"
-            value={teamSort ? "team" : "updated"}
-            options={[
-              { value: "updated", label: "По дате обновления" },
-              { value: "team", label: "По команде" },
-            ]}
-            onChange={(value) => setTeamSort(value === "team")}
-          />
         </Toolbar>
       ) : null}
-      <DataTable
+      <GroupedDataTableList
+        items={rows}
+        teamFilter={teamFilter}
         columns={["Ретро", "Статус", "Секции", "AI", "Обновлено", "Действия"]}
         error={null}
         loading={loading}
@@ -182,7 +173,7 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
             />
           ) : null
         }
-        mobileCards={rows.map((retro) => (
+        renderMobileCard={(retro, grouped) => (
           <MobileRecordCard
             key={retro.id}
             title={
@@ -192,7 +183,7 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
             }
             meta={
               <span className="flex flex-wrap items-center gap-2">
-                <TeamBadge teamId={retro.team_id} team={retro.team} />
+                {!grouped ? <TeamBadge teamId={retro.team_id} team={retro.team} /> : null}
                 <span>Обновлено {formatRetroDate(retro.updated_at)}</span>
               </span>
             }
@@ -219,17 +210,18 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
             <MobileRecordField label="Секции" value={retro.config?.sections?.length ?? 0} />
             <MobileRecordField label="AI" value={retro.ai_summary ? "есть анализ" : "нет"} />
           </MobileRecordCard>
-        ))}
-      >
-        {rows.map((retro) => (
+        )}
+        renderRow={(retro, grouped) => (
           <tr key={retro.id} className="border-t border-line align-top">
             <td className="px-3 py-2">
               <Link to={`${retro.id}`} className="font-semibold text-ink hover:text-blue">
                 {retro.title}
               </Link>
-              <p className="mt-1">
-                <TeamBadge teamId={retro.team_id} team={retro.team} />
-              </p>
+              {!grouped ? (
+                <p className="mt-1">
+                  <TeamBadge teamId={retro.team_id} team={retro.team} />
+                </p>
+              ) : null}
             </td>
             <td className="px-3 py-2">
               <StatusBadge status={retro.status} />
@@ -258,8 +250,8 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
               </div>
             </td>
           </tr>
-        ))}
-      </DataTable>
+        )}
+      />
       <ConfirmDialog
         open={confirmTarget !== null}
         title="Удалить ретро?"
