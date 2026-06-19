@@ -425,6 +425,7 @@ export interface ScopeBoardIssue {
   plan_change_reason?: string;
   plan_change_reasons?: string[];
   final_priority?: string;
+  significance?: number | null;
   severity?: string;
   domain?: string;
   request_type?: string;
@@ -725,10 +726,13 @@ export interface ScopePriorityQueueHistoryEntry {
 }
 
 export interface ScopePriorityQueue {
+  ranked_order?: string[];
   order: string[];
   issues: ScopeBoardIssue[];
   history: ScopePriorityQueueHistoryEntry[];
   filter_seen_at?: Record<string, string>;
+  warehouse_new_counts?: Partial<Record<"story" | "incident" | "bug" | "task", number>>;
+  warehouse_new_keys?: string[];
 }
 
 export interface ScopePriorityQueues {

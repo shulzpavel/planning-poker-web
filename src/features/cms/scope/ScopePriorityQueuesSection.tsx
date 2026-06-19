@@ -1,16 +1,17 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
   closestCenter,
+  useDraggable,
+  useDroppable,
   type DragEndEvent,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
@@ -43,6 +44,15 @@ import {
 import { useIncrementalList } from "./scopeListPaging";
 import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
 import { PlanFieldBadges } from "./scopePlanInsights";
+import {
+  RANKED_DROP_ZONE_ID,
+  WAREHOUSE_DROP_ZONE_ID,
+  computeNextRankedOrder,
+  groupWarehouseIssues,
+  isIssueNewOnWarehouse,
+  splitPriorityQueue,
+  totalWarehouseNewCounts,
+} from "./scopePriorityQueueModel";
 
 const QUEUE_META: Record<
   ScopePriorityQueueKind,
@@ -50,27 +60,30 @@ const QUEUE_META: Record<
 > = {
   todo: {
     title: "Задачи к выполнению",
-    subtitle: "На груминге с PO меняйте порядок — разработке будет понятно, что брать следующим.",
+    subtitle: "Приоритетная очередь задаёт значимость в Jira. Склад — новые поступления из фильтра.",
     jqlHint: "JQL для задач в работе / ready for dev",
   },
   test: {
     title: "Задачи к тестированию",
-    subtitle: "Приоритет очереди на тест — что проверять следующим после груминга.",
+    subtitle: "Приоритетная очередь задаёт значимость в Jira. Склад — новые поступления из фильтра.",
     jqlHint: "JQL для задач в статусах тестирования",
   },
 };
 
 function emptyQueue(): ScopePriorityQueue {
-  return { order: [], issues: [], history: [] };
+  return { order: [], issues: [], history: [], warehouse_new_counts: {}, warehouse_new_keys: [] };
 }
 
 function resolveQueue(snapshot: ScopeBoardSnapshot, kind: ScopePriorityQueueKind): ScopePriorityQueue {
   const queue = snapshot.priority_queues?.[kind];
   if (!queue) return emptyQueue();
   return {
-    order: queue.order ?? [],
+    order: queue.order ?? queue.ranked_order ?? [],
+    ranked_order: queue.ranked_order ?? queue.order ?? [],
     issues: queue.issues ?? [],
     history: queue.history ?? [],
+    warehouse_new_counts: queue.warehouse_new_counts ?? {},
+    warehouse_new_keys: queue.warehouse_new_keys ?? [],
   };
 }
 
@@ -157,35 +170,22 @@ function PriorityQueueBlock({
   const blockTone = queueBlockToneClasses(kind);
   const [reordering, setReordering] = useState(false);
   const [reorderError, setReorderError] = useState<string | null>(null);
-  const listTopRef = useRef<HTMLDivElement | null>(null);
-  const listBottomRef = useRef<HTMLDivElement | null>(null);
 
-  const issues = queue.issues;
-  const groupedIssues = useMemo(() => groupQueueIssues(issues), [issues]);
-  const { visibleItems, hasMore, loadMore, loadedCount, total } = useIncrementalList(groupedIssues);
-  const sortableIds = useMemo(() => visibleItems.map((issue) => issue.key), [visibleItems]);
-  const storyCount = useMemo(() => groupedIssues.filter(isQueueStoryIssue).length, [groupedIssues]);
-  const otherCount = issues.length - storyCount;
+  const split = useMemo(() => splitPriorityQueue(queue), [queue]);
+  const warehouseGroups = useMemo(
+    () => groupWarehouseIssues(split.warehouseIssues, split.warehouseNewKeys, split.warehouseNewCounts),
+    [split.warehouseIssues, split.warehouseNewKeys, split.warehouseNewCounts]
+  );
+  const warehouseNewTotal = totalWarehouseNewCounts(split.warehouseNewCounts);
+  const { visibleItems: visibleRanked, hasMore, loadMore, loadedCount, total } = useIncrementalList(split.rankedIssues);
+  const sortableIds = useMemo(() => visibleRanked.map((issue) => issue.key), [visibleRanked]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  function handleDragEnd(event: DragEndEvent) {
-    if (!canManage || reordering) return;
-    const activeId = String(event.active.id);
-    const overId = event.over ? String(event.over.id) : null;
-    if (!overId || activeId === overId) return;
-
-    const oldIndex = groupedIssues.findIndex((issue) => issue.key === activeId);
-    const newIndex = groupedIssues.findIndex((issue) => issue.key === overId);
-    if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
-
-    const nextOrder = arrayMove(groupedIssues, oldIndex, newIndex).map((issue) => issue.key);
-    void saveReorder(nextOrder, activeId);
-  }
-
-  async function saveReorder(nextOrder: string[], movedKey: string) {
+  async function saveRankedOrder(nextOrder: string[], movedKey: string) {
     setReordering(true);
     setReorderError(null);
     try {
@@ -197,132 +197,294 @@ function PriorityQueueBlock({
     }
   }
 
-  function scrollToQueueEdge(edge: "top" | "bottom") {
-    const target = edge === "top" ? listTopRef.current : listBottomRef.current;
-    target?.scrollIntoView({ behavior: "smooth", block: edge === "top" ? "start" : "end" });
+  function handleDragEnd(event: DragEndEvent) {
+    if (!canManage || reordering) return;
+    const activeKey = String(event.active.id);
+    const overId = event.over ? String(event.over.id) : null;
+    const nextOrder = computeNextRankedOrder(split.rankedOrder, activeKey, overId);
+    if (!nextOrder) return;
+    void saveRankedOrder(nextOrder, activeKey);
   }
 
   return (
-    <>
-      <details className="min-w-0 overflow-hidden rounded-2xl bg-surface shadow-card">
-        <summary className={cn("cursor-pointer list-none px-4 py-4 marker:content-none sm:px-5", blockTone.header)}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-base font-semibold text-ink">{meta.title}</p>
-              <p className="mt-0.5 text-xs text-ink3">{meta.jqlHint}</p>
-            </div>
-            <span className={cn("rounded-full px-3 py-1 text-sm font-semibold tabular-nums shadow-sm", blockTone.count)}>
-              {issues.length} задач
-            </span>
+    <details className="min-w-0 overflow-hidden rounded-2xl bg-surface shadow-card">
+      <summary className={cn("cursor-pointer list-none px-4 py-4 marker:content-none sm:px-5", blockTone.header)}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-base font-semibold text-ink">{meta.title}</p>
+            <p className="mt-0.5 text-xs text-ink3">{meta.jqlHint}</p>
           </div>
-        </summary>
-        <div className="space-y-4 px-4 py-5 sm:px-5">
-          <div ref={listTopRef} className="flex flex-wrap items-start justify-between gap-3">
-            <p className="min-w-0 flex-1 text-sm text-ink2">{meta.subtitle}</p>
-            {issues.length > 8 ? (
-              <div className="flex shrink-0 flex-wrap gap-1.5">
-                <Button type="button" size="sm" variant="ghost" className="min-h-7 px-2 text-xs" onClick={() => scrollToQueueEdge("bottom")}>
-                  В самый низ
-                </Button>
-              </div>
-            ) : null}
-          </div>
-          {jql.trim() ? (
-            <p className="break-all rounded-md border border-line bg-bg px-3 py-2 font-mono text-xs text-ink3">{jql.trim()}</p>
-          ) : (
-            <p className="text-xs text-ink3">JQL не задан — добавьте в «Настройки и JQL» и нажмите «Обновить из Jira».</p>
-          )}
-
-          {reorderError ? <p className="text-sm text-danger">{reorderError}</p> : null}
-          {reordering ? (
-            <p className="flex items-center gap-2 text-sm text-ink3">
-              <Spinner size="sm" />
-              Сохраняем порядок и значимость в Jira…
-            </p>
-          ) : null}
-
-          {issues.length === 0 ? (
-            <EmptyState title="Список пуст" description={`Задайте JQL (${meta.jqlHint}) и обновите board из Jira.`} />
-          ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
-                <ol className="space-y-4">
-                  {visibleItems.map((issue) => {
-                    const issueIndex = groupedIssues.findIndex((item) => item.key === issue.key);
-                    const groupLabel = queueGroupLabelForIndex(groupedIssues, issueIndex, storyCount, otherCount);
-                    return (
-                      <Fragment key={issue.key}>
-                        {groupLabel ? <QueueGroupDivider label={groupLabel.label} count={groupLabel.count} /> : null}
-                        <SortableQueueIssueCard
-                          issue={issue}
-                          index={issueIndex}
-                          history={queue.history}
-                          canManage={canManage}
-                          draggable={canManage && !reordering}
-                          onAddComment={(text) => onAddQueueComment(kind, issue.key, text)}
-                          onUpdateDueDate={(dueDate) => onUpdateQueueDueDate(kind, issue.key, dueDate)}
-                        />
-                      </Fragment>
-                    );
-                  })}
-                </ol>
-              </SortableContext>
-              <ScopeIncrementalFooter
-                loadedCount={loadedCount}
-                total={total}
-                hasMore={hasMore}
-                onMore={loadMore}
-              />
-              <div ref={listBottomRef} aria-hidden="true" />
-              {issues.length > 8 ? (
-                <div className="flex justify-end">
-                  <Button type="button" size="sm" variant="ghost" className="min-h-7 px-2 text-xs" onClick={() => scrollToQueueEdge("top")}>
-                    В самый верх
-                  </Button>
-                </div>
-              ) : null}
-            </DndContext>
-          )}
+          <span className={cn("rounded-full px-3 py-1 text-sm font-semibold tabular-nums shadow-sm", blockTone.count)}>
+            {queue.issues.length} задач
+          </span>
         </div>
-      </details>
-    </>
+      </summary>
+      <div className="space-y-6 px-4 py-5 sm:px-5">
+        <p className="text-sm text-ink2">{meta.subtitle}</p>
+        {jql.trim() ? (
+          <p className="break-all rounded-md border border-line bg-bg px-3 py-2 font-mono text-xs text-ink3">{jql.trim()}</p>
+        ) : (
+          <p className="text-xs text-ink3">JQL не задан — добавьте в «Настройки и JQL» и нажмите «Обновить из Jira».</p>
+        )}
+
+        {reorderError ? <p className="text-sm text-danger">{reorderError}</p> : null}
+        {reordering ? (
+          <p className="flex items-center gap-2 text-sm text-ink3">
+            <Spinner size="sm" />
+            Сохраняем порядок и значимость в Jira…
+          </p>
+        ) : null}
+
+        {queue.issues.length === 0 ? (
+          <EmptyState title="Список пуст" description={`Задайте JQL (${meta.jqlHint}) и обновите board из Jira.`} />
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <RankedQueueSection
+              issues={visibleRanked}
+              allRankedCount={split.rankedIssues.length}
+              sortableIds={sortableIds}
+              history={queue.history}
+              canManage={canManage}
+              reordering={reordering}
+              hasMore={hasMore}
+              loadedCount={loadedCount}
+              total={total}
+              onLoadMore={loadMore}
+              onAddComment={(issueKey, text) => onAddQueueComment(kind, issueKey, text)}
+              onUpdateDueDate={(issueKey, dueDate) => onUpdateQueueDueDate(kind, issueKey, dueDate)}
+            />
+            <WarehouseSection
+              groups={warehouseGroups}
+              history={queue.history}
+              canManage={canManage}
+              reordering={reordering}
+              hasNewArrivals={warehouseNewTotal > 0}
+              newKeys={split.warehouseNewKeys}
+              onAddComment={(issueKey, text) => onAddQueueComment(kind, issueKey, text)}
+              onUpdateDueDate={(issueKey, dueDate) => onUpdateQueueDueDate(kind, issueKey, dueDate)}
+            />
+          </DndContext>
+        )}
+      </div>
+    </details>
   );
 }
 
-function isQueueStoryIssue(issue: ScopeBoardIssue): boolean {
-  const type = (issue.issue_type || "").trim().toLowerCase();
-  return type === "story" || type === "user story" || type === "история";
+function RankedQueueSection({
+  issues,
+  allRankedCount,
+  sortableIds,
+  history,
+  canManage,
+  reordering,
+  hasMore,
+  loadedCount,
+  total,
+  onLoadMore,
+  onAddComment,
+  onUpdateDueDate,
+}: {
+  issues: ScopeBoardIssue[];
+  allRankedCount: number;
+  sortableIds: string[];
+  history: ScopePriorityQueueHistoryEntry[];
+  canManage: boolean;
+  reordering: boolean;
+  hasMore: boolean;
+  loadedCount: number;
+  total: number;
+  onLoadMore: () => void;
+  onAddComment: (issueKey: string, text: string) => Promise<void>;
+  onUpdateDueDate: (issueKey: string, dueDate: string) => Promise<void>;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: RANKED_DROP_ZONE_ID });
+
+  return (
+    <section
+      ref={setNodeRef}
+      className={cn(
+        "rounded-2xl border border-line bg-bg/40 p-4 transition-colors",
+        isOver && "border-blue/40 bg-blue/[0.03]"
+      )}
+    >
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-ink">Приоритетная очередь</p>
+          <p className="text-xs text-ink3">Порядок = значимость в Jira</p>
+        </div>
+        <Badge tone="info">{allRankedCount}</Badge>
+      </div>
+
+      {allRankedCount === 0 ? (
+        <p className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-ink3">
+          Перетащите задачи со склада, чтобы задать значимость.
+        </p>
+      ) : (
+        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+          <ol className="space-y-4">
+            {issues.map((issue, index) => (
+              <SortableQueueIssueCard
+                key={issue.key}
+                issue={issue}
+                index={index}
+                history={history}
+                canManage={canManage}
+                draggable={canManage && !reordering}
+                showSignificance
+                onAddComment={(text) => onAddComment(issue.key, text)}
+                onUpdateDueDate={(dueDate) => onUpdateDueDate(issue.key, dueDate)}
+              />
+            ))}
+          </ol>
+        </SortableContext>
+      )}
+      {allRankedCount > 0 ? (
+        <ScopeIncrementalFooter
+          loadedCount={loadedCount}
+          total={total}
+          hasMore={hasMore}
+          onMore={onLoadMore}
+        />
+      ) : null}
+    </section>
+  );
 }
 
-function groupQueueIssues(issues: ScopeBoardIssue[]): ScopeBoardIssue[] {
-  const stories = issues.filter(isQueueStoryIssue);
-  const others = issues.filter((issue) => !isQueueStoryIssue(issue));
-  return [...stories, ...others];
+function WarehouseSection({
+  groups,
+  history,
+  canManage,
+  reordering,
+  hasNewArrivals,
+  newKeys,
+  onAddComment,
+  onUpdateDueDate,
+}: {
+  groups: ReturnType<typeof groupWarehouseIssues>;
+  history: ScopePriorityQueueHistoryEntry[];
+  canManage: boolean;
+  reordering: boolean;
+  hasNewArrivals: boolean;
+  newKeys: Set<string>;
+  onAddComment: (issueKey: string, text: string) => Promise<void>;
+  onUpdateDueDate: (issueKey: string, dueDate: string) => Promise<void>;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: WAREHOUSE_DROP_ZONE_ID });
+
+  return (
+    <section
+      ref={setNodeRef}
+      className={cn(
+        "rounded-2xl border bg-bg/20 p-4 transition-colors",
+        hasNewArrivals ? "border-amber/50 ring-2 ring-amber/25 shadow-[0_0_0_1px_rgba(245,158,11,0.15)]" : "border-line",
+        isOver && "border-amber/60 bg-amber/[0.03]"
+      )}
+    >
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-ink">Склад задач</p>
+          <p className="text-xs text-ink3">Новые поступления — перетащите в очередь</p>
+        </div>
+        {hasNewArrivals ? <Badge tone="warning">NEW</Badge> : null}
+      </div>
+
+      {groups.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-ink3">
+          Склад пуст — все задачи уже в приоритетной очереди.
+        </p>
+      ) : (
+        <ol className="space-y-4">
+          {groups.map((group) => (
+            <Fragment key={group.type}>
+              <QueueGroupDivider label={group.label} count={group.issues.length} newCount={group.newCount} />
+              {group.issues.map((issue) => (
+                <WarehouseIssueCard
+                  key={issue.key}
+                  issue={issue}
+                  history={history}
+                  canManage={canManage}
+                  draggable={canManage && !reordering}
+                  isNew={isIssueNewOnWarehouse(issue.key, newKeys)}
+                  onAddComment={(text) => onAddComment(issue.key, text)}
+                  onUpdateDueDate={(dueDate) => onUpdateDueDate(issue.key, dueDate)}
+                />
+              ))}
+            </Fragment>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
 }
 
-function queueGroupLabelForIndex(
-  issues: ScopeBoardIssue[],
-  index: number,
-  storyCount: number,
-  otherCount: number
-): { label: string; count: number } | null {
-  if (index < 0 || index >= issues.length) return null;
-  const currentIsStory = isQueueStoryIssue(issues[index]!);
-  const previous = index > 0 ? issues[index - 1] : null;
-  const isFirstInGroup = !previous || isQueueStoryIssue(previous) !== currentIsStory;
-  if (!isFirstInGroup) return null;
-  if (currentIsStory) return { label: "Истории", count: storyCount };
-  return { label: "Остальные задачи", count: otherCount };
-}
-
-function QueueGroupDivider({ label, count }: { label: string; count: number }) {
+function QueueGroupDivider({
+  label,
+  count,
+  newCount = 0,
+}: {
+  label: string;
+  count: number;
+  newCount?: number;
+}) {
   return (
     <li className="list-none pb-3 pt-6 first:pt-1" aria-label={`${label}: ${count}`}>
-      <div className="flex items-center text-[11px] font-semibold uppercase tracking-wide text-ink3">
+      <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-ink3">
         <span className="rounded-full bg-line2/60 px-2.5 py-1">
           {label} · {count}
         </span>
+        {newCount > 0 ? (
+          <Badge tone="warning" className="min-h-5 px-1.5 text-[10px] uppercase tracking-wide">
+            +{newCount} new
+          </Badge>
+        ) : null}
       </div>
+    </li>
+  );
+}
+
+function WarehouseIssueCard({
+  issue,
+  history,
+  canManage,
+  draggable,
+  isNew,
+  onAddComment,
+  onUpdateDueDate,
+}: {
+  issue: ScopeBoardIssue;
+  history: ScopePriorityQueueHistoryEntry[];
+  canManage: boolean;
+  draggable: boolean;
+  isNew: boolean;
+  onAddComment: (text: string) => Promise<void>;
+  onUpdateDueDate: (dueDate: string) => Promise<void>;
+}) {
+  const drag = useDraggable({ id: issue.key, disabled: !draggable });
+  const style = {
+    transform: CSS.Translate.toString(drag.transform),
+    opacity: drag.isDragging ? 0.72 : 1,
+  };
+
+  return (
+    <li ref={drag.setNodeRef} style={style} className="list-none">
+      <QueueIssueCard
+        issue={issue}
+        index={-1}
+        history={history}
+        canManage={canManage}
+        isNew={isNew}
+        dragHandleProps={
+          draggable
+            ? {
+                attributes: drag.attributes as unknown as Record<string, unknown>,
+                listeners: drag.listeners as unknown as Record<string, unknown>,
+                isDragging: drag.isDragging,
+              }
+            : undefined
+        }
+        onAddComment={onAddComment}
+        onUpdateDueDate={onUpdateDueDate}
+      />
     </li>
   );
 }
@@ -333,6 +495,7 @@ function SortableQueueIssueCard({
   history,
   canManage,
   draggable,
+  showSignificance,
   onAddComment,
   onUpdateDueDate,
 }: {
@@ -341,6 +504,7 @@ function SortableQueueIssueCard({
   history: ScopePriorityQueueHistoryEntry[];
   canManage: boolean;
   draggable: boolean;
+  showSignificance?: boolean;
   onAddComment: (text: string) => Promise<void>;
   onUpdateDueDate: (dueDate: string) => Promise<void>;
 }) {
@@ -358,6 +522,7 @@ function SortableQueueIssueCard({
         index={index}
         history={history}
         canManage={canManage}
+        showSignificance={showSignificance}
         dragHandleProps={
           draggable
             ? {
@@ -380,6 +545,8 @@ function QueueIssueCard({
   history,
   canManage,
   dragHandleProps,
+  showSignificance = false,
+  isNew = false,
   onAddComment,
   onUpdateDueDate,
 }: {
@@ -392,6 +559,8 @@ function QueueIssueCard({
     listeners: Record<string, unknown>;
     isDragging: boolean;
   };
+  showSignificance?: boolean;
+  isNew?: boolean;
   onAddComment: (text: string) => Promise<void>;
   onUpdateDueDate: (dueDate: string) => Promise<void>;
 }) {
@@ -403,6 +572,7 @@ function QueueIssueCard({
   const [dueDateError, setDueDateError] = useState<string | null>(null);
   const milestone = useMemo(() => resolveQueueIssueMilestone(issue, history), [issue, history]);
   const lastReorder = useMemo(() => lastReorderForIssue(history, issue.key), [history, issue.key]);
+  const significance = issue.significance ?? (index >= 0 ? index + 1 : null);
 
   useEffect(() => {
     setDueDateDraft(toDateInputValue(issue.due_date));
@@ -441,7 +611,12 @@ function QueueIssueCard({
   const toneClasses = queueIssueToneClasses(issue);
 
   return (
-    <div className="relative min-w-0 max-w-full rounded-xl bg-surface px-3 py-5 shadow-card ring-1 ring-line/50 sm:px-5">
+    <div
+      className={cn(
+        "relative min-w-0 max-w-full rounded-xl bg-surface px-3 py-5 shadow-card ring-1 sm:px-5",
+        isNew ? "ring-amber/45" : "ring-line/50"
+      )}
+    >
       <span className={cn("absolute inset-y-5 left-0 w-1 rounded-r-full", toneClasses.rail)} aria-hidden="true" />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]">
         <div className="flex min-w-0 gap-4">
@@ -460,17 +635,31 @@ function QueueIssueCard({
                 ⋮⋮
               </button>
             ) : null}
-            <span
-              className={cn("inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold tabular-nums", toneClasses.index)}
-              aria-label={`Позиция ${index + 1}`}
-            >
-              {index + 1}
-            </span>
+            {index >= 0 ? (
+              <span
+                className={cn("inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold tabular-nums", toneClasses.index)}
+                aria-label={`Позиция ${index + 1}`}
+              >
+                {index + 1}
+              </span>
+            ) : null}
           </div>
 
           <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <IssueLink issue={issue} className="text-sm" />
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <IssueLink issue={issue} className="text-sm" />
+                {isNew ? (
+                  <Badge tone="warning" className="min-h-5 px-1.5 text-[10px] uppercase tracking-wide">
+                    NEW
+                  </Badge>
+                ) : null}
+                {showSignificance && significance ? (
+                  <Badge tone="warning" className="min-h-5 px-2 text-[11px] tabular-nums">
+                    Значимость {significance}
+                  </Badge>
+                ) : null}
+              </div>
               <QueueIssueSpBadge storyPoints={issue.story_points} />
             </div>
 
