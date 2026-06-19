@@ -173,16 +173,16 @@ function FlowPaceDonutCard({
       aria-expanded={selected}
       aria-controls={`flow-pace-detail-${chart.id}`}
       className={cn(
-        "flex w-full flex-col rounded-2xl border bg-surface p-4 text-left shadow-sm transition-colors",
+        "flex h-full min-h-[24rem] w-full flex-col rounded-2xl border bg-surface p-4 text-left shadow-sm transition-colors",
         selected
           ? "border-accent/50 ring-2 ring-accent/25"
           : "border-line/80 hover:border-line hover:bg-surface/95",
       )}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex min-h-[4.75rem] shrink-0 items-start justify-between gap-2">
         <div className="min-w-0 flex-1 space-y-1">
-          <h3 className="text-sm font-semibold text-ink">{chart.title}</h3>
-          <p className="text-xs leading-relaxed text-ink3">{chart.subtitle}</p>
+          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{chart.title}</h3>
+          <p className="line-clamp-2 text-xs leading-relaxed text-ink3">{chart.subtitle}</p>
         </div>
         <span
           className={cn(
@@ -196,7 +196,7 @@ function FlowPaceDonutCard({
         </span>
       </div>
 
-      <div className="relative mx-auto my-4 h-40 w-40">
+      <div className="relative mx-auto my-4 h-40 w-40 shrink-0">
         <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
           <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="10" className="text-line2" />
           {arcs.map((arc) => (
@@ -220,7 +220,7 @@ function FlowPaceDonutCard({
         </div>
       </div>
 
-      <ul className="mt-auto space-y-1.5">
+      <ul className="mt-auto min-h-[8rem] max-h-[8rem] shrink-0 space-y-1.5 overflow-y-auto pr-1">
         {chart.segments.map((segment) => (
           <li key={segment.key} className="flex items-center justify-between gap-2 text-xs">
             <span className="flex min-w-0 items-center gap-2 text-ink2">
@@ -257,7 +257,7 @@ function SortableFlowPaceDonutCard({
       ref={sortable.setNodeRef}
       style={style}
       className={cn(
-        "group/flow-pace-sortable flex items-start gap-2",
+        "group/flow-pace-sortable flex h-full items-stretch gap-2",
         sortable.isDragging ? "relative z-30" : "",
       )}
     >
@@ -265,7 +265,7 @@ function SortableFlowPaceDonutCard({
         <button
           type="button"
           className={cn(
-            "scope-no-print mt-2 inline-flex h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-full text-ink4 opacity-0",
+            "scope-no-print inline-flex h-7 w-7 shrink-0 cursor-grab self-center items-center justify-center rounded-full text-ink4 opacity-0",
             "touch-manipulation transition-[background-color,color,opacity] hover:bg-line2/60 hover:text-ink2 hover:opacity-100 active:cursor-grabbing",
             "focus-visible:opacity-100 group-hover/flow-pace-sortable:opacity-60 group-focus-within/flow-pace-sortable:opacity-100",
             sortable.isDragging ? "opacity-100" : "",
@@ -279,7 +279,7 @@ function SortableFlowPaceDonutCard({
           </svg>
         </button>
       ) : null}
-      <div className="min-w-0 flex-1">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <FlowPaceDonutCard chart={chart} selected={selected} onSelect={onSelect} />
       </div>
     </div>
@@ -351,7 +351,7 @@ export function ScopeFlowPaceDonuts({
     <div className={cn("space-y-4", className)}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={order} strategy={rectSortingStrategy}>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {orderedCharts.map((chart) => (
               <SortableFlowPaceDonutCard
                 key={chart.id}
