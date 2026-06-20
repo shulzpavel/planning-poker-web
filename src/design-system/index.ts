@@ -11,6 +11,7 @@ export { PageLoader } from "./PageLoader";
 export { ScrollArea } from "./ScrollArea";
 export { ScrollHint } from "./ScrollHint";
 export { AutoHideAppHeader } from "./AutoHideAppHeader";
+export { MaintenanceBanner } from "./MaintenanceBanner";
 export { CollapsibleSection } from "./CollapsibleSection";
 export { useScrollHideHeader } from "./useScrollHideHeader";
 export {

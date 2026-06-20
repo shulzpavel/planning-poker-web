@@ -26,7 +26,7 @@ export function ManagerSessionChrome({
 }: ManagerSessionChromeProps) {
   return (
     <div
-      className="sticky top-0 z-40 shrink-0 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85"
+      className="sticky top-[var(--maintenance-banner-offset,0px)] z-40 shrink-0 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85"
     >
       <ManagerTopBar
         {...topBarProps}

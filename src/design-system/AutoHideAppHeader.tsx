@@ -37,7 +37,7 @@ export function AutoHideAppHeader({ children, className, hideOnMobileScroll = tr
     <div
       className={cn(
         "z-40 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80",
-        "max-md:sticky max-md:top-0",
+        "max-md:sticky max-md:top-[var(--maintenance-banner-offset,0px)]",
         "max-md:transition-[transform,opacity,background-color,border-color,backdrop-filter] max-md:duration-200 max-md:ease-out",
         "motion-reduce:max-md:transition-none",
         !visible && "max-md:pointer-events-none max-md:-translate-y-full max-md:border-transparent max-md:bg-transparent max-md:opacity-0 max-md:backdrop-blur-0",

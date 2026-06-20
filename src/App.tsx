@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
-import { DeferredFallback, PageLoader, RouteTransition, ScrollHint, ThemeProvider, ToastProvider } from "./design-system";
+import { DeferredFallback, MaintenanceBanner, PageLoader, RouteTransition, ScrollHint, ThemeProvider, ToastProvider } from "./design-system";
+import { useMaintenanceStatus } from "./hooks/useMaintenanceStatus";
 
 // Each route ships its own bundle so the manager-only code (DnD, Jira import,
 // finished-session report) doesn't tax the participant page, and vice versa.
@@ -32,13 +33,18 @@ function LandingRouteLoader() {
 }
 
 export default function App() {
+  const maintenanceActive = useMaintenanceStatus();
+
   return (
     <ThemeProvider defaultMode="dark">
       <ToastProvider>
-        <BrowserRouter>
-          <AppRoutes />
-          <ScrollHint />
-        </BrowserRouter>
+        <div className="flex w-full flex-col">
+          {maintenanceActive ? <MaintenanceBanner /> : null}
+          <BrowserRouter>
+            <AppRoutes />
+            <ScrollHint />
+          </BrowserRouter>
+        </div>
       </ToastProvider>
     </ThemeProvider>
   );
