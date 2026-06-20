@@ -7,8 +7,8 @@ export type SystemStatus = {
   };
 };
 
+/** Poll interval for deploy maintenance banner visibility (ms). */
 export const MAINTENANCE_POLL_MS = 8_000;
-/** Poll interval for deploy maintenance banner visibility. */
 
 export async function fetchMaintenanceStatus(): Promise<boolean> {
   const response = await fetch(apiUrl("/system/status"), { cache: "no-store" });
