@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { Alert, Badge, Button, EmptyState, ListSkeleton, Skeleton as DsSkeleton, Spinner, cn } from "../../../design-system";
 import { FilterBar } from "./FilterBar";
 
-export { FilterBar } from "./FilterBar";
-export { filterFieldWidth, FILTER_WIDTH } from "./cmsFilterLayout";
+export { FilterBar, FilterResetButton } from "./FilterBar";
+export { filterFieldWidth, FILTER_WIDTH, FILTER_RESET_LABEL } from "./cmsFilterLayout";
 
 export function SectionHeader({
   title,

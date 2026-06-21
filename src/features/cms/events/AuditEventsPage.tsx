@@ -10,6 +10,7 @@ import {
   MobileRecordField,
   SectionHeader,
   Status,
+  filterFieldWidth,
 } from "../components/CmsPrimitives";
 import { useCmsList } from "../hooks/useCmsList";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
@@ -214,6 +215,18 @@ export default function AuditEventsPage() {
   const searchRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
 
+  const hasActiveFilters = Boolean(
+    actionFilter.trim() || actorFilter.trim() || status || fromFilter || toFilter,
+  );
+
+  function clearFilters() {
+    setActionFilter("");
+    setActorFilter("");
+    setStatus("");
+    setFromFilter("");
+    setToFilter("");
+  }
+
   // Clicking an actor in a row filters the journal by that actor — saves the
   // user from copy-pasting the username into the filter field.
   function filterByActor(actor: string | null) {
@@ -234,70 +247,56 @@ export default function AuditEventsPage() {
       </HelpCallout>
       {dateRangeError ? <Alert tone="warning">{dateRangeError}</Alert> : null}
       <FilterBar
-        layout="grid"
         onRefresh={list.reload}
         refreshLoading={list.loading}
         refreshDisabled={Boolean(dateRangeError)}
-        onReset={() => {
-          setActionFilter("");
-          setActorFilter("");
-          setStatus("");
-          setFromFilter("");
-          setToFilter("");
-        }}
+        onReset={clearFilters}
+        resetDisabled={!hasActiveFilters}
       >
-        <FilterBar.Cell xl={4}>
-          <TextField
-            ref={searchRef}
-            aria-label="Тип события"
-            label="Action"
-            placeholder="Фильтр по action, например cms.task.create"
-            value={actionFilter}
-            onChange={(event) => setActionFilter(event.target.value)}
-          />
-        </FilterBar.Cell>
-        <FilterBar.Cell xl={3}>
-          <TextField
-            aria-label="Кто (actor)"
-            label="Actor"
-            placeholder="username, например lead.user"
-            value={actorFilter}
-            onChange={(event) => setActorFilter(event.target.value)}
-          />
-        </FilterBar.Cell>
-        <FilterBar.Cell xl={2}>
-          <DropdownField
-            aria-label="Статус"
-            label="Статус"
-            value={status}
-            options={[
-              { value: "", label: "Все статусы" },
-              { value: "ok", label: "Успех" },
-              { value: "failed", label: "Ошибка" },
-            ]}
-            onChange={setStatus}
-          />
-        </FilterBar.Cell>
-        <FilterBar.Cell xl={6} md={2}>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <DatePickerPopover
-              className="w-full"
-              label="С"
-              value={fromFilter}
-              placeholder="дата начала"
-              reservePopoverSpace={false}
-              onChange={setFromFilter}
-            />
-            <DatePickerPopover
-              className="w-full"
-              label="По"
-              value={toFilter}
-              placeholder="дата конца"
-              reservePopoverSpace={false}
-              onChange={setToFilter}
-            />
-          </div>
-        </FilterBar.Cell>
+        <TextField
+          ref={searchRef}
+          className={filterFieldWidth("medium")}
+          aria-label="Тип события (action)"
+          placeholder="action, например cms.task.create"
+          value={actionFilter}
+          onChange={(event) => setActionFilter(event.target.value)}
+        />
+        <TextField
+          className={filterFieldWidth("role", "md:max-w-[180px]")}
+          aria-label="Кто (actor)"
+          placeholder="username"
+          value={actorFilter}
+          onChange={(event) => setActorFilter(event.target.value)}
+        />
+        <DropdownField
+          className={filterFieldWidth("status")}
+          aria-label="Статус"
+          value={status}
+          options={[
+            { value: "", label: "Все статусы" },
+            { value: "ok", label: "Успех" },
+            { value: "failed", label: "Ошибка" },
+          ]}
+          onChange={setStatus}
+        />
+        <DatePickerPopover
+          fieldLabel="С"
+          label="Начало периода"
+          className={filterFieldWidth("date")}
+          value={fromFilter}
+          placeholder="дата начала"
+          reservePopoverSpace={false}
+          onChange={setFromFilter}
+        />
+        <DatePickerPopover
+          fieldLabel="По"
+          label="Конец периода"
+          className={filterFieldWidth("date")}
+          value={toFilter}
+          placeholder="дата конца"
+          reservePopoverSpace={false}
+          onChange={setToFilter}
+        />
       </FilterBar>
       <DataTable
         error={list.error}

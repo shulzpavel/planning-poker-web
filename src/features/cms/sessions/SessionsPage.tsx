@@ -46,6 +46,7 @@ import { Alert, Badge, BottomSheet, Button, ConfirmDialog, DropdownField, EmptyS
 import {
   CompactList,
   FilterBar,
+  FilterResetButton,
   InlineError,
   LoadMoreFooter,
   MobileRecordCard,
@@ -112,6 +113,13 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
   const navigate = useNavigate();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const focusSearch = () => searchInputRef.current?.focus();
+  const hasActiveFilters = Boolean(q.trim() || active || teamFilter);
+
+  function clearSessionFilters() {
+    setQ("");
+    setActive("");
+    setTeamFilter("");
+  }
 
   const sessionToolbar = (
     <>
@@ -267,6 +275,8 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
         toolbar={sessionToolbar}
         onRefresh={list.reload}
         refreshLoading={list.loading}
+        onReset={clearSessionFilters}
+        resetDisabled={!hasActiveFilters}
         banner={
           <>
             {actionInfo ? <Alert tone="success">{actionInfo}</Alert> : null}
@@ -294,15 +304,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
               <EmptyState
                 title="Ничего не найдено"
                 description="По текущим фильтрам сессий нет. Сбросьте фильтры, чтобы увидеть полный список."
-                action={
-                    <Button
-                      intent="reset"
-                      size="sm"
-                      onClick={() => { setQ(""); setActive(""); }}
-                  >
-                    Сбросить фильтры
-                  </Button>
-                }
+                action={<FilterResetButton onClick={clearSessionFilters} />}
               />
             ) : (
               <EmptyState
