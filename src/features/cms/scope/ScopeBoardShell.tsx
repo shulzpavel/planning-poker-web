@@ -16,7 +16,6 @@ import {
   AiSparkleButton,
   Badge,
   Button,
-  ConfirmDialog,
   DropdownField,
   EmptyState,
   Spinner,
@@ -423,8 +422,7 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
   const [items, setItems] = useState<ScopeBoardRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<ScopeBoardRecord | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -445,17 +443,15 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
     void reload();
   }, [reload]);
 
-  async function confirmDelete() {
-    if (!pendingDelete) return;
-    setDeleting(true);
+  async function deleteBoard(record: ScopeBoardRecord) {
+    setDeletingId(record.id);
     try {
-      await cmsScopeApi.delete(pendingDelete.id);
-      setItems((current) => current.filter((item) => item.id !== pendingDelete.id));
-      setPendingDelete(null);
+      await cmsScopeApi.delete(record.id);
+      setItems((current) => current.filter((item) => item.id !== record.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось удалить отчёт.");
     } finally {
-      setDeleting(false);
+      setDeletingId(null);
     }
   }
 
@@ -549,30 +545,12 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
           items={items}
           teamFilter={teamFilter}
           canManage={canManage}
+          deletingId={deletingId}
           onOpen={(id) => navigate(`${id}`)}
-          onDelete={setPendingDelete}
+          onDelete={(record) => void deleteBoard(record)}
         />
       )}
 
-      <ConfirmDialog
-        open={Boolean(pendingDelete)}
-        title="Удалить отчёт?"
-        description={
-          pendingDelete ? (
-            <span>
-              Отчёт <b>«{pendingDelete.name}»</b> будет удалён без возможности восстановить.
-            </span>
-          ) : (
-            <span />
-          )
-        }
-        confirmLabel="Удалить"
-        cancelLabel="Отмена"
-        tone="danger"
-        busy={deleting}
-        onConfirm={() => void confirmDelete()}
-        onCancel={() => setPendingDelete(null)}
-      />
     </section>
   );
 }
@@ -581,12 +559,14 @@ function ScopeBoardList({
   items,
   teamFilter,
   canManage,
+  deletingId,
   onOpen,
   onDelete,
 }: {
   items: ScopeBoardRecord[];
   teamFilter: string;
   canManage: boolean;
+  deletingId: number | null;
   onOpen: (id: number) => void;
   onDelete: (record: ScopeBoardRecord) => void;
 }) {
@@ -630,7 +610,19 @@ function ScopeBoardList({
                   }
                   secondaryAction={
                     canManage ? (
-                        <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
+                        <Button
+                          size="sm"
+                          intent="delete"
+                          loading={deletingId === item.id}
+                          disabled={deletingId !== null}
+                          confirmTitle="Удалить отчёт?"
+                          confirmDescription={
+                            <span>
+                              Отчёт <b>«{item.name}»</b> будет удалён без возможности восстановить.
+                            </span>
+                          }
+                          onClick={() => onDelete(item)}
+                        >
                         Удалить
                       </Button>
                     ) : null
@@ -686,7 +678,19 @@ function ScopeBoardList({
                             Открыть
                           </Button>
                           {canManage ? (
-                              <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
+                              <Button
+                                size="sm"
+                                intent="delete"
+                                loading={deletingId === item.id}
+                                disabled={deletingId !== null}
+                                confirmTitle="Удалить отчёт?"
+                                confirmDescription={
+                                  <span>
+                                    Отчёт <b>«{item.name}»</b> будет удалён без возможности восстановить.
+                                  </span>
+                                }
+                                onClick={() => onDelete(item)}
+                              >
                               Удалить
                             </Button>
                           ) : null}

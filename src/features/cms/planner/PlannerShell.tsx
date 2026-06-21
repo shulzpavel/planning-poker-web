@@ -5,7 +5,6 @@ import {
   BackButton,
   Badge,
   Button,
-  ConfirmDialog,
   DropdownField,
   EmptyState,
   MobileBottomDock,
@@ -89,8 +88,7 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
   const [items, setItems] = useState<SprintPlanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<SprintPlanRecord | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -111,17 +109,15 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
     void reload();
   }, [reload]);
 
-  async function confirmDelete() {
-    if (!pendingDelete) return;
-    setDeleting(true);
+  async function deletePlan(record: SprintPlanRecord) {
+    setDeletingId(record.id);
     try {
-      await cmsPlannerApi.delete(pendingDelete.id);
-      setItems((current) => current.filter((item) => item.id !== pendingDelete.id));
-      setPendingDelete(null);
+      await cmsPlannerApi.delete(record.id);
+      setItems((current) => current.filter((item) => item.id !== record.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось удалить план.");
     } finally {
-      setDeleting(false);
+      setDeletingId(null);
     }
   }
 
@@ -215,30 +211,12 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
           items={items}
           teamFilter={teamFilter}
           canManage={canManage}
+          deletingId={deletingId}
           onEdit={(id) => navigate(`${id}`)}
-          onDelete={setPendingDelete}
+          onDelete={(record) => void deletePlan(record)}
         />
       )}
 
-      <ConfirmDialog
-        open={Boolean(pendingDelete)}
-        title="Удалить план?"
-        description={
-          pendingDelete ? (
-            <span>
-              План <b>«{pendingDelete.name}»</b> будет удалён без возможности восстановить.
-            </span>
-          ) : (
-            <span />
-          )
-        }
-        confirmLabel="Удалить"
-        cancelLabel="Отмена"
-        tone="danger"
-        busy={deleting}
-        onConfirm={() => void confirmDelete()}
-        onCancel={() => setPendingDelete(null)}
-      />
     </section>
   );
 }
@@ -247,12 +225,14 @@ function PlannerList({
   items,
   teamFilter,
   canManage,
+  deletingId,
   onEdit,
   onDelete,
 }: {
   items: SprintPlanRecord[];
   teamFilter: string;
   canManage: boolean;
+  deletingId: number | null;
   onEdit: (id: number) => void;
   onDelete: (record: SprintPlanRecord) => void;
 }) {
@@ -290,7 +270,19 @@ function PlannerList({
                   }
                   secondaryAction={
                     canManage ? (
-                        <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
+                        <Button
+                          size="sm"
+                          intent="delete"
+                          loading={deletingId === item.id}
+                          disabled={deletingId !== null}
+                          confirmTitle="Удалить план?"
+                          confirmDescription={
+                            <span>
+                              План <b>«{item.name}»</b> будет удалён без возможности восстановить.
+                            </span>
+                          }
+                          onClick={() => onDelete(item)}
+                        >
                         Удалить
                       </Button>
                     ) : null
@@ -339,7 +331,19 @@ function PlannerList({
                           Открыть
                         </Button>
                         {canManage ? (
-                            <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
+                            <Button
+                              size="sm"
+                              intent="delete"
+                              loading={deletingId === item.id}
+                              disabled={deletingId !== null}
+                              confirmTitle="Удалить план?"
+                              confirmDescription={
+                                <span>
+                                  План <b>«{item.name}»</b> будет удалён без возможности восстановить.
+                                </span>
+                              }
+                              onClick={() => onDelete(item)}
+                            >
                             Удалить
                           </Button>
                         ) : null}
@@ -580,7 +584,6 @@ function PlannerEditorPage({
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [legacyBackendDetected, setLegacyBackendDetected] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const initialCreateDraftRef = useRef(JSON.stringify({ name, notes, inputs }));
   const currentDraft = useMemo(() => JSON.stringify({ name, notes, inputs }), [inputs, name, notes]);
@@ -689,7 +692,7 @@ function PlannerEditorPage({
     return () => window.clearTimeout(id);
   }, [savedAt]);
 
-  async function confirmDelete() {
+  async function deleteCurrentPlan() {
     if (!planId) return;
     setDeleting(true);
     try {
@@ -699,7 +702,6 @@ function PlannerEditorPage({
       setError(err instanceof Error ? err.message : "Не удалось удалить план.");
     } finally {
       setDeleting(false);
-      setPendingDelete(false);
     }
   }
 
@@ -727,7 +729,19 @@ function PlannerEditorPage({
             <div className="flex flex-wrap gap-2">
               <BackButton label="К списку" size="sm" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} />
               {mode === "edit" && canManage ? (
-                  <Button intent="delete" size="sm" onClick={() => setPendingDelete(true)}>
+                  <Button
+                    intent="delete"
+                    size="sm"
+                    loading={deleting}
+                    disabled={deleting}
+                    confirmTitle="Удалить план?"
+                    confirmDescription={
+                      <span>
+                        План <b>«{name}»</b> будет удалён без возможности восстановить.
+                      </span>
+                    }
+                    onClick={() => void deleteCurrentPlan()}
+                  >
                   Удалить
                 </Button>
               ) : null}
@@ -830,17 +844,6 @@ function PlannerEditorPage({
         </div>
       ) : null}
 
-      <ConfirmDialog
-        open={pendingDelete}
-        title="Удалить план?"
-        description={<span>План <b>«{name}»</b> будет удалён без возможности восстановить.</span>}
-        confirmLabel="Удалить"
-        cancelLabel="Отмена"
-        tone="danger"
-        busy={deleting}
-        onConfirm={() => void confirmDelete()}
-        onCancel={() => setPendingDelete(false)}
-      />
       {unsavedGuard.dialog}
     </section>
   );

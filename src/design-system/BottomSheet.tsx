@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Button, resolveButtonVariant, type ButtonIntent } from "./components";
+import { Button, type ButtonIntent } from "./components";
 import { findPreferredFocusTarget, useMobileKeyboardInset } from "./mobileKeyboard";
 import { ScrollArea } from "./ScrollArea";
 import { cn } from "./utils";
@@ -274,7 +274,7 @@ export function SheetActionButton({
 }) {
   return (
     <Button
-      variant={resolveButtonVariant(intent)}
+      intent={intent}
       size={size}
       className={cn("w-full sm:w-auto", className)}
       {...props}

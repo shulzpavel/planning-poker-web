@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { Button, resolveButtonVariant, type ButtonIntent } from "./components";
+import { Button, DELETE_CONFIRM_DEFAULTS, requiresDeleteConfirm, resolveButtonVariant, type ButtonIntent } from "./components";
 
 const intentExpectations: Array<[ButtonIntent, string]> = [
   ["open", "primary"],
@@ -46,5 +46,16 @@ describe("Button intents", () => {
   it("renders danger styling for delete actions", () => {
     const deleteMarkup = renderToStaticMarkup(<Button intent="delete">Удалить</Button>);
     expect(deleteMarkup).toContain("text-red");
+  });
+
+  it("requires delete confirmation by default for delete intent", () => {
+    expect(requiresDeleteConfirm("delete")).toBe(true);
+    expect(requiresDeleteConfirm("delete", true)).toBe(false);
+    expect(requiresDeleteConfirm("cancel")).toBe(false);
+  });
+
+  it("uses Russian defaults for built-in delete confirmation copy", () => {
+    expect(DELETE_CONFIRM_DEFAULTS.title).toBe("Точно удалить?");
+    expect(DELETE_CONFIRM_DEFAULTS.confirmLabel).toBe("Удалить");
   });
 });

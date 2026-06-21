@@ -141,7 +141,7 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
             <MobileRecordField label="Последнее" value={formatDate(item.last_seen_at)} />
             {canHardDeleteParticipants ? (
               <div className="pt-2">
-                  <Button intent="delete" size="sm" onClick={() => openDeleteDialog(item)}>
+                  <Button intent="delete" size="sm" skipDeleteConfirm onClick={() => openDeleteDialog(item)}>
                   Удалить навсегда
                 </Button>
               </div>
@@ -162,7 +162,7 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
             <td className="px-3 py-2 text-ink3 whitespace-nowrap">{formatDate(item.last_seen_at)}</td>
             {canHardDeleteParticipants ? (
               <td className="px-3 py-2 text-right">
-                  <Button intent="delete" size="sm" onClick={() => openDeleteDialog(item)}>
+                  <Button intent="delete" size="sm" skipDeleteConfirm onClick={() => openDeleteDialog(item)}>
                   Удалить
                 </Button>
               </td>

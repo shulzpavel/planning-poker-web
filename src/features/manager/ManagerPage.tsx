@@ -20,7 +20,7 @@ import { apiUrl } from "../../app/config";
 import TaskTextBlock from "../../components/TaskTextBlock";
 import JiraDescriptionPanel from "../../components/JiraDescriptionPanel";
 import AiSummaryView from "../../components/AiSummaryView";
-import { AiGenerationProgress, AiSparkleButton, Alert, Badge, Button, ConfirmDialog, EmptyState, ScrollArea, Spinner, Surface, TextField, TextareaField, ThemeHeaderControl, cn, useTheme, useToast, type ThemeMode } from "../../design-system";
+import { AiGenerationProgress, AiSparkleButton, Alert, Badge, Button, EmptyState, ScrollArea, Spinner, Surface, TextField, TextareaField, ThemeHeaderControl, cn, useTheme, useToast, type ThemeMode } from "../../design-system";
 import { cmsAuthApi, hasCmsAuthHint } from "../cms/api/cmsClient";
 import type { CmsPrincipal } from "../cms/api/cmsTypes";
 import CmsLoginPage from "../cms/auth/CmsLoginPage";
@@ -1363,7 +1363,6 @@ function QueuePanel({
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [deleteTask, setDeleteTask] = useState<TaskItem | null>(null);
   const sortableIds = useMemo(() => tasks.map((task) => task.task_uid).filter(Boolean), [tasks]);
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -1418,7 +1417,7 @@ function QueuePanel({
                 onUpdate(task, editValue.trim());
                 setEditingId(null);
               }}
-              onDelete={() => setDeleteTask(task)}
+              onDelete={() => onDelete(task)}
             />
           ))}
         </div>
@@ -1440,17 +1439,6 @@ function QueuePanel({
         {queueList}
       </div>
       {cursor ? <Button className="mt-3 w-full" intent="more" onClick={onLoadMore}>Load more</Button> : null}
-      <ConfirmDialog
-        open={Boolean(deleteTask)}
-        title="Удалить задачу?"
-        description={deleteTask?.summary ?? ""}
-        confirmLabel="Delete"
-        onCancel={() => setDeleteTask(null)}
-        onConfirm={() => {
-          if (deleteTask) onDelete(deleteTask);
-          setDeleteTask(null);
-        }}
-      />
     </Surface>
   );
 }
@@ -1544,7 +1532,17 @@ function SortableQueueTaskCard({
         ) : (
           <>
             <Button size="sm" intent="edit" onClick={onStartEdit}>Edit</Button>
-            <Button size="sm" intent="delete" disabled={busy !== null} onClick={onDelete}>Delete</Button>
+            <Button
+              size="sm"
+              intent="delete"
+              disabled={busy !== null}
+              confirmTitle="Удалить задачу?"
+              confirmDescription={task.summary}
+              confirmLabel="Delete"
+              onClick={onDelete}
+            >
+              Delete
+            </Button>
           </>
         )}
       </div>

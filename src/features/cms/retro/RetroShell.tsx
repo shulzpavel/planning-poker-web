@@ -7,7 +7,6 @@ import {
   BackButton,
   Badge,
   Button,
-  ConfirmDialog,
   DropdownField,
   EmptyState,
   Spinner,
@@ -96,7 +95,6 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
   const [teamFilter, setTeamFilter] = useState("");
   const [items, setItems] = useState<RetroRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirmTarget, setConfirmTarget] = useState<RetroRecord | null>(null);
   const [busyDelete, setBusyDelete] = useState<number | null>(null);
 
   const reload = useCallback(() => {
@@ -122,7 +120,6 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
       toast.error(e instanceof Error ? e.message : "Не удалось удалить");
     } finally {
       setBusyDelete(null);
-      setConfirmTarget(null);
     }
   }
 
@@ -247,7 +244,9 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
                     intent="delete"
                     size="sm"
                     className="px-3"
-                    onClick={() => setConfirmTarget(retro)}
+                    confirmTitle="Удалить ретро?"
+                    confirmDescription={`Ретро «${retro.title}» будет удалено из CMS.`}
+                    onClick={() => void remove(retro)}
                     loading={busyDelete === retro.id}
                   disabled={busyDelete !== null}
                 >
@@ -286,7 +285,9 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
                     <Button
                       intent="delete"
                       size="sm"
-                      onClick={() => setConfirmTarget(retro)}
+                      confirmTitle="Удалить ретро?"
+                      confirmDescription={`Ретро «${retro.title}» будет удалено из CMS.`}
+                      onClick={() => void remove(retro)}
                     loading={busyDelete === retro.id}
                     disabled={busyDelete !== null}
                   >
@@ -297,18 +298,6 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
             </td>
           </tr>
         )}
-      />
-      <ConfirmDialog
-        open={confirmTarget !== null}
-        title="Удалить ретро?"
-        description={confirmTarget ? `Ретро «${confirmTarget.title}» будет удалено из CMS.` : ""}
-        confirmLabel="Удалить"
-        cancelLabel="Отмена"
-        tone="danger"
-        onCancel={() => setConfirmTarget(null)}
-        onConfirm={() => {
-          if (confirmTarget) void remove(confirmTarget);
-        }}
       />
     </section>
   );

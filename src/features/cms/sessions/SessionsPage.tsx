@@ -78,7 +78,6 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<
     | { kind: "close"; item: SessionItem }
-    | { kind: "delete"; item: SessionItem }
     | null
   >(null);
   const [actionBusy, setActionBusy] = useState<number | null>(null);
@@ -385,25 +384,6 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
           }
         }}
       />
-      <ConfirmDialog
-        open={confirmAction?.kind === "delete"}
-        title="Удалить сессию из истории?"
-        description={
-          confirmAction?.kind === "delete"
-            ? `Сессия «${displaySessionTitle(confirmAction.item)}», её задачи, голоса и invite-ссылки исчезнут из CMS. Запись в журнале действий сохранится. Действие отменить из интерфейса нельзя.`
-            : ""
-        }
-        confirmLabel="Удалить"
-        cancelLabel="Отмена"
-        tone="danger"
-        onCancel={() => setConfirmAction(null)}
-        onConfirm={() => {
-          if (confirmAction?.kind === "delete") {
-            void runSessionAction("delete", confirmAction.item);
-          }
-        }}
-      />
-
       <CreateSessionDialog
         open={createOpen}
         title={createTitle}
@@ -446,7 +426,13 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
             navigate(`/cms/sessions/${detail.chat_id}/cockpit`);
           }}
           onOpenReport={(detail) => navigate(`/cms/sessions/${detail.chat_id}/report`)}
-          onSessionAction={(kind, detail) => setConfirmAction({ kind, item: detail })}
+          onSessionAction={(kind, detail) => {
+            if (kind === "close") {
+              setConfirmAction({ kind, item: detail });
+              return;
+            }
+            void runSessionAction("delete", detail);
+          }}
           actionBusyId={actionBusy}
         />
       ) : null}
@@ -814,6 +800,9 @@ function SessionDetails({
                   intent="delete"
                 size="sm"
                 disabled={actionBusyId === detail.id}
+                loading={actionBusyId === detail.id}
+                confirmTitle="Удалить сессию из истории?"
+                confirmDescription={`Сессия «${displaySessionTitle(detail)}», её задачи, голоса и invite-ссылки исчезнут из CMS. Запись в журнале действий сохранится. Действие отменить из интерфейса нельзя.`}
                 onClick={() => onSessionAction("delete", detail)}
               >
                 Удалить из истории
@@ -1538,7 +1527,6 @@ function TaskRow({
   const [jiraKey, setJiraKey] = useState(task.jira_key ?? "");
   const [url, setUrl] = useState(task.url ?? "");
   const [storyPoints, setStoryPoints] = useState(task.story_points === null ? "" : String(task.story_points));
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const isCurrent = detail.current_task_id === task.task_uid;
   const currentLocked = detail.is_active && isCurrent;
   const disabled = busy !== null || !canManage || currentLocked;
@@ -1572,7 +1560,6 @@ function TaskRow({
   }
 
   async function remove() {
-    setDeleteOpen(false);
     await onRun(`delete:${task.task_uid}`, async () =>
       cmsTasksApi.delete(sessionId, task.task_uid, detail.tasks_version)
     );
@@ -1632,7 +1619,16 @@ function TaskRow({
               <Button variant="ghost" size="sm" disabled={disabled || task.bucket_index >= detail.tasks_queue_count - 1} title="Вниз" onClick={() => void move(task.bucket_index + 1)}>↓</Button>
               <Button variant="ghost" size="sm" disabled={disabled || task.bucket_index >= detail.tasks_queue_count - 1} title="В конец" onClick={() => void move(detail.tasks_queue_count - 1)}>В конец</Button>
                 <Button intent="edit" size="sm" disabled={busy !== null || !canManage} onClick={() => setEditing(true)}>Изменить</Button>
-                <Button intent="delete" size="sm" disabled={disabled} onClick={() => setDeleteOpen(true)}>Удалить</Button>
+                <Button
+                  intent="delete"
+                  size="sm"
+                  disabled={disabled}
+                  confirmTitle="Удалить задачу?"
+                  confirmDescription="Задача будет убрана из активной очереди. Это действие нельзя отменить через CMS."
+                  onClick={() => void remove()}
+                >
+                  Удалить
+                </Button>
             </div>
           ) : null}
           {currentLocked ? (
@@ -1640,15 +1636,6 @@ function TaskRow({
           ) : null}
         </div>
       )}
-      <ConfirmDialog
-        open={deleteOpen}
-        title="Удалить задачу?"
-        description="Задача будет убрана из активной очереди. Это действие нельзя отменить через CMS."
-        confirmLabel="Удалить"
-        cancelLabel="Отмена"
-        onCancel={() => setDeleteOpen(false)}
-        onConfirm={() => void remove()}
-      />
     </motion.div>
   );
 }

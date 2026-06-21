@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type CSSProperties, type FocusEvent, type HTMLAttributes, type InputHTMLAttributes, type ReactNode, type Ref, type TextareaHTMLAttributes, useEffect, useId, useRef } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type CSSProperties, type FocusEvent, type HTMLAttributes, type InputHTMLAttributes, type MouseEvent, type ReactNode, type Ref, type TextareaHTMLAttributes, useEffect, useId, useRef, useState } from "react";
 import { findPreferredFocusTarget, keepFocusedFieldVisible, useMobileKeyboardInset } from "./mobileKeyboard";
 import { cn } from "./utils";
 
@@ -78,6 +78,27 @@ export function resolveButtonVariant(intent: ButtonIntent | undefined, fallback:
   return intent ? buttonIntentVariants[intent] : fallback;
 }
 
+/** Default copy for built-in delete confirmation on `intent="delete"` buttons. */
+export const DELETE_CONFIRM_DEFAULTS = {
+  title: "Точно удалить?",
+  description: "Это действие нельзя отменить.",
+  confirmLabel: "Удалить",
+  cancelLabel: "Отмена",
+} as const;
+
+export function requiresDeleteConfirm(intent: ButtonIntent | undefined, skipDeleteConfirm?: boolean): boolean {
+  return intent === "delete" && !skipDeleteConfirm;
+}
+
+export type DeleteConfirmProps = {
+  confirmTitle?: string;
+  confirmDescription?: ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  /** Skip built-in confirmation when a parent opens a stronger custom dialog. */
+  skipDeleteConfirm?: boolean;
+};
+
 const buttonSizes: Record<ButtonSize, string> = {
   sm: "min-h-11 px-3.5 text-base sm:min-h-9 sm:px-3 sm:text-sm",
   md: "min-h-12 px-4 text-base sm:min-h-11 sm:text-sm",
@@ -93,45 +114,85 @@ export function Button({
   loading = false,
   type = "button",
   disabled,
+  confirmTitle = DELETE_CONFIRM_DEFAULTS.title,
+  confirmDescription = DELETE_CONFIRM_DEFAULTS.description,
+  confirmLabel = DELETE_CONFIRM_DEFAULTS.confirmLabel,
+  cancelLabel = DELETE_CONFIRM_DEFAULTS.cancelLabel,
+  skipDeleteConfirm = false,
+  onClick,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   intent?: ButtonIntent;
   size?: ButtonSize;
   loading?: boolean;
-}) {
+} & DeleteConfirmProps) {
   const resolvedVariant = variant ?? resolveButtonVariant(intent);
+  const deleteConfirmRequired = requiresDeleteConfirm(intent, skipDeleteConfirm);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    if (deleteConfirmRequired) {
+      event.preventDefault();
+      setDeleteConfirmOpen(true);
+      return;
+    }
+    onClick?.(event);
+  }
+
+  function handleDeleteConfirm() {
+    setDeleteConfirmOpen(false);
+    if (onClick) {
+      (onClick as (event?: MouseEvent<HTMLButtonElement>) => void)();
+    }
+  }
 
   return (
-    <button
-      type={type}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg border font-semibold leading-none",
-        // Transition only the visual properties so a tab/route change
-        // doesn't reset the in-flight active scale animation. Native
-        // mobile tap feedback via `active:scale-[0.98]` keeps within the
-        // 150ms motion budget.
-        "transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out",
-        "active:scale-[0.98] motion-reduce:active:scale-100",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
-        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45",
-        buttonVariants[resolvedVariant],
-        buttonSizes[size],
-        className,
-      )}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
-      {...props}
-    >
-      {loading ? <Spinner size="sm" /> : null}
-      {/* While loading, fade the label so the spinner stays the focal
-          point — text still occupies the same width to keep the button
-          from snapping size mid-action.
-          inline-flex + items-center keeps inline SVG icons vertically
-          aligned with the label instead of sitting on the text baseline,
-          so callers can pass `<Icon /> <span>label</span>` directly. */}
-      <span className={cn("inline-flex min-w-0 items-center gap-2", loading ? "opacity-70" : undefined)}>{children}</span>
-    </button>
+    <>
+      <button
+        type={type}
+        className={cn(
+          "inline-flex items-center justify-center gap-2 rounded-lg border font-semibold leading-none",
+          // Transition only the visual properties so a tab/route change
+          // doesn't reset the in-flight active scale animation. Native
+          // mobile tap feedback via `active:scale-[0.98]` keeps within the
+          // 150ms motion budget.
+          "transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out",
+          "active:scale-[0.98] motion-reduce:active:scale-100",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
+          "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45",
+          buttonVariants[resolvedVariant],
+          buttonSizes[size],
+          className,
+        )}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        onClick={handleClick}
+        {...props}
+      >
+        {loading ? <Spinner size="sm" /> : null}
+        {/* While loading, fade the label so the spinner stays the focal
+            point — text still occupies the same width to keep the button
+            from snapping size mid-action.
+            inline-flex + items-center keeps inline SVG icons vertically
+            aligned with the label instead of sitting on the text baseline,
+            so callers can pass `<Icon /> <span>label</span>` directly. */}
+        <span className={cn("inline-flex min-w-0 items-center gap-2", loading ? "opacity-70" : undefined)}>{children}</span>
+      </button>
+      {deleteConfirmRequired ? (
+        <ConfirmDialog
+          open={deleteConfirmOpen}
+          title={confirmTitle}
+          description={confirmDescription}
+          confirmLabel={confirmLabel}
+          cancelLabel={cancelLabel}
+          tone="danger"
+          busy={loading}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteConfirmOpen(false)}
+        />
+      ) : null}
+    </>
   );
 }
 
