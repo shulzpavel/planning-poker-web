@@ -41,12 +41,10 @@ export function MaintenanceBanner({ className }: { className?: string }) {
       aria-label={`Технические работы. ${MAINTENANCE_SUBTITLE_DESKTOP}`}
     >
       <div className="maintenance-banner-accent h-[3px] w-full shrink-0" aria-hidden="true" />
-      <div className="maintenance-banner-wash pointer-events-none absolute inset-0" aria-hidden="true" />
       <div
         className={cn(
-          "maintenance-banner-glass relative flex w-full items-center justify-center px-4 text-center",
+          "relative flex w-full items-center justify-center border-b border-line bg-surface px-4 text-center",
           "min-h-[10dvh] min-h-[10svh]",
-          "supports-[backdrop-filter]:bg-surface/45",
         )}
       >
         <div
@@ -56,7 +54,7 @@ export function MaintenanceBanner({ className }: { className?: string }) {
             "lg:flex-row lg:items-center lg:gap-4 lg:text-left",
           )}
         >
-          <div className="maintenance-banner-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl sm:h-11 sm:w-11 lg:h-12 lg:w-12">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-line bg-line2 text-red sm:h-11 sm:w-11 lg:h-12 lg:w-12">
             <MaintenanceIcon />
           </div>
           <div className="min-w-0 max-w-xl lg:max-w-none">
