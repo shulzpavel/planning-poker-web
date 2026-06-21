@@ -1,14 +1,16 @@
 import { DropdownField } from "../../../design-system";
 import type { CmsTeam } from "../api/cmsTypes";
+import { filterFieldWidth } from "./cmsFilterLayout";
 
 interface TeamFilterProps {
   teams: CmsTeam[];
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  className?: string;
 }
 
-export function TeamFilter({ teams, value, onChange, disabled }: TeamFilterProps) {
+export function TeamFilter({ teams, value, onChange, disabled, className }: TeamFilterProps) {
   const options = [
     { value: "", label: "Все команды" },
     { value: "legacy", label: "Без команды (legacy)" },
@@ -18,7 +20,7 @@ export function TeamFilter({ teams, value, onChange, disabled }: TeamFilterProps
   return (
     <DropdownField
       aria-label="Команда"
-      className="md:max-w-[220px]"
+      className={filterFieldWidth("team", className)}
       value={value}
       options={options}
       disabled={disabled}

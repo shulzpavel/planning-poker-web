@@ -6,11 +6,12 @@ import type { CmsPrincipal, UserItem } from "../api/cmsTypes";
 import { CMS_PERMISSIONS, hasPermission } from "../navigation";
 import {
   DataTable,
+  FilterBar,
   HelpCallout,
   MobileRecordCard,
   MobileRecordField,
   SectionHeader,
-  Toolbar,
+  filterFieldWidth,
 } from "../components/CmsPrimitives";
 import { useCmsList } from "../hooks/useCmsList";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
@@ -63,17 +64,17 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
         <p>Поиск ищет по имени и id. Фильтр «Роль» оставит только Lead / Participant / Admin — удобно искать фасилитаторов.</p>
         <p>В одной сессии участники видны на её карточке (раздел «Сессии» → выберите сессию).</p>
       </HelpCallout>
-      <Toolbar>
+      <FilterBar onRefresh={list.reload} refreshLoading={list.loading}>
         <TextField
           ref={searchRef}
-          className="md:max-w-sm"
+          className={filterFieldWidth("search")}
           aria-label="Поиск участника"
           placeholder="Поиск по имени или id"
           value={q}
           onChange={(event) => setQ(event.target.value)}
         />
         <DropdownField
-          className="md:max-w-[200px]"
+          className={filterFieldWidth("status")}
           aria-label="Роль участника"
           value={role}
           options={[
@@ -84,8 +85,7 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
           ]}
           onChange={setRole}
         />
-          <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
-      </Toolbar>
+      </FilterBar>
       <DataTable
         error={list.error}
         loading={list.loading}

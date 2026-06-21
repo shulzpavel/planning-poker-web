@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { Button, EmptyState, TextField } from "../../../design-system";
+import { EmptyState, TextField } from "../../../design-system";
 import type { VoteItem } from "../api/cmsTypes";
-import { DataTable, MobileRecordCard, MobileRecordField, Toolbar } from "../components/CmsPrimitives";
+import { DataTable, FilterBar, MobileRecordCard, MobileRecordField, filterFieldWidth } from "../components/CmsPrimitives";
 import { useCmsList } from "../hooks/useCmsList";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { formatDate } from "../../../shared/lib/format";
@@ -25,12 +25,11 @@ export default function VotesPage() {
   const list = useCmsList<VoteItem>("/votes", params, { scrollKey: "cms-votes" });
   return (
     <section className="space-y-4">
-      <Toolbar>
-        <TextField className="md:max-w-[160px]" aria-label="Session id" placeholder="session_id" value={sessionId} onChange={(event) => setSessionId(event.target.value)} />
-        <TextField className="md:max-w-[160px]" aria-label="Task id" placeholder="task_id" value={taskId} onChange={(event) => setTaskId(event.target.value)} />
-        <TextField className="md:max-w-[160px]" aria-label="User id" placeholder="user_id" value={userId} onChange={(event) => setUserId(event.target.value)} />
-        <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
-      </Toolbar>
+      <FilterBar onRefresh={list.reload} refreshLoading={list.loading}>
+        <TextField className={filterFieldWidth("id")} aria-label="Session id" placeholder="session_id" value={sessionId} onChange={(event) => setSessionId(event.target.value)} />
+        <TextField className={filterFieldWidth("id")} aria-label="Task id" placeholder="task_id" value={taskId} onChange={(event) => setTaskId(event.target.value)} />
+        <TextField className={filterFieldWidth("id")} aria-label="User id" placeholder="user_id" value={userId} onChange={(event) => setUserId(event.target.value)} />
+      </FilterBar>
       <DataTable
         error={list.error}
         loading={list.loading}

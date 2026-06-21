@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 import { Alert, Badge, Button, EmptyState, ListSkeleton, Skeleton as DsSkeleton, Spinner, cn } from "../../../design-system";
+import { FilterBar } from "./FilterBar";
+
+export { FilterBar } from "./FilterBar";
+export { filterFieldWidth, FILTER_WIDTH } from "./cmsFilterLayout";
 
 export function SectionHeader({
   title,
@@ -108,9 +112,7 @@ export function MobileMetricTile({
 
 export function MobileFilterBar({ children }: { children: ReactNode }) {
   return (
-    <div className="-mx-3 overflow-x-auto px-3 pb-1 sm:-mx-4 sm:px-4 lg:mx-0 lg:overflow-visible lg:px-0 lg:pb-0">
-      <div className="flex min-w-full gap-2 [&>*]:min-w-0 [&>*]:flex-1 lg:min-w-0 lg:flex-wrap lg:[&>*]:flex-none">{children}</div>
-    </div>
+    <FilterBar>{children}</FilterBar>
   );
 }
 
@@ -508,7 +510,7 @@ export function MobileFeatureCard({
 }
 
 export function Toolbar({ children }: { children: ReactNode }) {
-  return <div className="flex w-full max-w-4xl flex-col gap-2 md:flex-row md:items-center">{children}</div>;
+  return <FilterBar>{children}</FilterBar>;
 }
 
 export function Status({ active, done, label }: { active: boolean; done?: boolean; label?: string }) {

@@ -38,17 +38,16 @@ import {
 import { AI_JOB_POLL_INTERVAL_MS, pollAiJob, SCOPE_AI_POLL_TIMEOUT_MS } from "../../../shared/lib/pollAiJob";
 import type { CmsPrincipal } from "../api/cmsTypes";
 import {
+  FilterBar,
   HelpCallout,
   InlineError,
   MobileFeatureCard,
-  MobileFilterBar,
   MobileMetricTile,
   MobilePageHero,
   MobileRecordCard,
   MobileRecordField,
   SectionHeader,
   Skeleton,
-  Toolbar,
 } from "../components/CmsPrimitives";
 import { TeamBadge } from "../components/TeamBadge";
 import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
@@ -512,18 +511,9 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
       {error ? <InlineError text={error} /> : null}
 
       {principal.is_superuser ? (
-        <>
-          <div className="lg:hidden">
-            <MobileFilterBar>
-              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-            </MobileFilterBar>
-          </div>
-          <div className="hidden lg:block">
-            <Toolbar>
-              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-            </Toolbar>
-          </div>
-        </>
+        <FilterBar>
+          <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
+        </FilterBar>
       ) : null}
 
       {loading ? (

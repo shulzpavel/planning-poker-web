@@ -4,13 +4,12 @@ import type { UseCmsListResult } from "../hooks/useCmsList";
 import { useCmsTeams } from "../hooks/useCmsTeams";
 import { TeamFilter } from "./TeamFilter";
 import {
+  FilterBar,
   HelpCallout,
   InlineError,
   LoadMoreFooter,
-  MobileFilterBar,
   MobilePageHero,
   SectionHeader,
-  Toolbar,
 } from "./CmsPrimitives";
 
 type HeroStat = {
@@ -31,10 +30,12 @@ export interface CmsTeamListPageProps {
   helpCallout?: { title?: ReactNode; children: ReactNode };
   teamFilter: string;
   onTeamFilterChange: (value: string) => void;
-  /** Desktop toolbar controls shown before the team filter. */
+  /** Filter controls (search, status, …) — team filter is appended for superusers. */
   toolbar?: ReactNode;
-  /** Optional duplicate toolbar row on mobile (below team filter). */
-  mobileToolbar?: ReactNode;
+  onRefresh?: () => void;
+  onReset?: () => void;
+  resetLabel?: string;
+  refreshLoading?: boolean;
   error?: string | null;
   banner?: ReactNode;
   /** When set, renders a standalone LoadMoreFooter below children. */
@@ -50,8 +51,8 @@ export interface CmsTeamListPageProps {
 }
 
 /**
- * Shared CMS list page shell: mobile hero, desktop header, superuser team
- * filter (mobile bar + desktop toolbar), optional help callout and paging footer.
+ * Shared CMS list page shell: mobile hero, desktop header, unified filter bar
+ * (page filters + superuser team filter), optional help callout and paging footer.
  */
 export function CmsTeamListPage({
   principal,
@@ -65,7 +66,10 @@ export function CmsTeamListPage({
   teamFilter,
   onTeamFilterChange,
   toolbar,
-  mobileToolbar,
+  onRefresh,
+  onReset,
+  resetLabel,
+  refreshLoading,
   error,
   banner,
   listFooter,
@@ -74,6 +78,7 @@ export function CmsTeamListPage({
 }: CmsTeamListPageProps) {
   const { teams } = useCmsTeams(principal);
   const showTeamFilter = principal.is_superuser;
+  const showFilterBar = Boolean(toolbar || showTeamFilter);
 
   return (
     <section className={className}>
@@ -97,28 +102,18 @@ export function CmsTeamListPage({
       {banner}
       {error ? <InlineError text={error} /> : null}
 
-      {showTeamFilter ? (
-        <>
-          <div className="lg:hidden">
-            <MobileFilterBar>
-              <TeamFilter teams={teams} value={teamFilter} onChange={onTeamFilterChange} />
-            </MobileFilterBar>
-          </div>
-          {mobileToolbar ? <div className="space-y-2 lg:hidden">{mobileToolbar}</div> : null}
-          <div className="hidden lg:block">
-            <Toolbar>
-              {toolbar}
-              <TeamFilter teams={teams} value={teamFilter} onChange={onTeamFilterChange} />
-            </Toolbar>
-          </div>
-        </>
-      ) : toolbar ? (
-        <>
-          <div className="lg:hidden">{mobileToolbar ?? toolbar}</div>
-          <div className="hidden lg:block">
-            <Toolbar>{toolbar}</Toolbar>
-          </div>
-        </>
+      {showFilterBar ? (
+        <FilterBar
+          onRefresh={onRefresh}
+          onReset={onReset}
+          resetLabel={resetLabel}
+          refreshLoading={refreshLoading}
+        >
+          {toolbar}
+          {showTeamFilter ? (
+            <TeamFilter teams={teams} value={teamFilter} onChange={onTeamFilterChange} />
+          ) : null}
+        </FilterBar>
       ) : null}
 
       {children}
