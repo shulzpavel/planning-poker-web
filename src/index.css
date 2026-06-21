@@ -171,6 +171,26 @@
     box-shadow: var(--shadow-card);
   }
 
+  @media (max-width: 1023px) {
+    .cms-shell .scope-collapsible-card {
+      box-shadow: none;
+    }
+  }
+
+  .cms-section-body {
+    @apply space-y-4 p-3 sm:p-4 lg:space-y-5 lg:p-7;
+  }
+
+  .planner-velocity-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 640px) {
+    .planner-velocity-row {
+      grid-template-columns: var(--planner-velocity-grid);
+    }
+  }
+
   .scope-board-header__toolbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

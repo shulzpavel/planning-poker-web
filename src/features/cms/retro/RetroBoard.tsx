@@ -80,7 +80,7 @@ export function RetroBoard({
         ) : null}
       </div>
 
-      <div className="grid gap-3 lg:gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-2 lg:gap-4 2xl:grid-cols-3">
         {orderedSections.map((section) => {
           const cards = grouped.get(section.section_id) ?? [];
           const sectionGroups = groups.get(section.section_id) ?? [];
@@ -92,7 +92,7 @@ export function RetroBoard({
             <Surface
               key={section.section_id}
               className={[
-                "flex flex-col gap-4 p-4 sm:p-5",
+                "-mx-3 flex flex-col gap-3 rounded-none border-x-0 p-3 shadow-none sm:-mx-4 sm:p-4 lg:mx-0 lg:gap-4 lg:rounded-lg lg:border-x lg:p-5 lg:shadow-card",
                 compactOnMobile ? "min-h-0 lg:min-h-72" : "min-h-72",
                 isActive && state.phase === "collecting" ? "ring-2 ring-blue/40" : "",
               ].join(" ")}
@@ -107,7 +107,7 @@ export function RetroBoard({
               </div>
 
               {compactOnMobile ? (
-                <div className="flex items-center justify-between gap-3 rounded-lg bg-line2/35 px-3 py-3 text-sm text-ink3 lg:hidden">
+                <div className="flex items-center justify-between gap-3 border-y border-line bg-line2/35 px-3 py-3 text-sm text-ink3 lg:hidden">
                   <span>{hasContent ? `${cards.length + sectionGroups.length} карточек` : "Пока нет карточек"}</span>
                   <Badge tone="neutral">закрыта</Badge>
                 </div>
@@ -115,11 +115,11 @@ export function RetroBoard({
 
               <div className={compactOnMobile ? "hidden lg:block" : undefined}>
                 {!hasContent ? (
-                  <p className="rounded-xl border border-dashed border-line px-4 py-4 text-center text-sm text-ink4 lg:py-6">
+                  <p className="rounded-lg border border-dashed border-line px-3 py-4 text-center text-sm text-ink4 sm:px-4 lg:py-6">
                     Пока нет карточек
                   </p>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul className="space-y-2 lg:space-y-3">
                   {sectionGroups.map((group) => {
                     const mine = myVotes?.has(group.group_id) ?? false;
                     const budgetBlocked =
@@ -131,7 +131,7 @@ export function RetroBoard({
                     return (
                       <li
                         key={group.group_id}
-                        className="rounded-2xl border border-blue/30 bg-blue/5 px-4 py-3 text-base text-ink shadow-sm"
+                        className="rounded-lg border border-blue/30 bg-blue/5 px-3 py-3 text-base text-ink shadow-sm sm:px-4"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 space-y-2">
@@ -182,7 +182,7 @@ export function RetroBoard({
                     return (
                       <li
                         key={card.card_id}
-                        className="min-h-24 rounded-xl border border-line bg-surface px-4 py-3 text-base text-ink shadow-sm"
+                    className="min-h-0 rounded-lg border border-line bg-surface px-3 py-3 text-base text-ink shadow-sm sm:min-h-24 sm:px-4"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -359,13 +359,13 @@ export function RetroOutcomesPanel({
   return (
     <div className={["space-y-4", className].filter(Boolean).join(" ")}>
       {hasActions ? (
-        <Surface className="space-y-3 p-4 sm:p-5">
+        <Surface className="-mx-3 space-y-3 rounded-none border-x-0 p-3 shadow-none sm:-mx-4 sm:p-4 lg:mx-0 lg:rounded-lg lg:border-x lg:p-5 lg:shadow-card">
           <h3 className="text-base font-bold text-ink">Выводы по ретро</h3>
           <ul className="space-y-2">
             {state.action_items.map((item) => (
               <li
                 key={item.item_id}
-                className="rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink2 sm:text-base"
+                className="rounded-lg border border-line bg-surface px-3 py-3 text-sm text-ink2 sm:px-4 sm:text-base"
               >
                 <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{item.text}</span>
                 {item.assignee ? <span className="ml-2 text-ink3">· {item.assignee}</span> : null}

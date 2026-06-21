@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Badge, Button, Surface, cn } from "../../../design-system";
+import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import type {
   ScopeBoardMetrics,
   ScopeDeveloperBreakdown,
@@ -146,9 +147,9 @@ export function ScopeAssigneeCharts({ metrics, presentation = false }: { metrics
   const horizonMeta = HORIZON_META[horizon];
 
   return (
-    <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0", presentation && "h-full")}>
+    <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0 shadow-none", cmsMobileSectionShell, presentation && "h-full lg:shadow-card")}>
       <details className="scope-presentation-section group">
-        <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
+        <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
           <div>
             <h2 className="text-base font-semibold text-ink">Нагрузка по ролям</h2>
             <p className="scope-section-header-subtitle mt-1 text-sm">
@@ -162,7 +163,7 @@ export function ScopeAssigneeCharts({ metrics, presentation = false }: { metrics
           </span>
         </summary>
 
-        <div className="space-y-5 p-4 sm:p-6 lg:p-7">
+        <div className={cmsSectionBody}>
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <RoleSegmentPicker value={role} onChange={setRole} />
             <HorizonSegmentPicker value={horizon} onChange={setHorizon} />

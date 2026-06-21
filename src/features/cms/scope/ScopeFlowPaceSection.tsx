@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Badge, Surface, cn } from "../../../design-system";
 import type { ScopeBoardRecord, ScopeFlowPace } from "../api/cmsClient";
+import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { flowPaceStatusLabel, flowPaceStatusTone } from "./scopeFlowPaceHelpers";
 import { ScopeFlowPaceDonuts } from "./ScopeFlowPaceDonuts";
 
@@ -24,9 +25,9 @@ export const ScopeFlowPaceSection = memo(function ScopeFlowPaceSection({
   const charts = flowPace.charts?.donuts ?? [];
 
   return (
-    <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0", presentation && "h-full")}>
+    <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0 shadow-none", cmsMobileSectionShell, presentation && "h-full lg:shadow-card")}>
       <details className="scope-presentation-section group">
-        <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
+        <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base font-semibold text-ink">AI пульс спринта</h2>
@@ -44,7 +45,7 @@ export const ScopeFlowPaceSection = memo(function ScopeFlowPaceSection({
           </span>
         </summary>
 
-        <div className="border-t border-line/50 bg-bg/45 p-4 sm:p-6 lg:p-7">
+        <div className={cn("border-t border-line/50 bg-bg/45", cmsSectionBody)}>
           {charts.length > 0 ? (
             <ScopeFlowPaceDonuts
               charts={charts}
@@ -56,7 +57,7 @@ export const ScopeFlowPaceSection = memo(function ScopeFlowPaceSection({
               onChartOrderError={onChartOrderError}
             />
           ) : (
-            <p className="rounded-2xl border border-line/70 bg-surface px-6 py-8 text-center text-sm text-ink3 shadow-sm">
+            <p className="rounded-lg border border-line/70 bg-surface px-4 py-6 text-center text-sm text-ink3 shadow-none sm:px-6 sm:py-8 sm:shadow-sm">
               Нет данных — обновите scope из Jira.
             </p>
           )}

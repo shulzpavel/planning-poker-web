@@ -1,5 +1,7 @@
 import { useMemo } from "react";
+import { cn } from "../../../design-system";
 import type { ScopeBoardSnapshot, ScopeRefreshEvent, ScopeRefreshLogEntry } from "../api/cmsClient";
+import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { useIncrementalList } from "./scopeListPaging";
 import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
 
@@ -97,8 +99,8 @@ export function ScopeActivityFeed({ snapshot }: { snapshot: ScopeBoardSnapshot }
   }
 
   return (
-    <details className="scope-collapsible-card scope-presentation-section group overflow-hidden rounded-lg bg-surface">
-      <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
+    <details className={cn("scope-collapsible-card scope-presentation-section group", cmsMobileSectionShell)}>
+      <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
         <div>
           <h3 className="text-base font-semibold text-ink">Что изменилось</h3>
           <p className="scope-section-header-subtitle mt-1 text-sm">Обновлено {formatFeedTime(snapshot.refreshed_at)}</p>
@@ -110,11 +112,11 @@ export function ScopeActivityFeed({ snapshot }: { snapshot: ScopeBoardSnapshot }
         </span>
       </summary>
 
-      <div className="space-y-5 p-4 sm:p-6 lg:p-7">
+      <div className={cmsSectionBody}>
         {latestEvents.length > 0 ? <PaginatedEventList events={latestEvents} /> : null}
 
         {historyEntries.length > 0 ? (
-          <details className="group rounded-2xl bg-bg/70 p-4">
+          <details className="group rounded-lg bg-bg/70 p-3 sm:p-4">
             <summary className="cursor-pointer list-none text-sm font-semibold text-ink marker:content-none">
               <span className="group-open:hidden">История обновлений ({historyEntries.length})</span>
               <span className="hidden group-open:inline">Скрыть историю</span>

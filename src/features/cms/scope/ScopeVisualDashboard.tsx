@@ -1,6 +1,7 @@
 import { Badge, Surface, cn } from "../../../design-system";
 import type { CSSProperties } from "react";
 import type { ScopeBoardMetrics, ScopeWorkloadMode } from "../api/cmsClient";
+import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { formatScopeSp, intakeStatusMeta } from "./scopeBoardHelpers";
 import {
   buildScopeAlerts,
@@ -57,13 +58,14 @@ export function ScopeVisualDashboard({
   return (
     <Surface
       className={cn(
-        "overflow-hidden border-transparent bg-surface/80 p-0 shadow-card",
-        presentation && "scope-capacity-presentation border-line/50 bg-surface shadow-none",
+        "overflow-hidden border-transparent bg-surface/80 p-0 shadow-none",
+        cmsMobileSectionShell,
+        presentation && "scope-capacity-presentation border-line/50 bg-surface lg:shadow-none",
       )}
     >
       <div
         className={cn(
-          "space-y-5 p-4 sm:p-6 lg:p-7",
+          cmsSectionBody,
           presentation && "scope-capacity-presentation-body",
         )}
       >
@@ -231,8 +233,8 @@ function DataQualityDetailsBlock({
   const attentionCount = new Set([...details.unestimated, ...details.roleIssues].map((issue) => issue.key)).size;
 
   return (
-    <details className="scope-collapsible-card group mt-4 overflow-hidden rounded-2xl">
-      <summary className="scope-section-header-warning flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-semibold marker:content-none group-open:rounded-b-none">
+    <details className={cn("scope-collapsible-card group mt-4", cmsMobileSectionShell)}>
+      <summary className={cn("scope-section-header-warning flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold marker:content-none", cmsSectionHeaderPad)}>
         <span>
           Какие задачи требуют внимания:
           <span className="scope-section-header-subtitle ml-2 font-normal">
@@ -245,7 +247,7 @@ function DataQualityDetailsBlock({
           </svg>
         </span>
       </summary>
-      <div className="grid gap-4 px-4 pb-4 pt-4 text-sm sm:px-5 sm:pb-5 lg:grid-cols-2">
+      <div className="grid gap-3 px-0 pb-3 pt-0 text-sm sm:gap-4 sm:px-4 sm:pb-4 sm:pt-4 lg:grid-cols-2 lg:px-5 lg:pb-5">
         <QualityIssueList
           title={splitMode ? "Без SP Dev / Test" : "Без SP"}
           emptyText={splitMode ? "У всех задач заполнены SP Dev и SP Test." : "Все задачи оценены."}

@@ -90,17 +90,19 @@ export function GroupedDataTableList<T extends TeamScopedRow>({
 
   return (
     <>
-      <div className="space-y-5 lg:hidden">
-        {error ? <InlineError text={error} /> : null}
+      <div className="-mx-3 space-y-4 sm:-mx-4 lg:mx-0 lg:hidden">
+        {error ? <div className="px-3 sm:px-4"><InlineError text={error} /></div> : null}
         {showInitialSkeleton ? (
-          <ListSkeleton rows={6} />
+          <div className="px-3 sm:px-4"><ListSkeleton rows={6} /></div>
         ) : empty ? (
-          empty
+          <div className="px-3 sm:px-4">{empty}</div>
         ) : (
           groups.map((group) => (
-            <section key={group.key} className="space-y-3">
-              <TeamGroupHeading label={group.label} count={group.items.length} />
-              <div className="space-y-3">
+            <section key={group.key} className="space-y-2">
+              <div className="px-3 sm:px-4">
+                <TeamGroupHeading label={group.label} count={group.items.length} />
+              </div>
+              <div className="space-y-2">
                 {group.items.map((item) => renderMobileCard(item, true))}
               </div>
             </section>
@@ -158,7 +160,7 @@ export function TeamGroupedSections<T extends TeamScopedRow>({
   const grouped = shouldGroupListByTeam(teamFilter, items);
 
   if (!grouped) {
-    return <>{renderSection(sortByUpdatedDesc(items), false)}</>;
+    return <div className="-mx-3 sm:-mx-4 lg:mx-0">{renderSection(sortByUpdatedDesc(items), false)}</div>;
   }
 
   const groups = groupItemsByTeam(items).map((group) => ({
@@ -169,8 +171,10 @@ export function TeamGroupedSections<T extends TeamScopedRow>({
   return (
     <div className={className}>
       {groups.map((group) => (
-        <section key={group.key} className="space-y-3">
-          <TeamGroupHeading label={group.label} count={group.items.length} />
+        <section key={group.key} className="-mx-3 space-y-2 sm:-mx-4 lg:mx-0 lg:space-y-3">
+          <div className="px-3 sm:px-4 lg:px-0">
+            <TeamGroupHeading label={group.label} count={group.items.length} />
+          </div>
           {renderSection(group.items, true)}
         </section>
       ))}
@@ -181,7 +185,7 @@ export function TeamGroupedSections<T extends TeamScopedRow>({
 /** Desktop table shell shared by planner/scope list views. */
 export function ListTableSurface({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-card">
+    <div className="hidden overflow-hidden rounded-lg border border-line bg-surface shadow-card lg:block">
       {children}
     </div>
   );

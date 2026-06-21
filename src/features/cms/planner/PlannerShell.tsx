@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
@@ -11,6 +11,7 @@ import {
   Spinner,
   TextField,
   TextareaField,
+  cn,
   useToast,
 } from "../../../design-system";
 import {
@@ -52,6 +53,7 @@ import {
   useTeamIdState,
 } from "../components/TeamSelect";
 import { CmsTeamListPage } from "../components/CmsTeamListPage";
+import { cmsMobileSectionShell } from "../components/cmsMobileLayout";
 import { useCmsTeams } from "../hooks/useCmsTeams";
 import { ListTableSurface, TeamGroupedSections } from "../components/TeamGroupedSections";
 
@@ -980,12 +982,12 @@ function PlannerForm({
   const trackCount = inputs.tracks.length;
   const velocityRowStyle = useMemo(
     () => ({
-      gridTemplateColumns: `minmax(0,2fr) ${
+      "--planner-velocity-grid": `minmax(0,2fr) ${
         trackCount > 0
           ? `${Array(trackCount).fill("minmax(0,1fr)").join(" ")} `
           : ""
       }auto`,
-    }),
+    }) as CSSProperties & { "--planner-velocity-grid": string },
     [trackCount],
   );
 
@@ -1083,7 +1085,7 @@ function PlannerForm({
           {inputs.velocityHistory.map((entry, index) => (
             <div
               key={index}
-              className="grid items-end gap-2"
+              className="planner-velocity-row grid items-end gap-2"
               style={velocityRowStyle}
             >
               <TextField
@@ -1218,7 +1220,7 @@ function FormCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-line bg-surface p-4 shadow-card">
+    <div className={cn(cmsMobileSectionShell, "p-3 sm:p-4")}>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h3 className="text-sm font-bold text-ink">{title}</h3>
@@ -1253,7 +1255,7 @@ function FactCard({
     (v) => typeof v === "number" && Number.isFinite(v),
   );
   return (
-    <div className="rounded-lg border border-green/30 bg-green/5 p-4 shadow-card">
+    <div className="-mx-3 border-y border-green/30 bg-green/5 p-3 shadow-none sm:-mx-4 sm:p-4 lg:mx-0 lg:rounded-lg lg:border lg:shadow-card">
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex items-start gap-2">
           <span

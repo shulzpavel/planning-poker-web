@@ -224,7 +224,7 @@ export default function CmsShell({
         </div>
       </BottomSheet>
 
-      <div className="mx-auto max-w-7xl space-y-5 px-3 py-5 sm:px-4 lg:py-6">
+      <div className="mx-auto max-w-7xl space-y-3 px-3 py-4 sm:space-y-5 sm:px-4 sm:py-5 lg:py-6 cms-shell">
         {visibleTabs.length === 0 ? (
           <InlineError text="Для этой учётной записи не настроено ни одного раздела CMS." />
         ) : null}

@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Badge, Button, Spinner, TextareaField } from "../../../design-system";
+import { Badge, Button, Spinner, TextareaField, cn } from "../../../design-system";
+import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import type {
   ScopeBoardIssue,
   ScopeBoardSnapshot,
@@ -83,7 +84,7 @@ export function ScopeReportSection({
   const releaseMode = Boolean(releaseContext) || isReleaseReport;
 
   const body = (
-    <div className="space-y-5 p-4 sm:p-6 lg:p-7">
+    <div className={cmsSectionBody}>
       <div className="space-y-5">
         {releaseContext ? (
           <ReleaseReportBlocks
@@ -127,8 +128,8 @@ export function ScopeReportSection({
 
   if (releaseMode && releaseContext) {
     return (
-      <section className="scope-collapsible-card overflow-hidden rounded-lg bg-surface">
-        <div className="scope-section-header px-4 py-3 sm:px-5">
+      <section className={cn("scope-collapsible-card", cmsMobileSectionShell)}>
+        <div className={cn("scope-section-header", cmsSectionHeaderPad)}>
           <div>
             <h2 className="text-base font-semibold text-ink">Релиз</h2>
             <p className="scope-section-header-subtitle mt-1 text-sm">
@@ -142,8 +143,8 @@ export function ScopeReportSection({
   }
 
   return (
-    <details className="scope-collapsible-card scope-presentation-section group overflow-hidden rounded-lg bg-surface">
-      <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
+    <details className={cn("scope-collapsible-card scope-presentation-section group", cmsMobileSectionShell)}>
+      <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
         <div>
           <h2 className="text-base font-semibold text-ink">Отчёт</h2>
           <p className="scope-section-header-subtitle mt-1 text-sm">
@@ -202,7 +203,7 @@ function ReleaseReportBlocks({
   ].filter((item): item is { bucket: ScopeReleaseBucket; subtitle: string } => Boolean(item));
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-blue/20 bg-gradient-to-br from-blue/[0.12] via-surface to-surface shadow-card ring-1 ring-blue/10">
+    <div className="overflow-hidden border-y border-blue/20 bg-gradient-to-br from-blue/[0.12] via-surface to-surface shadow-none ring-1 ring-blue/10 sm:rounded-2xl sm:border sm:shadow-card lg:rounded-3xl">
       {pastSlots.length > 0 ? (
         <ReleaseContextGroup
           title="Прошедшие релизы"
@@ -218,7 +219,7 @@ function ReleaseReportBlocks({
       ) : null}
 
       <ReleaseHeroHeader bucket={current} subtitle="Текущий релиз" />
-      <div className="grid gap-4 border-t border-blue/10 p-4 lg:grid-cols-3 lg:p-5">
+      <div className="grid gap-3 border-t border-blue/10 p-3 sm:p-4 lg:grid-cols-3 lg:gap-4 lg:p-5">
         {REPORT_COLUMNS.map((column) => (
           <ReportColumn
             key={column.key}
@@ -281,7 +282,7 @@ function ReleaseContextGroup({
   onSaveReportComment?: (issueKey: string, text: string) => Promise<void>;
 }) {
   return (
-    <div className="border-t border-line/70 bg-line2/20 p-4 lg:p-5">
+    <div className="border-t border-line/70 bg-line2/20 p-3 sm:p-4 lg:p-5">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink3">{eyebrow}</p>
@@ -323,7 +324,7 @@ function ReleaseHeroHeader({ bucket, subtitle }: { bucket: ScopeReleaseBucket; s
   const progress = releaseProgress(bucket);
 
   return (
-    <div className="relative overflow-hidden p-4 sm:p-6">
+    <div className="relative overflow-hidden p-3 sm:p-4 lg:p-6">
       <div className="pointer-events-none absolute right-0 top-0 h-36 w-36 rounded-full bg-blue/10 blur-3xl" />
       <div className="relative flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-2">
@@ -332,7 +333,7 @@ function ReleaseHeroHeader({ bucket, subtitle }: { bucket: ScopeReleaseBucket; s
             Релиз
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">{displayName}</h3>
+            <h3 className="break-words text-2xl font-bold tracking-tight text-ink sm:text-4xl">{displayName}</h3>
             {bucket.project_key ? <Badge tone="info">{bucket.project_key}</Badge> : null}
             <ReleaseStatusBadge meta={meta} />
           </div>
@@ -353,7 +354,7 @@ function ReleaseHeroHeader({ bucket, subtitle }: { bucket: ScopeReleaseBucket; s
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:gap-3 xl:grid-cols-4">
         <ReleaseDateCard label="Дата начала" value={meta?.start_date} emptyLabel="Не указана дата начала" />
         <ReleaseDateCard label="Дата релиза" value={meta?.release_date} emptyLabel="Не указана дата релиза" />
         <ReleaseMetricCard label="Задач в релизе" value={String(bucket.counts.total)} />
@@ -362,7 +363,7 @@ function ReleaseHeroHeader({ bucket, subtitle }: { bucket: ScopeReleaseBucket; s
 
       <ReleaseProgressBar bucket={bucket} />
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-1.5 sm:gap-2">
         <Badge tone="info">{bucket.counts.in_work} в работе</Badge>
         <Badge tone="warning">{bucket.counts.in_test} в тесте</Badge>
         <Badge tone="success">{bucket.counts.done} готово</Badge>
@@ -412,11 +413,11 @@ function ReleaseSecondarySlot({
     <details
       className={
         isPrevious
-          ? "group overflow-hidden rounded-xl border border-line bg-surface/60"
-          : "group overflow-hidden rounded-xl border border-line bg-surface/80"
+          ? "group overflow-hidden rounded-lg border border-line bg-surface/60"
+          : "group overflow-hidden rounded-lg border border-line bg-surface/80"
       }
     >
-      <summary className="cursor-pointer list-none border-b border-line px-4 py-3 marker:content-none sm:px-5">
+      <summary className="cursor-pointer list-none border-b border-line px-3 py-3 marker:content-none sm:px-4 lg:px-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -445,7 +446,7 @@ function ReleaseSecondarySlot({
       {isPrevious ? (
         <ReleaseArchiveSummary bucket={bucket} />
       ) : (
-      <div className="grid gap-4 p-4 lg:grid-cols-3">
+      <div className="grid gap-3 p-3 sm:p-4 lg:grid-cols-3 lg:gap-4">
         {REPORT_COLUMNS.map((column) => (
           <ReportColumn
             key={column.key}
@@ -480,7 +481,7 @@ function ReleaseProgressBar({ bucket }: { bucket: ScopeReleaseBucket }) {
   const progress = releaseProgress(bucket);
 
   return (
-    <div className="mt-5 rounded-2xl border border-line/80 bg-surface/70 p-4">
+    <div className="mt-4 rounded-lg border border-line/80 bg-surface/70 p-3 sm:mt-5 sm:p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-ink">Пульс релиза</p>
         <p className="text-xs text-ink3">{bucket.counts.total} задач</p>
@@ -492,7 +493,7 @@ function ReleaseProgressBar({ bucket }: { bucket: ScopeReleaseBucket }) {
         <div className="bg-green transition-all" style={{ width: `${progress.donePct}%` }} />
         <div className="bg-red transition-all" style={{ width: `${progress.pausedPct}%` }} />
       </div>
-      <div className="mt-3 grid gap-2 text-xs text-ink3 sm:grid-cols-5">
+      <div className="mt-3 grid gap-1.5 text-xs text-ink3 sm:grid-cols-5 sm:gap-2">
         <ReleaseProgressLegend colorClass="bg-blue" label="В работе" value={`${progress.inWorkPct}%`} />
         <ReleaseProgressLegend colorClass="bg-amber" label="В тесте" value={`${progress.inTestPct}%`} />
         <ReleaseProgressLegend colorClass="bg-purple" label="К релизу" value={`${progress.readyToReleasePct}%`} />
@@ -523,8 +524,8 @@ function ReleaseArchiveSummary({ bucket }: { bucket: ScopeReleaseBucket }) {
   const issueTypeEntries = sortedCountEntries(bucket.by_issue_type).slice(0, 6);
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+    <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
+      <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
         <ReleaseMetricCard label="Итог" value={`${bucket.counts.done}/${bucket.counts.total} готово`} />
         <ReleaseMetricCard label="Story Points" value={`${formatScopeSp(totalSp)} SP`} />
         <ReleaseMetricCard label="Дата релиза" value={formatReleaseDate(bucket.version_meta?.release_date) || "Не указана"} />
@@ -536,7 +537,7 @@ function ReleaseArchiveSummary({ bucket }: { bucket: ScopeReleaseBucket }) {
       </div>
 
       {bucket.issues.length > 0 ? (
-        <div className="rounded-2xl bg-bg/60 p-4">
+        <div className="rounded-lg bg-bg/60 p-3 sm:p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h4 className="text-sm font-semibold text-ink">Задачи релиза</h4>
           </div>
@@ -623,8 +624,8 @@ function ReleaseCommentBlock({
   }
 
   return (
-    <div className={compact ? "border-t border-line bg-surface/60 p-4" : "border-t border-blue/10 bg-surface/70 p-4 sm:p-5"}>
-      <div className="rounded-2xl border border-line bg-bg/70 p-4">
+    <div className={compact ? "border-t border-line bg-surface/60 p-3 sm:p-4" : "border-t border-blue/10 bg-surface/70 p-3 sm:p-4 lg:p-5"}>
+      <div className="rounded-lg border border-line bg-bg/70 p-3 sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink3">Комментарий к релизу</p>
@@ -647,7 +648,7 @@ function ReleaseCommentBlock({
             ))}
           </ol>
         ) : (
-          <p className="mt-3 rounded-xl bg-line2/40 px-4 py-5 text-center text-sm text-ink3">
+          <p className="mt-3 rounded-lg bg-line2/40 px-3 py-4 text-center text-sm text-ink3 sm:px-4 sm:py-5">
             Пока нет комментариев — добавьте первый итог по релизу.
           </p>
         )}
@@ -695,7 +696,7 @@ function ReleaseCommentCard({
   const createdLabel = formatReleaseCommentTime(item.created_at);
 
   return (
-    <li className="flex gap-3 rounded-2xl bg-surface/80 px-3 py-3 sm:px-4">
+    <li className="flex gap-3 rounded-lg bg-surface/80 px-3 py-3 sm:px-4">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue/10 text-sm font-bold text-blue">
         {index}
       </span>
@@ -784,7 +785,7 @@ function ReleaseBreakdownList({
 }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl bg-bg/60 p-4">
+      <div className="rounded-lg bg-bg/60 p-3 sm:p-4">
         <h4 className="text-sm font-semibold text-ink">{title}</h4>
         <p className="mt-3 text-sm text-ink3">{emptyLabel}</p>
       </div>
@@ -792,7 +793,7 @@ function ReleaseBreakdownList({
   }
 
   return (
-    <div className="rounded-2xl bg-bg/60 p-4">
+    <div className="rounded-lg bg-bg/60 p-3 sm:p-4">
       <h4 className="text-sm font-semibold text-ink">{title}</h4>
       <ul className="mt-3 space-y-2">
         {items.map(([label, count]) => (
@@ -835,7 +836,7 @@ function ReleaseDateCard({
   const isEmpty = !formatted;
 
   return (
-    <div className="rounded-xl border border-line/80 bg-surface/80 px-4 py-3">
+    <div className="rounded-lg border border-line/80 bg-surface/80 px-3 py-3 sm:px-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-ink3">{label}</p>
       <p className={`mt-2 text-base font-semibold ${isEmpty ? "text-ink3" : "text-ink"}`}>
         {formatted || emptyLabel}
@@ -846,7 +847,7 @@ function ReleaseDateCard({
 
 function ReleaseMetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-line/80 bg-surface/80 px-4 py-3">
+    <div className="rounded-lg border border-line/80 bg-surface/80 px-3 py-3 sm:px-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-ink3">{label}</p>
       <p className="mt-2 text-base font-semibold text-ink">{value}</p>
     </div>
@@ -962,9 +963,9 @@ function EpicReportBlock({
         };
 
   return (
-    <details className={`overflow-hidden rounded-2xl shadow-sm ${accentStyles.shell}`}>
+    <details className={`overflow-hidden rounded-lg shadow-none sm:shadow-sm ${accentStyles.shell}`}>
       <summary
-        className={`cursor-pointer list-none px-4 py-4 marker:content-none sm:px-5 ${accentStyles.header}`}
+        className={`cursor-pointer list-none px-3 py-3 marker:content-none sm:px-4 lg:px-5 ${accentStyles.header}`}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -984,7 +985,7 @@ function EpicReportBlock({
         </div>
       </summary>
 
-      <div className="grid gap-4 p-4 lg:grid-cols-3 lg:p-5">
+      <div className="grid gap-3 p-3 sm:p-4 lg:grid-cols-3 lg:gap-4 lg:p-5">
         {REPORT_COLUMNS.map((column) => (
           <ReportColumn
             key={column.key}
@@ -1054,15 +1055,15 @@ function OpenQuestionsBlock({
     <div
       className={
         needsAttention
-          ? "border-t-4 border-t-amber bg-amber/[0.06] px-4 py-5 sm:px-5"
-          : "border-t border-line bg-line2/20 px-4 py-4 sm:px-5"
+          ? "border-t-4 border-t-amber bg-amber/[0.06] px-3 py-4 sm:px-4 lg:px-5 lg:py-5"
+          : "border-t border-line bg-line2/20 px-3 py-3 sm:px-4 lg:px-5 lg:py-4"
       }
     >
       <div
         className={
           needsAttention
-            ? "rounded-lg border border-line bg-surface p-4 shadow-sm sm:p-5"
-            : "rounded-lg border border-line bg-surface/60 p-4 sm:p-5"
+            ? "rounded-lg border border-line bg-surface p-3 shadow-sm sm:p-4 lg:p-5"
+            : "rounded-lg border border-line bg-surface/60 p-3 sm:p-4 lg:p-5"
         }
       >
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -1316,16 +1317,16 @@ function ReportColumn({
   const { visibleItems, hasMore, loadMore, loadedCount, total } = useIncrementalList(sortedIssues);
 
   return (
-    <div className="rounded-2xl bg-bg/70 p-4">
-      <div className="mb-4 flex items-center justify-between gap-2">
+    <div className="bg-transparent p-0 sm:rounded-2xl sm:bg-bg/70 sm:p-4">
+      <div className="mb-3 flex items-center justify-between gap-2 sm:mb-4">
         <h3 className="text-base font-semibold text-ink">{title}</h3>
         <Badge tone={tone}>{count}</Badge>
       </div>
       {sortedIssues.length === 0 ? (
-        <p className="rounded-xl bg-line2/40 px-3 py-5 text-center text-sm text-ink3">Нет задач</p>
+        <p className="rounded-lg bg-line2/40 px-3 py-4 text-center text-sm text-ink3 sm:py-5">Нет задач</p>
       ) : (
         <>
-          <ul className="space-y-3 text-sm">
+          <ul className="space-y-0 text-sm sm:space-y-3">
             {visibleItems.map((issue, index) => {
               const subgroup = columnKey === "in_test" ? inTestReportSubgroup(issue) : null;
               const previousSubgroup =
@@ -1341,7 +1342,7 @@ function ReportColumn({
                       </p>
                     </li>
                   ) : null}
-                  <li className="rounded-xl bg-surface/80 px-3 py-3">
+                  <li className="border-t border-line bg-transparent px-0 py-3 first:border-t-0 sm:rounded-xl sm:border-t-0 sm:bg-surface/80 sm:px-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <ReportIssueLink issue={issue} />
                       {issue.priority ? (

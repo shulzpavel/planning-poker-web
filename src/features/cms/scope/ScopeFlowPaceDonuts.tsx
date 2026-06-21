@@ -17,6 +17,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "../../../design-system";
 import type { ScopeBoardRecord, ScopeFlowAlert, ScopeFlowPaceChart, ScopeFlowPaceChartDetailSegment } from "../api/cmsClient";
+import { cmsMobileSectionShell } from "../components/cmsMobileLayout";
 import { cmsScopeApi } from "../api/cmsClient";
 import {
   FlowPaceAlertGroup,
@@ -360,7 +361,7 @@ export function ScopeFlowPaceDonuts({
       {activeChart ? (
         <section
           id={`flow-pace-detail-${activeChart.id}`}
-          className="scope-collapsible-card overflow-hidden rounded-2xl border border-line/80 bg-surface shadow-sm"
+          className={cn("scope-collapsible-card", cmsMobileSectionShell, "lg:shadow-sm")}
         >
           <div className="flex items-start justify-between gap-3 border-b border-line/60 bg-bg/45 px-4 py-3 sm:px-5">
             <div className="min-w-0">

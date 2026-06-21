@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Alert, Badge, Button, EmptyState, ListSkeleton, Skeleton as DsSkeleton, Spinner, cn } from "../../../design-system";
 import { FilterBar } from "./FilterBar";
+import { cmsHelpCalloutShell, cmsMobileBleed, cmsPageHeaderShell } from "./cmsMobileLayout";
 
 export { FilterBar, FilterResetButton } from "./FilterBar";
 export { filterFieldWidth, FILTER_WIDTH, FILTER_RESET_LABEL, filterFieldProps } from "./cmsFilterLayout";
@@ -15,7 +16,7 @@ export function SectionHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="flex w-full max-w-4xl flex-col gap-3 md:flex-row md:items-start md:justify-between">
+    <header className={cmsPageHeaderShell}>
       <div className="min-w-0">
         <h2 className="text-base font-bold text-ink sm:text-lg">{title}</h2>
         {description ? (
@@ -35,7 +36,7 @@ export function HelpCallout({
   children: ReactNode;
 }) {
   return (
-    <aside className="w-full max-w-3xl rounded-lg border border-line bg-line2/30 p-3 text-sm text-ink2 sm:p-4">
+    <aside className={cmsHelpCalloutShell}>
       {title ? <p className="mb-1 text-xs font-bold uppercase tracking-wide text-ink3">{title}</p> : null}
       <div className="space-y-1">{children}</div>
     </aside>
@@ -239,6 +240,7 @@ export function DataTable({
 }) {
   const showInitialSkeleton = showSkeleton && loading && loadedCount === 0;
   const mobileListClass = mobileUntil === "lg" ? "lg:hidden" : "md:hidden";
+  const mobileListBleedClass = cn(mobileListClass, cmsMobileBleed, "space-y-2");
   const desktopTableClass =
     mobileUntil === "lg"
       ? "hidden w-full overflow-hidden rounded-lg border border-line bg-surface shadow-card lg:block"
@@ -260,20 +262,20 @@ export function DataTable({
   if (mobileCards) {
     return (
       <>
-        <div className={mobileListClass}>
-          {error ? <div className="mb-3"><InlineError text={error} /></div> : null}
+        <div className={mobileListBleedClass}>
+          {error ? <div className="px-3 sm:px-4"><InlineError text={error} /></div> : null}
           {showInitialSkeleton ? (
-            <div className="space-y-3">
+            <div className="px-3 sm:px-4">
               <ListSkeleton rows={6} />
             </div>
           ) : empty ? (
-            <div>{empty}</div>
+            <div className="px-3 sm:px-4">{empty}</div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {mobileCards}
             </div>
           )}
-          {showFooter ? renderFooter() : null}
+          {showFooter ? <div className="px-3 sm:px-4">{renderFooter()}</div> : null}
         </div>
 
         <div className={desktopTableClass}>
@@ -360,7 +362,7 @@ export function CompactList({
   itemNoun?: string;
 }) {
   return (
-    <div className="rounded-lg border border-line bg-surface px-3 shadow-card">
+    <div className="border-y border-line bg-surface px-3 shadow-none sm:rounded-lg sm:border sm:shadow-card">
       {error ? <InlineError text={error} /> : null}
       {loading && loadedCount === 0 ? (
         <div className="py-3"><ListSkeleton rows={3} dense /></div>
@@ -401,7 +403,7 @@ export function MobileRecordCard({
   footer?: ReactNode;
 }) {
   return (
-    <article className="overflow-hidden rounded-card border border-line border-l-4 border-l-blue/35 bg-surface p-4 shadow-card">
+    <article className="overflow-hidden border border-line border-l-4 border-l-blue/35 bg-surface p-3 shadow-none sm:rounded-card sm:p-4 sm:shadow-card lg:rounded-card lg:shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -413,12 +415,12 @@ export function MobileRecordCard({
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
       {children ? (
-        <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl bg-line2/25 p-3 text-xs text-ink3 min-[380px]:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-2 border-t border-line pt-3 text-xs text-ink3 min-[380px]:grid-cols-2 sm:mt-4 sm:gap-3 sm:rounded-xl sm:border-t-0 sm:bg-line2/25 sm:p-3">
           {children}
         </div>
       ) : null}
       {footer ? (
-        <div className="mt-4 flex flex-col gap-2 border-t border-line pt-3 min-[420px]:flex-row min-[420px]:flex-wrap [&>*]:w-full min-[420px]:[&>*]:w-auto">
+        <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3 min-[420px]:flex-row min-[420px]:flex-wrap sm:mt-4 [&>*]:w-full min-[420px]:[&>*]:w-auto">
           {footer}
         </div>
       ) : null}
@@ -478,7 +480,7 @@ export function MobileFeatureCard({
     <h3 className="min-w-0 break-words text-lg font-bold leading-snug text-ink">{title}</h3>
   );
   return (
-    <article className={cn("overflow-hidden rounded-xl border border-line border-l-4 bg-surface p-4 shadow-card", accentClass)}>
+    <article className={cn("overflow-hidden border border-line border-l-4 bg-surface p-3 shadow-none sm:rounded-xl sm:p-4 sm:shadow-card lg:rounded-xl lg:shadow-card", accentClass)}>
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {eyebrow ? <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink3">{eyebrow}</div> : null}
@@ -488,9 +490,9 @@ export function MobileFeatureCard({
         {status ? <div className="shrink-0">{status}</div> : null}
       </div>
       {metrics && metrics.length > 0 ? (
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden border-y border-line bg-line sm:mt-4 sm:gap-2 sm:overflow-visible sm:border-y-0 sm:bg-transparent">
           {metrics.map((metric, index) => (
-            <div key={index} className="min-w-0 rounded-lg bg-line2/35 px-3 py-2.5">
+            <div key={index} className="min-w-0 bg-surface px-2.5 py-2 sm:rounded-lg sm:bg-line2/35 sm:px-3 sm:py-2.5">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-ink4">{metric.label}</p>
               <div className="mt-1 min-w-0 break-words text-base font-bold leading-tight text-ink2 tabular-nums">{metric.value}</div>
               {metric.hint ? <p className="mt-1 text-xs leading-snug text-ink3">{metric.hint}</p> : null}
@@ -500,7 +502,7 @@ export function MobileFeatureCard({
       ) : null}
       {children ? <div className="mt-4 text-sm leading-relaxed text-ink2">{children}</div> : null}
       {primaryAction || secondaryAction ? (
-        <div className="mt-4 flex items-stretch gap-2 border-t border-line pt-3">
+        <div className="mt-3 flex items-stretch gap-2 border-t border-line pt-3 sm:mt-4">
           {primaryAction ? <div className="min-w-0 flex-1 [&>*]:w-full [&>*]:pointer-events-auto">{primaryAction}</div> : null}
           {secondaryAction ? <div className="shrink-0 [&>*]:h-full [&>*]:pointer-events-auto">{secondaryAction}</div> : null}
         </div>

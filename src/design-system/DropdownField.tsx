@@ -142,7 +142,7 @@ export function DropdownField({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeValue, setActiveValue] = useState<string | null>(value || null);
-  const [popoverLayout, setPopoverLayout] = useState<{ left: number; top: number; width: number } | null>(null);
+  const [popoverLayout, setPopoverLayout] = useState<{ left: number; top: number; width: number; maxHeight: number } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -163,14 +163,31 @@ export function DropdownField({
 
     const margin = 8;
     const viewportWidth = window.innerWidth;
+    const viewport = window.visualViewport;
+    const viewportHeight = viewport?.height ?? window.innerHeight;
+    const viewportTop = viewport?.offsetTop ?? 0;
     const triggerRect = root.getBoundingClientRect();
-    const width = Math.min(Math.max(triggerRect.width, 280), viewportWidth - margin * 2);
-    let left = triggerRect.left;
+    const mobile = viewportWidth < 640;
+    const width = mobile
+      ? viewportWidth - margin * 2
+      : Math.min(Math.max(triggerRect.width, 280), viewportWidth - margin * 2);
+    let left = mobile ? margin : triggerRect.left;
     if (left + width > viewportWidth - margin) {
       left = Math.max(margin, viewportWidth - width - margin);
     }
 
-    setPopoverLayout({ left, top: triggerRect.bottom + 8, width });
+    const gap = 8;
+    const viewportBottom = viewportTop + viewportHeight;
+    const spaceBelow = viewportBottom - triggerRect.bottom - margin - gap;
+    const spaceAbove = triggerRect.top - viewportTop - margin - gap;
+    const openAbove = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const available = Math.max(132, openAbove ? spaceAbove : spaceBelow);
+    const maxHeight = Math.min(360, available);
+    const top = openAbove
+      ? Math.max(viewportTop + margin, triggerRect.top - gap - maxHeight)
+      : Math.min(triggerRect.bottom + gap, viewportBottom - margin - maxHeight);
+
+    setPopoverLayout({ left, top, width, maxHeight });
   }, []);
 
   useEffect(() => {
@@ -196,11 +213,15 @@ export function DropdownField({
 
     window.addEventListener("resize", layoutPopover);
     window.addEventListener("scroll", layoutPopover, true);
+    window.visualViewport?.addEventListener("resize", layoutPopover);
+    window.visualViewport?.addEventListener("scroll", layoutPopover);
 
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", layoutPopover);
       window.removeEventListener("scroll", layoutPopover, true);
+      window.visualViewport?.removeEventListener("resize", layoutPopover);
+      window.visualViewport?.removeEventListener("scroll", layoutPopover);
     };
   }, [enabledOptions, filteredOptions, layoutPopover, open, searchable, value]);
 
@@ -310,11 +331,12 @@ export function DropdownField({
                       left: popoverLayout.left,
                       top: popoverLayout.top,
                       width: popoverLayout.width,
+                      maxHeight: popoverLayout.maxHeight,
                     }
                   : undefined
               }
               className={cn(
-                "fixed z-[110] rounded-2xl border border-line bg-surface p-2 shadow-xl",
+                "fixed z-[110] overflow-hidden rounded-xl border border-line bg-surface p-1.5 shadow-xl sm:rounded-2xl sm:p-2",
                 !popoverLayout && "pointer-events-none opacity-0",
               )}
               onKeyDown={handleControlKeyDown}
@@ -335,7 +357,17 @@ export function DropdownField({
                 </div>
               ) : null}
 
-              <div id={listboxId} role="listbox" aria-labelledby={inputId} className="max-h-72 overflow-y-auto">
+              <div
+                id={listboxId}
+                role="listbox"
+                aria-labelledby={inputId}
+                className="overflow-y-auto"
+                style={
+                  popoverLayout
+                    ? { maxHeight: Math.max(96, popoverLayout.maxHeight - (searchable ? 54 : 0)) }
+                    : undefined
+                }
+              >
                 {filteredOptions.length > 0 ? (
                   filteredOptions.map((option) => {
                     const selected = option.value === value;
@@ -367,7 +399,7 @@ export function DropdownField({
                         )}
                       >
                         <span className="min-w-0">
-                          <span className="block truncate font-semibold">{option.label}</span>
+                          <span className="block break-words font-semibold sm:truncate">{option.label}</span>
                           {option.hint ? <span className="mt-0.5 block text-xs text-ink3">{option.hint}</span> : null}
                         </span>
                         {selected ? <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" /> : null}

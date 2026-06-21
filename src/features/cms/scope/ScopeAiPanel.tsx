@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Badge, cn } from "../../../design-system";
+import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { normalizeAiHistory } from "./scopeAiHistory";
 import { ScopeAiJiraExportBadge } from "./scopeAiJiraExport";
 import { ScopeAiView, formatAiTime, HEALTH_LABELS, HEALTH_TONE } from "./ScopeAiView";
@@ -61,13 +62,14 @@ export function ScopeAiPanel({
     return (
       <details
         className={cn(
-          "scope-collapsible-card group overflow-hidden rounded-lg bg-surface",
+          "scope-collapsible-card group",
+          cmsMobileSectionShell,
           presentation && "scope-presentation-section",
         )}
         open={open || analyzing}
         onToggle={(event) => setOpen(event.currentTarget.open)}
       >
-        <summary className="scope-section-header cursor-pointer list-none px-4 py-3 marker:content-none sm:px-5">
+        <summary className={cn("scope-section-header cursor-pointer list-none marker:content-none", cmsSectionHeaderPad)}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-base font-semibold text-ink">AI-сводка для бизнеса</span>
             <span className="scope-print-hide inline-flex items-center gap-2 text-xs font-semibold text-ink">
@@ -81,7 +83,7 @@ export function ScopeAiPanel({
             </span>
           </div>
         </summary>
-        <div className="p-4 text-sm text-ink2 sm:p-6 lg:p-7">
+        <div className={cn(cmsSectionBody, "text-sm text-ink2")}>
           {analyzing
             ? "Генерируем AI-сводку по текущему snapshot..."
             : "Нажмите «AI-анализ» в шапке отчёта, чтобы получить бизнес-сводку."}
@@ -97,13 +99,14 @@ export function ScopeAiPanel({
   return (
     <details
       className={cn(
-        "scope-collapsible-card group overflow-hidden rounded-lg bg-surface",
+        "scope-collapsible-card group",
+        cmsMobileSectionShell,
         presentation && "scope-presentation-section",
       )}
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
-      <summary className="scope-section-header cursor-pointer list-none px-4 py-3 marker:content-none sm:px-5">
+      <summary className={cn("scope-section-header cursor-pointer list-none marker:content-none", cmsSectionHeaderPad)}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-base font-semibold text-ink">AI-сводка для бизнеса</span>
@@ -127,7 +130,7 @@ export function ScopeAiPanel({
         </div>
       </summary>
 
-      <div className="p-4 sm:p-6 lg:p-7">
+      <div className={cmsSectionBody}>
         <div className="scope-ai-panel-grid grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
             <ScopeAiView
               key={activeEntry.id}

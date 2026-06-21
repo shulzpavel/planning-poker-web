@@ -12,6 +12,7 @@ import {
   Spinner,
   Surface,
   TextField,
+  cn,
   useToast,
 } from "../../../design-system";
 import { ApiError } from "../../../shared/api/http";
@@ -20,6 +21,7 @@ import {
   MobileFeatureCard,
   SectionHeader,
 } from "../components/CmsPrimitives";
+import { cmsMobileSurface } from "../components/cmsMobileLayout";
 import { CmsTeamListPage } from "../components/CmsTeamListPage";
 import { GroupedDataTableList } from "../components/TeamGroupedSections";
 import {
@@ -424,7 +426,7 @@ function RetroConfigForm({
   }
 
   return (
-    <Surface className="space-y-4 p-4">
+    <Surface className={cn("space-y-4", cmsMobileSurface)}>
       {error ? <Alert tone="danger">{error}</Alert> : null}
       <TextField
         label="Название ретро"
@@ -585,12 +587,12 @@ function RetroDetailPage({ canManage, canAnalyze }: { canManage: boolean; canAna
             onCancel={() => navigate("/cms/retro")}
           />
         ) : (
-          <Surface className="p-4 text-sm text-ink2">
+          <Surface className={cn("text-sm text-ink2", cmsMobileSurface)}>
             У вас есть доступ на просмотр, но нет прав на изменение или запуск ретро.
           </Surface>
         )}
         {canManage ? (
-          <Surface className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <Surface className={cn("flex flex-wrap items-center justify-between gap-3", cmsMobileSurface)}>
             <p className="text-sm text-ink2">Готовы начать? Сохранённая конфигурация запустит живое ретро.</p>
             <Button intent="open" onClick={() => void startOrResume()} loading={starting}>
               Запустить ретро
@@ -773,7 +775,7 @@ function RetroCockpit({
 
       {error ? <Alert tone="warning">{error}</Alert> : null}
 
-      <Surface className="space-y-2 p-4">
+      <Surface className={cn("space-y-2", cmsMobileSurface)}>
         <p className="text-sm font-semibold text-ink3">Ссылка для команды</p>
         <div className="flex flex-wrap items-center gap-2">
           <code className="flex-1 break-all rounded-md border border-line bg-surface px-3 py-2 text-xs text-ink2">
@@ -862,7 +864,7 @@ function RetroCockpit({
       ) : null}
 
       {state.phase === "done" ? (
-        <Surface className="space-y-3 p-4">
+        <Surface className={cn("space-y-3", cmsMobileSurface)}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-base font-bold text-ink">AI-анализ итогов</h3>
             {canAnalyze ? (
@@ -906,7 +908,7 @@ function ManagerControls({
   const nextSection = nextUnopenedSection(state);
 
   return (
-    <Surface className="space-y-3 p-4">
+    <Surface className={cn("space-y-3", cmsMobileSurface)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-ink3">Управление ходом ретро</p>
         {state.phase === "collecting" && countdown ? (
@@ -1025,7 +1027,7 @@ function ActionItemsPanel({
   }
 
   return (
-    <Surface className="space-y-3 p-4">
+    <Surface className={cn("space-y-3", cmsMobileSurface)}>
       <p className="text-sm font-semibold text-ink3">Задачи по итогам</p>
       {state.action_items.length === 0 ? (
         <p className="text-xs text-ink4">Пока нет зафиксированных действий.</p>

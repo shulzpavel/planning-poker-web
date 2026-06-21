@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Badge, Button, Spinner, TextareaField } from "../../../design-system";
+import { Badge, Button, Spinner, TextareaField, cn } from "../../../design-system";
+import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import type { ScopeBoardSnapshot, ScopeTopItem } from "../api/cmsClient";
 import { TextWithLinks } from "./textWithLinks";
 
@@ -45,8 +46,8 @@ export function ScopeTopItemsSection({
   }
 
   return (
-    <details className="scope-collapsible-card scope-presentation-section group overflow-hidden rounded-2xl">
-      <summary className="scope-section-header cursor-pointer list-none rounded-2xl px-4 py-3 marker:content-none sm:px-5 group-open:rounded-b-none">
+    <details className={cn("scope-collapsible-card scope-presentation-section group", cmsMobileSectionShell)}>
+      <summary className={cn("scope-section-header cursor-pointer list-none marker:content-none", cmsSectionHeaderPad)}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-ink">Топ-10 вопросов и задач</span>
@@ -64,8 +65,8 @@ export function ScopeTopItemsSection({
         </div>
       </summary>
 
-      <div className="space-y-4 pt-4">
-        <div className="rounded-2xl bg-blue/[0.05] px-4 py-3">
+      <div className={cmsSectionBody}>
+        <div className="rounded-lg bg-blue/[0.05] px-3 py-3 sm:rounded-2xl sm:px-4">
           <p className="text-sm font-medium text-ink">Если отчёт будет огромный</p>
           <p className="mt-1 text-sm text-ink2">
             Оставьте здесь только главное для бизнеса: ключевые вопросы, риски и задачи, которые нужно обсудить на
@@ -74,7 +75,7 @@ export function ScopeTopItemsSection({
         </div>
 
         {items.length > 0 ? (
-          <ol className="space-y-3">
+          <ol className="divide-y divide-line sm:space-y-3 sm:divide-y-0">
             {items.map((item, index) => (
               <TopItemCard
                 key={item.id}
@@ -87,13 +88,13 @@ export function ScopeTopItemsSection({
             ))}
           </ol>
         ) : (
-          <p className="rounded-2xl bg-line2/40 px-4 py-6 text-center text-sm text-ink3">
+          <p className="rounded-lg bg-line2/40 px-3 py-5 text-center text-sm text-ink3 sm:px-4 sm:py-6">
             Пока нет пунктов — добавьте первый вопрос или задачу для бизнеса.
           </p>
         )}
 
         {canManage ? (
-          <div className="rounded-2xl bg-bg/70 px-3 py-3">
+          <div className="rounded-lg bg-bg/70 px-0 py-0 sm:px-3 sm:py-3">
             <TextareaField
               label="Новый пункт"
               rows={2}

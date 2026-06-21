@@ -1,4 +1,5 @@
 import { Badge, Surface, cn } from "../../../design-system";
+import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import type { ScopeBoardIssue, ScopeBoardMetrics } from "../api/cmsClient";
 
 export function planChangeReasonLabel(issue: ScopeBoardIssue): string {
@@ -96,9 +97,9 @@ export function ScopePlanInsights({ metrics, presentation = false }: { metrics: 
   }
 
   return (
-    <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0", presentation && "h-full")}>
+    <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0 shadow-none", cmsMobileSectionShell, presentation && "h-full lg:shadow-card")}>
       <details className="scope-presentation-section group">
-        <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
+        <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
           <div>
             <h2 className="text-base font-semibold text-ink">Plan status и Plan change reason</h2>
             <p className="scope-section-header-subtitle mt-1 text-sm">
@@ -111,7 +112,7 @@ export function ScopePlanInsights({ metrics, presentation = false }: { metrics: 
             </svg>
           </span>
         </summary>
-        <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-2 lg:p-7">
+        <div className={cn("grid gap-4 lg:grid-cols-2 lg:gap-5", cmsSectionBody)}>
           <CountBarChart
             title="Plan change reason"
             subtitle="Чем чаще меняли план — тем длиннее полоска"

@@ -22,6 +22,7 @@ import {
   Surface,
   TextField,
   TextareaField,
+  cn,
   useToast,
 } from "../../../design-system";
 import {
@@ -49,6 +50,7 @@ import {
   SectionHeader,
   Skeleton,
 } from "../components/CmsPrimitives";
+import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad, cmsMobileSurface } from "../components/cmsMobileLayout";
 import { TeamBadge } from "../components/TeamBadge";
 import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
 import {
@@ -814,7 +816,7 @@ function ReleaseQueriesEditor({
   ];
 
   return (
-    <div className="space-y-3 rounded-2xl border border-line bg-bg/60 p-4">
+    <div className="space-y-3 rounded-lg border border-line bg-bg/60 p-3 sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-ink">Дополнительные релизы</p>
@@ -830,7 +832,7 @@ function ReleaseQueriesEditor({
       {queries.length > 0 ? (
         <div className="space-y-3">
           {queries.map((query, index) => (
-            <div key={query.id} className="rounded-xl border border-line bg-surface p-3">
+            <div key={query.id} className="rounded-lg border border-line bg-surface p-3">
               <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)_auto]">
                 <DropdownField
                   label="Тип релиза"
@@ -866,7 +868,7 @@ function ReleaseQueriesEditor({
           ))}
         </div>
       ) : (
-        <p className="rounded-xl bg-line2/40 px-4 py-5 text-center text-sm text-ink3">
+        <p className="rounded-lg bg-line2/40 px-3 py-4 text-center text-sm text-ink3 sm:px-4 sm:py-5">
           Дополнительных релизов пока нет. Текущий релиз задаётся JQL выше.
         </p>
       )}
@@ -1540,8 +1542,8 @@ function ScopeBoardEditorPage({
             {resolveSnapshotSections(snapshot).map((section) => {
               const sectionMetrics = metrics.sections?.find((item) => item.id === section.id);
               return (
-                <details key={section.id} className="scope-collapsible-card group overflow-hidden rounded-lg bg-surface">
-                  <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:content-none sm:px-5">
+                <details key={section.id} className={cn("scope-collapsible-card group", cmsMobileSectionShell)}>
+                  <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
                     <div>
                       <p className="text-base font-semibold text-ink">
                         {section.name} · {sectionMetrics?.count ?? section.issues.length} задач
@@ -1577,8 +1579,8 @@ function ScopeBoardEditorPage({
         );
       case "settings":
         return (
-          <details className="scope-collapsible-card scope-no-print group overflow-hidden rounded-lg bg-surface">
-            <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-ink marker:content-none sm:px-5">
+          <details className={cn("scope-collapsible-card scope-no-print group", cmsMobileSectionShell)}>
+            <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink marker:content-none", cmsSectionHeaderPad)}>
               <span>⚙ Настройки и JQL</span>
               <span className="scope-section-header-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform group-open:rotate-180">
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
@@ -1586,7 +1588,7 @@ function ScopeBoardEditorPage({
                 </svg>
               </span>
             </summary>
-            <div className="space-y-5 p-4 sm:p-6 lg:p-7">
+            <div className="space-y-4 p-3 sm:p-4 lg:space-y-5 lg:p-7">
               <div className="grid gap-4 md:grid-cols-2">
                 <TextField
                   label="Название"
@@ -1776,7 +1778,7 @@ function ScopeBoardEditorPage({
       {!loading ? (
         <>
           {mode === "create" ? (
-            <Surface className="space-y-4 p-4 sm:p-5">
+            <Surface className={cn("space-y-4", cmsMobileSurface, "lg:p-5")}>
               <HelpCallout title="Команда">
                 <p>
                   Отчёт привязан к команде — пользователи других команд его не увидят. Как при создании сессии
@@ -1882,8 +1884,8 @@ function ScopeBoardEditorPage({
           ) : null}
 
           {mode === "create" ? (
-            <details className="scope-collapsible-card scope-no-print group overflow-hidden rounded-lg bg-surface" open>
-            <summary className="scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-ink marker:content-none sm:px-5">
+            <details className={cn("scope-collapsible-card scope-no-print group", cmsMobileSectionShell)} open>
+            <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink marker:content-none", cmsSectionHeaderPad)}>
               <span>
                 <span className="group-open:hidden">⚙ Настройки и JQL</span>
                 <span className="hidden group-open:inline">⚙ Настройки и JQL</span>
@@ -1894,7 +1896,7 @@ function ScopeBoardEditorPage({
                 </svg>
               </span>
             </summary>
-            <div className="space-y-5 p-4 sm:p-6 lg:p-7">
+            <div className="space-y-4 p-3 sm:p-4 lg:space-y-5 lg:p-7">
               {isReleaseTemplate ? (
                 <div className="space-y-5">
                   <TextareaField
@@ -2025,10 +2027,10 @@ function ScopeTasksSection({
 
   const body =
     issues.length === 0 ? (
-      <p className="px-4 py-6 text-sm text-ink3 sm:px-5">Нет задач по JQL.</p>
+      <p className="px-3 py-5 text-sm text-ink3 sm:px-4 lg:px-5 lg:py-6">Нет задач по JQL.</p>
     ) : (
       <>
-        <div className="space-y-3 p-4 sm:p-5 lg:hidden">
+        <div className="space-y-2 p-0 sm:p-4 lg:hidden">
           {visibleItems.map((issue) => (
             <MobileRecordCard
               key={issue.key}
@@ -2109,7 +2111,7 @@ function ScopeTasksSection({
             </tbody>
           </table>
         </div>
-        <div className="px-4 pb-4 lg:px-5">
+        <div className="px-3 pb-3 sm:px-4 sm:pb-4 lg:px-5">
           <ScopeIncrementalFooter
             loadedCount={loadedCount}
             total={total}
@@ -2126,7 +2128,7 @@ function ScopeTasksSection({
 
   return (
     <Surface className="overflow-hidden p-0">
-      <div className="border-b border-line px-4 py-3 sm:px-5">
+      <div className="border-b border-line px-3 py-3 sm:px-4 lg:px-5">
         <h3 className="text-sm font-bold uppercase tracking-wide text-ink3">{title}</h3>
         <p className="mt-1 text-xs text-ink3">
           {issues.length} задач{statusSummary ? ` · ${statusSummary}` : ""}

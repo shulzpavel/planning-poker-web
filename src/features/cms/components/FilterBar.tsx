@@ -6,6 +6,7 @@ import {
   filterRefreshButtonClass,
   filterResetButtonClass,
 } from "./cmsFilterLayout";
+import { cmsFilterBarShell } from "./cmsMobileLayout";
 import { compactFilterFields } from "./filterFieldUtils";
 
 export type FilterBarProps = {
@@ -97,13 +98,7 @@ export function FilterBar({
   const hasActions = Boolean(onRefresh || onReset);
 
   return (
-    <div
-      className={cn(
-        "w-full max-w-4xl rounded-xl border border-line/80 bg-surface/40 p-3 shadow-none",
-        className,
-      )}
-      data-filter-bar=""
-    >
+    <div className={cn(cmsFilterBarShell, className)} data-filter-bar="">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{compactFilterFields(children)}</div>
         {hasActions ? (

@@ -33,6 +33,7 @@ import type {
   TaskItem,
   WebParticipantItem,
 } from "../api/cmsTypes";
+import { cmsMobileSectionShell, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { TeamBadge } from "../components/TeamBadge";
 import { teamFilterParams } from "../components/TeamFilter";
 import {
@@ -42,7 +43,7 @@ import {
   useTeamIdState,
 } from "../components/TeamSelect";
 import { useCmsTeams } from "../hooks/useCmsTeams";
-import { Alert, Badge, BottomSheet, Button, ConfirmDialog, DropdownField, EmptyState, ScrollArea, SheetActionButton, SheetFooterActions, Surface, TextField } from "../../../design-system";
+import { Alert, Badge, BottomSheet, Button, ConfirmDialog, DropdownField, EmptyState, ScrollArea, SheetActionButton, SheetFooterActions, Surface, TextField, cn } from "../../../design-system";
 import {
   CompactList,
   FilterBar,
@@ -762,8 +763,8 @@ function SessionDetails({
   }
 
   return (
-    <section className="rounded-lg border border-line bg-surface shadow-card">
-      <header className="border-b border-line px-4 py-3">
+    <section className={cn(cmsMobileSectionShell)}>
+      <header className={cn("border-b border-line", cmsSectionHeaderPad)}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             {renaming && detail ? (
@@ -861,9 +862,9 @@ function SessionDetails({
           </div>
         </div>
       </header>
-      {error ? <div className="p-4"><InlineError text={error} /></div> : null}
+      {error ? <div className="p-3 sm:p-4"><InlineError text={error} /></div> : null}
       {detail ? (
-        <div className="grid gap-4 p-4 xl:grid-cols-[minmax(280px,360px)_1fr]">
+        <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-[minmax(280px,360px)_1fr]">
           <div className="space-y-4">
             <ParticipantsBlock
               participants={participantList.items}
@@ -1300,7 +1301,7 @@ function TaskVirtualList({
   );
 
   return (
-    <div className="rounded-lg border border-line px-3">
+    <div className="-mx-3 border-y border-line px-3 sm:mx-0 sm:rounded-lg sm:border">
       {error ? <InlineError text={error} /> : null}
       {tasks.length === 0 && !loading ? <p className="py-4 text-sm text-ink3">Задач не найдено.</p> : null}
       {queueMode && canManage ? (
@@ -1407,7 +1408,7 @@ function ManualTaskPanel({
         busy={busy}
         onRun={onRun}
       />
-      <Surface as="form" className="space-y-3 p-3" onSubmit={submitManual}>
+      <Surface as="form" className="space-y-3 rounded-none border-x-0 p-3 shadow-none sm:rounded-lg sm:border-x sm:shadow-card" onSubmit={submitManual}>
         <p className="text-xs font-semibold uppercase tracking-wide text-ink3">Добавить задачу вручную</p>
         <div className="grid gap-2 sm:grid-cols-[1fr_120px]">
           <TextField label="Summary" placeholder="Кейс или фича" value={summary} onChange={(event) => setSummary(event.target.value)} />
@@ -1488,7 +1489,7 @@ function JiraImportPanel({
   }
 
   return (
-    <Surface as="form" className="space-y-3 p-3" onSubmit={loadPreview}>
+    <Surface as="form" className="space-y-3 rounded-none border-x-0 p-3 shadow-none sm:rounded-lg sm:border-x sm:shadow-card" onSubmit={loadPreview}>
       <p className="text-xs font-semibold uppercase tracking-wide text-ink3">Импорт из Jira</p>
       <div className="grid gap-2 sm:grid-cols-[1fr_110px]">
         <TextField label="JQL" placeholder="Пользуйтесь поиском задач в Jira через JQL" value={jql} onChange={(event) => setJql(event.target.value)} />
