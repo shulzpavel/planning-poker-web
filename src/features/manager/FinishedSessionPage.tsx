@@ -250,7 +250,7 @@ export default function FinishedSessionPage() {
           <>
             <Button
               size="sm"
-	              intent="apply"
+                intent="apply"
               disabled={!canSyncJira || jiraSyncBusy}
               loading={jiraSyncBusy}
               onClick={() => { void syncJiraSp(); }}
@@ -260,7 +260,7 @@ export default function FinishedSessionPage() {
             </Button>
             <Button
               size="sm"
-	              intent="save"
+                intent="save"
               disabled={!canDownload}
               onClick={downloadCsv}
               className="hidden md:inline-flex"
@@ -269,14 +269,14 @@ export default function FinishedSessionPage() {
             </Button>
             <Button
               size="sm"
-	              intent="save"
+                intent="save"
               disabled={!canDownload}
               onClick={downloadMarkdown}
               className="hidden md:inline-flex"
             >
               MD
             </Button>
-	            <Button size="sm" intent="open" onClick={() => navigate("/manage")} className="hidden md:inline-flex">
+              <Button size="sm" intent="open" onClick={() => navigate("/manage")} className="hidden md:inline-flex">
               Cockpit
             </Button>
           </>
@@ -308,7 +308,7 @@ export default function FinishedSessionPage() {
           stays thumb-reachable, everything else lives in the sheet. */}
       <MobileBottomDock aria-label="Действия отчёта" contentClassName="max-w-6xl">
           <Button
-	            intent="save"
+              intent="save"
             className="flex-1 min-h-12"
             disabled={!canDownload}
             onClick={downloadMarkdown}
@@ -316,7 +316,7 @@ export default function FinishedSessionPage() {
             Скачать MD
           </Button>
           <Button
-	            intent="more"
+              intent="more"
             className="min-h-12 px-3"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Ещё действия"
@@ -682,7 +682,7 @@ function FinishedTasksFooter({
     <div className="flex flex-col items-center gap-2 border-t border-line bg-canvas px-4 py-3">
       {error ? <Alert tone="danger">{error}</Alert> : null}
       {hasMore ? (
-	        <Button intent="more" size="sm" onClick={onMore} loading={loadingMore} disabled={loadingMore}>
+          <Button intent="more" size="sm" onClick={onMore} loading={loadingMore} disabled={loadingMore}>
           Показать ещё
         </Button>
       ) : (
@@ -810,7 +810,7 @@ function TaskRow({
           )}
           <Button
             size="sm"
-	            intent="edit"
+              intent="edit"
             disabled={reopenBusy !== null}
             loading={reopenBusy === entry.task_id}
             onClick={() => { void onReopen(entry.task_id); }}
@@ -883,7 +883,7 @@ function TaskCard({
       </div>
       <Button
         size="sm"
-	        intent="edit"
+          intent="edit"
         className="mt-3 w-full"
         disabled={reopenBusy !== null}
         loading={reopenBusy === entry.task_id}

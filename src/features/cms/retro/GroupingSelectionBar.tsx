@@ -63,10 +63,10 @@ export function GroupingSelectionBar({
                 }}
               />
               <div className="flex shrink-0 items-center gap-2">
-	                <Button intent="create" size="sm" onClick={onCreate} disabled={!canCreate} loading={busy}>
+                  <Button intent="create" size="sm" onClick={onCreate} disabled={!canCreate} loading={busy}>
                   Сгруппировать
                 </Button>
-	                <Button intent="reset" size="sm" onClick={onClear} disabled={busy}>
+                  <Button intent="reset" size="sm" onClick={onClear} disabled={busy}>
                   Сбросить
                 </Button>
               </div>

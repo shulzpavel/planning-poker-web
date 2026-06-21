@@ -84,7 +84,7 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
           ]}
           onChange={setRole}
         />
-	        <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
+          <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
       </Toolbar>
       <DataTable
         error={list.error}
@@ -108,9 +108,9 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
                 title="Никого не нашли"
                 description="По текущим фильтрам участников нет. Сбросьте фильтры — посмотрите всех."
                 action={
-	                  <Button
-	                    intent="reset"
-	                    size="sm"
+                    <Button
+                      intent="reset"
+                      size="sm"
                     onClick={() => { setQ(""); setRole(""); }}
                   >
                     Сбросить фильтры
@@ -123,7 +123,7 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
                 description="Список заполнится автоматически, когда люди впервые откроют invite-ссылку. Запустите первую сессию — пригласите команду."
                 action={
                   <Button
-	                    intent="open"
+                      intent="open"
                     size="sm"
                     onClick={() => navigate("/manage")}
                   >
@@ -141,7 +141,7 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
             <MobileRecordField label="Последнее" value={formatDate(item.last_seen_at)} />
             {canHardDeleteParticipants ? (
               <div className="pt-2">
-	                <Button intent="delete" size="sm" onClick={() => openDeleteDialog(item)}>
+                  <Button intent="delete" size="sm" onClick={() => openDeleteDialog(item)}>
                   Удалить навсегда
                 </Button>
               </div>
@@ -162,7 +162,7 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
             <td className="px-3 py-2 text-ink3 whitespace-nowrap">{formatDate(item.last_seen_at)}</td>
             {canHardDeleteParticipants ? (
               <td className="px-3 py-2 text-right">
-	                <Button intent="delete" size="sm" onClick={() => openDeleteDialog(item)}>
+                  <Button intent="delete" size="sm" onClick={() => openDeleteDialog(item)}>
                   Удалить
                 </Button>
               </td>

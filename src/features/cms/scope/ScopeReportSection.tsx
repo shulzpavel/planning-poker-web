@@ -1223,7 +1223,7 @@ function OpenQuestionCard({
             />
             {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
             <div className="mt-2 flex justify-end">
-	              <Button size="sm" intent="apply" disabled={saving || draft.trim().length === 0} onClick={() => void resolveQuestion()}>
+                <Button size="sm" intent="apply" disabled={saving || draft.trim().length === 0} onClick={() => void resolveQuestion()}>
                 {saving ? <Spinner size="sm" /> : null}
                 Закрыть вопрос
               </Button>

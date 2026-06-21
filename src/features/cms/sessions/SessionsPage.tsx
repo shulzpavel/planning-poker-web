@@ -230,7 +230,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
         {principal.is_superuser ? (
           <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
         ) : null}
-	        <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
+          <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
       </Toolbar>
 
       <GroupedDataTableList
@@ -254,10 +254,10 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
                 title="Ничего не найдено"
                 description="По текущим фильтрам сессий нет. Сбросьте фильтры, чтобы увидеть полный список."
                 action={
-	                  <Button
-	                    intent="reset"
-	                    size="sm"
-	                    onClick={() => { setQ(""); setActive(""); }}
+                    <Button
+                      intent="reset"
+                      size="sm"
+                      onClick={() => { setQ(""); setActive(""); }}
                   >
                     Сбросить фильтры
                   </Button>
@@ -268,9 +268,9 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
                 title="Ещё нет ни одной сессии"
                 description="Создайте первую planning-сессию — позже сюда попадут все ваши прошедшие и активные."
                 action={
-	                  <Button
-	                    intent="create"
-	                    size="sm"
+                    <Button
+                      intent="create"
+                      size="sm"
                     onClick={() => {
                       setCreateTitle("");
                       setCreateError(null);
@@ -311,7 +311,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
               <>
                 <Button
                   size="sm"
-	                  intent="open"
+                    intent="open"
                   className="flex-1 min-w-[120px]"
                   onClick={() => openCockpit(item)}
                 >
@@ -319,7 +319,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
                 </Button>
                 <Button
                   size="sm"
-	                  intent="more"
+                    intent="more"
                   className="flex-1 min-w-[120px]"
                   onClick={() => setSelectedId(item.id)}
                 >
@@ -355,10 +355,10 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
             <td className="px-3 py-2 align-top text-ink3 whitespace-nowrap">{formatDate(item.updated_at)}</td>
             <td className="px-3 py-2 align-top">
               <div className="flex flex-wrap gap-1.5">
-	                <Button size="sm" intent="open" onClick={() => openCockpit(item)}>
+                  <Button size="sm" intent="open" onClick={() => openCockpit(item)}>
                   {item.batch_completed && !item.is_active ? "Открыть отчёт" : "Открыть"}
                 </Button>
-	                <Button size="sm" intent="more" onClick={() => setSelectedId(item.id)}>
+                  <Button size="sm" intent="more" onClick={() => setSelectedId(item.id)}>
                   Подробнее
                 </Button>
               </div>
@@ -750,10 +750,10 @@ function SessionDetails({
                   Оставьте пусто, чтобы вернуть стандартное название «Сессия #{detail.id}». Не более 200 символов.
                 </p>
                 <div className="flex flex-wrap gap-2">
-	                  <Button type="submit" intent="save" size="sm" disabled={renameBusy} loading={renameBusy}>
+                    <Button type="submit" intent="save" size="sm" disabled={renameBusy} loading={renameBusy}>
                     Сохранить
                   </Button>
-	                  <Button type="button" intent="cancel" size="sm" disabled={renameBusy} onClick={cancelRename}>
+                    <Button type="button" intent="cancel" size="sm" disabled={renameBusy} onClick={cancelRename}>
                     Отмена
                   </Button>
                 </div>
@@ -778,19 +778,19 @@ function SessionDetails({
                 page navigation is one click away. */}
             {detail ? (
               <>
-	                <Button intent="open" size="sm" onClick={() => onOpenCockpit(detail)}>
+                  <Button intent="open" size="sm" onClick={() => onOpenCockpit(detail)}>
                   Открыть управление
                 </Button>
-	                <Button intent="open" size="sm" onClick={() => onOpenReport(detail)}>
+                  <Button intent="open" size="sm" onClick={() => onOpenReport(detail)}>
                   Открыть отчёт
                 </Button>
               </>
             ) : null}
-	            <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={() => void refreshTasks()}>
+              <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={() => void refreshTasks()}>
               Обновить
             </Button>
             {canManageSessions && detail && !renaming ? (
-	              <Button intent="edit" size="sm" onClick={startRename}>
+                <Button intent="edit" size="sm" onClick={startRename}>
                 Переименовать
               </Button>
             ) : null}
@@ -800,7 +800,7 @@ function SessionDetails({
                 intent. */}
             {canManageSessions && detail && detail.is_active ? (
               <Button
-	                intent="cancel"
+                  intent="cancel"
                 size="sm"
                 disabled={actionBusyId === detail.id}
                 loading={actionBusyId === detail.id}
@@ -811,7 +811,7 @@ function SessionDetails({
             ) : null}
             {canManageSessions && detail ? (
               <Button
-	                intent="delete"
+                  intent="delete"
                 size="sm"
                 disabled={actionBusyId === detail.id}
                 onClick={() => onSessionAction("delete", detail)}
@@ -821,7 +821,7 @@ function SessionDetails({
             ) : null}
             {/* Renamed from "Закрыть карточку" — the old label
                 clashed with "Закрыть сессию" right next to it. */}
-	            <Button intent="cancel" size="sm" onClick={onClose}>
+              <Button intent="cancel" size="sm" onClick={onClose}>
               Свернуть
             </Button>
           </div>
@@ -1381,7 +1381,7 @@ function ManualTaskPanel({
           <TextField label="Jira key" placeholder="PROJ-123" value={jiraKey} onChange={(event) => setJiraKey(event.target.value)} />
           <TextField label="URL" placeholder="https://..." value={url} onChange={(event) => setUrl(event.target.value)} />
         </div>
-	        <Button type="submit" intent="add" className="w-full" disabled={busy !== null || !summary.trim()}>
+          <Button type="submit" intent="add" className="w-full" disabled={busy !== null || !summary.trim()}>
           Добавить задачу
         </Button>
       </Surface>
@@ -1596,8 +1596,8 @@ function TaskRow({
             <TextField label="SP" placeholder="SP" inputMode="numeric" value={storyPoints} onChange={(event) => setStoryPoints(event.target.value)} />
           </div>
           <div className="flex flex-wrap gap-2">
-	            <Button type="submit" intent="save" size="sm" disabled={busy !== null || !summary.trim()}>Сохранить</Button>
-	            <Button intent="cancel" size="sm" onClick={() => setEditing(false)}>Отмена</Button>
+              <Button type="submit" intent="save" size="sm" disabled={busy !== null || !summary.trim()}>Сохранить</Button>
+              <Button intent="cancel" size="sm" onClick={() => setEditing(false)}>Отмена</Button>
           </div>
         </form>
       ) : (
@@ -1631,8 +1631,8 @@ function TaskRow({
               <Button variant="ghost" size="sm" disabled={disabled || task.bucket_index === 0} title="Вверх" onClick={() => void move(task.bucket_index - 1)}>↑</Button>
               <Button variant="ghost" size="sm" disabled={disabled || task.bucket_index >= detail.tasks_queue_count - 1} title="Вниз" onClick={() => void move(task.bucket_index + 1)}>↓</Button>
               <Button variant="ghost" size="sm" disabled={disabled || task.bucket_index >= detail.tasks_queue_count - 1} title="В конец" onClick={() => void move(detail.tasks_queue_count - 1)}>В конец</Button>
-	              <Button intent="edit" size="sm" disabled={busy !== null || !canManage} onClick={() => setEditing(true)}>Изменить</Button>
-	              <Button intent="delete" size="sm" disabled={disabled} onClick={() => setDeleteOpen(true)}>Удалить</Button>
+                <Button intent="edit" size="sm" disabled={busy !== null || !canManage} onClick={() => setEditing(true)}>Изменить</Button>
+                <Button intent="delete" size="sm" disabled={disabled} onClick={() => setDeleteOpen(true)}>Удалить</Button>
             </div>
           ) : null}
           {currentLocked ? (

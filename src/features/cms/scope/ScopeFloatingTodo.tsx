@@ -168,7 +168,7 @@ export function ScopeFloatingTodo({
 
   const collapsed = (
     <div className={cn("fixed bottom-5 right-5", layerClass)}>
-      <Button variant="secondary" className="border-amber/30 bg-surface" onClick={() => setOpen(true)}>
+      <Button intent="neutral" className="border-amber/30 bg-surface" onClick={() => setOpen(true)}>
         <span className="inline-flex h-2 w-2 rounded-full bg-amber" aria-hidden="true" />
         Мини todo
         {activeCount > 0 ? <Badge tone="warning">{activeCount}</Badge> : null}
@@ -207,7 +207,7 @@ export function ScopeFloatingTodo({
         </div>
         <Button
           size="sm"
-          variant="ghost"
+          intent="cancel"
           className="cursor-pointer text-xs"
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => setOpen(false)}

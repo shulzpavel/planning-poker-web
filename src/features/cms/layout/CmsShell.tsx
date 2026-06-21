@@ -117,7 +117,7 @@ export default function CmsShell({
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggle className="hidden lg:inline-flex" />
             <Button
-	              intent="open"
+                intent="open"
               size="sm"
               onClick={() => navigate("/manage")}
               title="Открыть рабочее место фасилитатора"
@@ -125,7 +125,7 @@ export default function CmsShell({
             >
               <span>Cockpit</span>
             </Button>
-	            <Button intent="neutral" size="sm" onClick={logout} className="hidden lg:inline-flex">
+              <Button intent="neutral" size="sm" onClick={logout} className="hidden lg:inline-flex">
               Выйти
             </Button>
             {/* Mobile navigation trigger. The full action set (nav groups,

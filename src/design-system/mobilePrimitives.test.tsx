@@ -56,6 +56,7 @@ describe("mobile layout primitives", () => {
   });
 
   it("maps shared button intents to consistent visual variants", () => {
+    expect(resolveButtonVariant("open")).toBe("primary");
     expect(resolveButtonVariant("add")).toBe("primary");
     expect(resolveButtonVariant("create")).toBe("primary");
     expect(resolveButtonVariant("save")).toBe("primary");

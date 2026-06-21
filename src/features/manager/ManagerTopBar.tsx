@@ -186,7 +186,7 @@ export function ManagerTopBar({
                 Назад
               </SheetActionButton>
               <SheetActionButton
-	                intent="finish"
+                  intent="finish"
                 loading={Boolean(finishBusy)}
                 disabled={Boolean(finishBusy)}
                 onClick={() => {

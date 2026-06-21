@@ -477,7 +477,7 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
         description="Capacity, буфер, intake-статус и последний Jira-срез по командам. Важные риски видны до открытия отчёта."
         action={
           canManage ? (
-	            <Button intent="create" size="sm" onClick={() => navigate("new")}>
+              <Button intent="create" size="sm" onClick={() => navigate("new")}>
               Новый
             </Button>
           ) : undefined
@@ -496,7 +496,7 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
           description="JQL-секции, буфер capacity, статус задач и очереди на груминг — по команде."
           actions={
             canManage ? (
-	              <Button intent="create" size="sm" onClick={() => navigate("new")}>
+                <Button intent="create" size="sm" onClick={() => navigate("new")}>
                 Новый отчёт
               </Button>
             ) : undefined
@@ -538,7 +538,7 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
           description="Создайте первый отчёт месяца для вашей команды."
           action={
             canManage ? (
-	              <Button intent="create" onClick={() => navigate("new")}>
+                <Button intent="create" onClick={() => navigate("new")}>
                 Новый отчёт
               </Button>
             ) : undefined
@@ -624,13 +624,13 @@ function ScopeBoardList({
                     { label: "Обновлён", value: formatDate(item.updated_at) },
                   ]}
                   primaryAction={
-	                    <Button size="sm" intent="open" onClick={() => onOpen(item.id)}>
+                      <Button size="sm" intent="open" onClick={() => onOpen(item.id)}>
                       Открыть
                     </Button>
                   }
                   secondaryAction={
                     canManage ? (
-	                      <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
+                        <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
                         Удалить
                       </Button>
                     ) : null
@@ -682,11 +682,11 @@ function ScopeBoardList({
                       <td className="px-3 py-2 align-top text-ink3">{formatDate(item.updated_at)}</td>
                       <td className="px-3 py-2 align-top text-right">
                         <div className="inline-flex gap-1.5">
-	                          <Button size="sm" intent="open" onClick={() => onOpen(item.id)}>
+                            <Button size="sm" intent="open" onClick={() => onOpen(item.id)}>
                             Открыть
                           </Button>
                           {canManage ? (
-	                            <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
+                              <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
                               Удалить
                             </Button>
                           ) : null}
@@ -828,7 +828,7 @@ function ReleaseQueriesEditor({
             Прошедшие релизы появятся над текущим, будущие — после текущего.
           </p>
         </div>
-	        <Button size="sm" intent="add" disabled={disabled} onClick={addQuery}>
+          <Button size="sm" intent="add" disabled={disabled} onClick={addQuery}>
           + Добавить запрос
         </Button>
       </div>
@@ -853,7 +853,7 @@ function ReleaseQueriesEditor({
                   onChange={(event) => updateQuery(index, { label: event.target.value })}
                 />
                 <div className="flex items-end">
-	                  <Button size="sm" intent="delete" disabled={disabled} onClick={() => removeQuery(index)}>
+                    <Button size="sm" intent="delete" disabled={disabled} onClick={() => removeQuery(index)}>
                     Удалить
                   </Button>
                 </div>
@@ -1966,11 +1966,11 @@ function ScopeBoardEditorPage({
       {!loading && canManage ? (
         <footer className="scope-board-footer scope-no-print mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
           {mode === "edit" && snapshot ? (
-	            <Button intent="save" disabled={!metrics} onClick={() => printScopeReport(printRootRef.current)}>
+              <Button intent="save" disabled={!metrics} onClick={() => printScopeReport(printRootRef.current)}>
               Сохранить PDF
             </Button>
           ) : null}
-	          <Button intent={mode === "create" ? "create" : "save"} disabled={saving || refreshing} onClick={() => void handleSave()}>
+            <Button intent={mode === "create" ? "create" : "save"} disabled={saving || refreshing} onClick={() => void handleSave()}>
             {saving ? <Spinner size="sm" /> : null}
             {mode === "create" ? "Создать" : "Сохранить"}
           </Button>

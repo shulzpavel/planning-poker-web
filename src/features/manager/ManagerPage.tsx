@@ -1288,8 +1288,8 @@ function CreateSessionPanel({
           />
         </div>
         {createError ? <Alert tone="danger">{createError}</Alert> : null}
-	        <Button
-	          intent="create"
+          <Button
+            intent="create"
           className="w-full"
           loading={loading}
           disabled={loading || !title.trim()}
@@ -1316,7 +1316,7 @@ function InviteCard({ inviteUrl }: { inviteUrl: string }) {
           <h2 className="text-sm font-bold text-ink">Ссылка для участников</h2>
           <p className="mt-1 break-all text-xs text-ink3">{new URL(inviteUrl, window.location.origin).toString()}</p>
         </div>
-	        <Button size="sm" intent={copied ? "success" : "neutral"} onClick={copy}>{copied ? "Copied" : "Copy"}</Button>
+          <Button size="sm" intent={copied ? "success" : "neutral"} onClick={copy}>{copied ? "Copied" : "Copy"}</Button>
       </div>
     </Surface>
   );
@@ -1699,7 +1699,7 @@ function ControlRoom({
             <div className="mt-6 flex flex-wrap gap-2">
               {phase === "waiting" ? (
                 <Button
-	                  intent="open"
+                    intent="open"
                   size="lg"
                   disabled={!canStart || busy !== null}
                   loading={busy === "start" || loading}
@@ -1723,7 +1723,7 @@ function ControlRoom({
               {(phase === "voting" || phase === "results") ? (
                 <>
                   <Button
-	                    intent="open"
+                      intent="open"
                     disabled={!task || busy !== null}
                     loading={busy === "next"}
                     onClick={onNext}
@@ -1732,7 +1732,7 @@ function ControlRoom({
                     Next →
                   </Button>
                   <Button
-	                    intent="neutral"
+                      intent="neutral"
                     disabled={!task || busy !== null}
                     loading={busy === "skip"}
                     onClick={onSkip}
@@ -1743,7 +1743,7 @@ function ControlRoom({
                 </>
               ) : null}
               {phase === "complete" ? (
-	                <Button intent="open" size="lg" onClick={onOpenReport}>
+                  <Button intent="open" size="lg" onClick={onOpenReport}>
                   📊 Открыть отчёт сессии
                 </Button>
               ) : null}
@@ -1854,7 +1854,7 @@ function ControlRoom({
           {completedHasMore ? (
             <div className="mt-3 flex justify-center">
               <Button
-	                intent="more"
+                  intent="more"
                 size="sm"
                 onClick={onLoadMoreHistory}
                 disabled={historyLoadingMore}
@@ -2050,7 +2050,7 @@ function FinalEstimateTracksBlock({
       </div>
       <Button
         className="mt-4"
-	        intent="save"
+          intent="save"
         disabled={!complete || busy !== null}
         loading={busy === "estimate"}
         onClick={() => onSubmit(values)}
@@ -2155,7 +2155,7 @@ function HistoryCard({
       ) : null}
       <Button
         size="sm"
-	        intent="edit"
+          intent="edit"
         className="mt-2 w-full"
         disabled={busy !== null}
         onClick={() => onReopen(entry.task_id)}
@@ -2348,7 +2348,7 @@ function WizardManualForm({
       </div>
       <MobileStickyFormFooter>
         <Button
-	          intent="add"
+            intent="add"
           className="w-full"
           disabled={!summary.trim() || busy !== null}
           onClick={() => onAction("add", async () => {
@@ -2456,7 +2456,7 @@ function WizardJiraForm({
       <MobileStickyFormFooter>
         <div className="flex gap-2">
           <Button
-	            intent="apply"
+              intent="apply"
             className="flex-1"
             disabled={!jql.trim() || busy !== null || previewBusy}
             loading={previewBusy}
@@ -2465,7 +2465,7 @@ function WizardJiraForm({
             Preview
           </Button>
           <Button
-	            intent="add"
+              intent="add"
             className="flex-1"
             disabled={!preview || selected.size === 0 || busy !== null}
             onClick={() => onAction("jira-import", async () => {
@@ -2558,7 +2558,7 @@ function TaskAddPanel({
           </Button>
           <Button
             className="flex-1"
-	            intent="add"
+              intent="add"
             disabled={!preview || selected.size === 0 || busy !== null}
             onClick={() => onAction("jira-import", async () => {
               const result = await managerApi.jiraImport(chatId, {
@@ -2617,7 +2617,7 @@ function TaskAddPanel({
           </div>
           <Button
             className="w-full"
-	            intent="add"
+              intent="add"
             disabled={!summary.trim() || busy !== null}
             onClick={() => onAction("add", async () => {
               const result = await managerApi.addTask(chatId, {

@@ -79,7 +79,7 @@ export default function RolesListPage() {
         description="Набор permissions с понятным именем. Системные роли защищены — их можно открыть, но не редактировать."
         actions={
           <Button
-	            intent="create"
+              intent="create"
             size="sm"
             onClick={onCreate}
             disabled={!canManage}

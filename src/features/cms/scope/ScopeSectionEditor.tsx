@@ -58,12 +58,12 @@ export function ScopeSectionEditor({
               <span className="text-xs text-ink3">#{index + 1}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <Button size="sm" variant="ghost" disabled={disabled || index === 0} onClick={() => moveSection(index, -1)}>
+              <Button size="sm" intent="more" disabled={disabled || index === 0} onClick={() => moveSection(index, -1)}>
                 ↑
               </Button>
               <Button
                 size="sm"
-                variant="ghost"
+                intent="more"
                 disabled={disabled || index === sections.length - 1}
                 onClick={() => moveSection(index, 1)}
               >

@@ -160,7 +160,7 @@ export function LoadMoreFooter({
           Показано {loadedCount} {itemNoun}. Уточните поиск или фильтры, чтобы найти нужное.
         </p>
         {onFocusSearch ? (
-          <Button variant="ghost" size="sm" onClick={onFocusSearch}>К поиску</Button>
+          <Button intent="more" size="sm" onClick={onFocusSearch}>К поиску</Button>
         ) : null}
       </div>
     );
@@ -181,7 +181,7 @@ export function LoadMoreFooter({
       </p>
       <Button
         className="scope-presentation-keep"
-        variant="ghost"
+        intent="more"
         size="sm"
         onClick={onMore}
         disabled={loading || loadingMore || !hasMore}

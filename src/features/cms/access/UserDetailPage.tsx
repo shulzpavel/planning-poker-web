@@ -277,11 +277,11 @@ function NewUserView({ canManage, roles, onCreated }: NewUserViewProps) {
       </div>
 
       <StickyActionFooter>
-	          <Button intent="reset" onClick={() => { setUsername(""); setPassword(""); setDisplayName(""); setRoleIds([]); }} disabled={saving}>
+            <Button intent="reset" onClick={() => { setUsername(""); setPassword(""); setDisplayName(""); setRoleIds([]); }} disabled={saving}>
             Очистить
           </Button>
-	          <Button
-	            intent="create"
+            <Button
+              intent="create"
             loading={saving}
             disabled={!canSubmit}
             onClick={submit}
@@ -434,11 +434,11 @@ function ExistingUserView({ admin, canManage, isCurrent, roles, onUpdated }: Exi
               />
             </div>
             <div className="mt-4 flex items-center justify-end gap-2">
-	              <Button intent="cancel" onClick={() => { setDisplayName(admin.display_name ?? ""); setIsActive(admin.is_active); }} disabled={!profileDirty || savingProfile}>
+                <Button intent="cancel" onClick={() => { setDisplayName(admin.display_name ?? ""); setIsActive(admin.is_active); }} disabled={!profileDirty || savingProfile}>
                 Отмена
               </Button>
               <Button
-	                intent="save"
+                  intent="save"
                 onClick={saveProfile}
                 disabled={!canManage || !profileDirty || savingProfile}
                 loading={savingProfile}
@@ -460,11 +460,11 @@ function ExistingUserView({ admin, canManage, isCurrent, roles, onUpdated }: Exi
               />
             </div>
             <div className="mt-4 flex items-center justify-end gap-2">
-	              <Button intent="cancel" onClick={() => setRoleIds(admin.roles.map((role) => role.id))} disabled={!rolesDirty || savingRoles}>
+                <Button intent="cancel" onClick={() => setRoleIds(admin.roles.map((role) => role.id))} disabled={!rolesDirty || savingRoles}>
                 Отмена
               </Button>
               <Button
-	                intent="save"
+                  intent="save"
                 onClick={saveRoles}
                 disabled={!canManage || !rolesDirty || savingRoles || roleIds.length === 0}
                 loading={savingRoles}
@@ -483,14 +483,14 @@ function ExistingUserView({ admin, canManage, isCurrent, roles, onUpdated }: Exi
               </div>
               <div className="mt-4 flex items-center justify-end gap-2">
                 <Button
-	                  intent="cancel"
+                    intent="cancel"
                   onClick={() => setTeamIds(admin.team_ids ?? admin.teams?.map((team) => team.id) ?? [])}
                   disabled={!teamsDirty || savingProfile}
                 >
                   Отмена
                 </Button>
                 <Button
-	                  intent="save"
+                    intent="save"
                   onClick={saveProfile}
                   disabled={!canManage || !teamsDirty || savingProfile}
                   loading={savingProfile}
@@ -508,7 +508,7 @@ function ExistingUserView({ admin, canManage, isCurrent, roles, onUpdated }: Exi
             </p>
             <div className="mt-3">
               <Button
-	                intent="danger"
+                  intent="danger"
                 onClick={() => setPasswordModal(true)}
                 disabled={!canManage}
               >
@@ -630,8 +630,8 @@ function PasswordResetDialog({ open, username, onCancel, onConfirm }: PasswordRe
             <div className="mt-3"><InlineError text={error} /></div>
           ) : null}
           <div className="mt-4 flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-	            <Button intent="cancel" onClick={onCancel} disabled={submitting} className="w-full md:w-auto">Отмена</Button>
-	            <Button intent="danger" onClick={submit} loading={submitting} disabled={!isValid || submitting} className="w-full md:w-auto">
+              <Button intent="cancel" onClick={onCancel} disabled={submitting} className="w-full md:w-auto">Отмена</Button>
+              <Button intent="danger" onClick={submit} loading={submitting} disabled={!isValid || submitting} className="w-full md:w-auto">
               Сбросить пароль
             </Button>
           </div>

@@ -146,7 +146,7 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
         description="Живые комнаты, итоги и AI-анализ. Сначала активные ретро и быстрый вход, затем архив по командам."
         action={
           canManage ? (
-	            <Button intent="create" size="sm" onClick={() => navigate("new")}>
+              <Button intent="create" size="sm" onClick={() => navigate("new")}>
               Создать
             </Button>
           ) : null
@@ -164,7 +164,7 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
           description="Настройте секции, поделитесь ссылкой с командой и проведите живое ретро. В конце — AI-анализ итогов."
           actions={
             canManage ? (
-	              <Button intent="create" size="sm" onClick={() => navigate("new")}>
+                <Button intent="create" size="sm" onClick={() => navigate("new")}>
                 Создать ретро
               </Button>
             ) : null
@@ -205,7 +205,7 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
               description="Создайте первое ретро — настройте секции и пригласите команду."
               action={
                 canManage ? (
-	                  <Button intent="create" size="sm" onClick={() => navigate("new")}>
+                    <Button intent="create" size="sm" onClick={() => navigate("new")}>
                     Создать ретро
                   </Button>
                 ) : undefined
@@ -237,18 +237,18 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
               { label: "Обновлено", value: formatRetroDate(retro.updated_at) },
             ]}
             primaryAction={
-	              <Button intent={retro.status === "live" ? "open" : "neutral"} size="sm" onClick={() => navigate(`${retro.id}`)}>
+                <Button intent={retro.status === "live" ? "open" : "neutral"} size="sm" onClick={() => navigate(`${retro.id}`)}>
                 Открыть
               </Button>
             }
             secondaryAction={
               canManage ? (
-	                <Button
-	                  intent="delete"
-	                  size="sm"
-	                  className="px-3"
-	                  onClick={() => setConfirmTarget(retro)}
-	                  loading={busyDelete === retro.id}
+                  <Button
+                    intent="delete"
+                    size="sm"
+                    className="px-3"
+                    onClick={() => setConfirmTarget(retro)}
+                    loading={busyDelete === retro.id}
                   disabled={busyDelete !== null}
                 >
                   Удалить
@@ -279,14 +279,14 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
             <td className="whitespace-nowrap px-3 py-2 text-ink3">{formatRetroDate(retro.updated_at)}</td>
             <td className="px-3 py-2">
               <div className="flex flex-wrap gap-2">
-	                <Button intent="open" size="sm" onClick={() => navigate(`${retro.id}`)}>
+                  <Button intent="open" size="sm" onClick={() => navigate(`${retro.id}`)}>
                   Открыть
                 </Button>
                 {canManage ? (
-	                  <Button
-	                    intent="delete"
-	                    size="sm"
-	                    onClick={() => setConfirmTarget(retro)}
+                    <Button
+                      intent="delete"
+                      size="sm"
+                      onClick={() => setConfirmTarget(retro)}
                     loading={busyDelete === retro.id}
                     disabled={busyDelete !== null}
                   >
@@ -473,7 +473,7 @@ function RetroConfigForm({
                 onChange={(e) => updateSection(index, e.target.value)}
               />
               <Button
-	                intent="delete"
+                  intent="delete"
                 size="sm"
                 onClick={() => removeSection(index)}
                 disabled={sections.length <= 1}
@@ -485,7 +485,7 @@ function RetroConfigForm({
             </div>
           ))}
         </div>
-	        <Button intent="add" size="sm" onClick={addSection}>
+          <Button intent="add" size="sm" onClick={addSection}>
           + Секция
         </Button>
       </div>
@@ -516,10 +516,10 @@ function RetroConfigForm({
       </div>
 
       <div className="flex gap-2">
-	        <Button intent="save" onClick={() => void submit()} loading={busy}>
+          <Button intent="save" onClick={() => void submit()} loading={busy}>
           {submitLabel}
         </Button>
-	        <Button intent="cancel" onClick={() => unsavedGuard.confirmIfNeeded(onCancel)}>
+          <Button intent="cancel" onClick={() => unsavedGuard.confirmIfNeeded(onCancel)}>
           Отмена
         </Button>
       </div>
@@ -992,13 +992,13 @@ function ManagerControls({
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
             {state.phase === "collecting" ? (
-	              <Button size="sm" intent="cancel" onClick={onCloseSection} disabled={busy}>
+                <Button size="sm" intent="cancel" onClick={onCloseSection} disabled={busy}>
                 Приостановить сбор
               </Button>
             ) : null}
             <Button
               size="sm"
-	              intent="primary"
+                intent="primary"
               onClick={onStartVoting}
               disabled={busy || state.phase === "lobby" || !allSectionsOpened}
               title={!allSectionsOpened ? "Сначала откройте все блоки ретро" : undefined}
@@ -1013,13 +1013,13 @@ function ManagerControls({
       ) : null}
 
       {state.phase === "voting" ? (
-	        <Button size="sm" intent="primary" onClick={onStartDiscussion} disabled={busy}>
+          <Button size="sm" intent="primary" onClick={onStartDiscussion} disabled={busy}>
           Перейти к обсуждению →
         </Button>
       ) : null}
 
       {state.phase === "discussing" ? (
-	        <Button size="sm" intent="finish" onClick={onFinalize} disabled={busy}>
+          <Button size="sm" intent="finish" onClick={onFinalize} disabled={busy}>
           Завершить ретро ✓
         </Button>
       ) : null}
@@ -1068,7 +1068,7 @@ function ActionItemsPanel({
                 {item.assignee ? <span className="ml-2 text-ink3">· {item.assignee}</span> : null}
               </span>
               <Button
-	                intent="delete"
+                  intent="delete"
                 size="sm"
                 onClick={() => onRemove(item.item_id)}
                 disabled={busy}
@@ -1096,7 +1096,7 @@ function ActionItemsPanel({
           value={assignee}
           onChange={(e) => setAssignee(e.target.value)}
         />
-	        <Button intent="add" size="sm" onClick={submit} disabled={busy || !text.trim()}>
+          <Button intent="add" size="sm" onClick={submit} disabled={busy || !text.trim()}>
           Добавить
         </Button>
       </div>

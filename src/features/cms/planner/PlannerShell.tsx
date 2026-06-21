@@ -142,7 +142,7 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
         description="Последние расчёты capacity, velocity и буфера. Открывайте актуальный план или создавайте новый без перехода через таблицу."
         action={
           canManage ? (
-	            <Button intent="create" size="sm" onClick={() => navigate("new")}>
+              <Button intent="create" size="sm" onClick={() => navigate("new")}>
               Новый
             </Button>
           ) : undefined
@@ -161,7 +161,7 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
           description="Калькулятор Velocity/Capacity по командному гайду. Сохранённые расчёты остаются здесь для следующего спринта."
           actions={
             canManage ? (
-	              <Button intent="create" size="sm" onClick={() => navigate("new")}>
+                <Button intent="create" size="sm" onClick={() => navigate("new")}>
                 Новый план
               </Button>
             ) : undefined
@@ -204,7 +204,7 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
           description="Создайте первый, чтобы оценить план на ближайший спринт."
           action={
             canManage ? (
-	              <Button intent="create" onClick={() => navigate("new")}>
+                <Button intent="create" onClick={() => navigate("new")}>
                 Новый план
               </Button>
             ) : undefined
@@ -284,13 +284,13 @@ function PlannerList({
                     { label: "Буфер", value: `${item.payload.buffer_percent ?? DEFAULT_BUFFER_PERCENT}%` },
                   ]}
                   primaryAction={
-	                    <Button size="sm" intent="open" onClick={() => onEdit(item.id)}>
+                      <Button size="sm" intent="open" onClick={() => onEdit(item.id)}>
                       Открыть
                     </Button>
                   }
                   secondaryAction={
                     canManage ? (
-	                      <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
+                        <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
                         Удалить
                       </Button>
                     ) : null
@@ -335,11 +335,11 @@ function PlannerList({
                     </td>
                     <td className="px-3 py-2 align-top text-right">
                       <div className="inline-flex gap-1.5">
-	                        <Button size="sm" intent="open" onClick={() => onEdit(item.id)}>
+                          <Button size="sm" intent="open" onClick={() => onEdit(item.id)}>
                           Открыть
                         </Button>
                         {canManage ? (
-	                          <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
+                            <Button size="sm" intent="delete" onClick={() => onDelete(item)}>
                             Удалить
                           </Button>
                         ) : null}
@@ -727,7 +727,7 @@ function PlannerEditorPage({
             <div className="flex flex-wrap gap-2">
               <BackButton label="К списку" size="sm" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} />
               {mode === "edit" && canManage ? (
-	                <Button intent="delete" size="sm" onClick={() => setPendingDelete(true)}>
+                  <Button intent="delete" size="sm" onClick={() => setPendingDelete(true)}>
                   Удалить
                 </Button>
               ) : null}
@@ -788,13 +788,13 @@ function PlannerEditorPage({
 
       {!loading ? (
         <MobileBottomDock aria-label="Действия плана" contentClassName="w-full">
-	          <Button className="flex-1" intent="cancel" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} disabled={saving}>
+            <Button className="flex-1" intent="cancel" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} disabled={saving}>
             Отмена
           </Button>
           {canManage ? (
             <Button
               className="flex-1"
-	              intent={mode === "edit" ? "save" : "create"}
+                intent={mode === "edit" ? "save" : "create"}
               loading={saving}
               disabled={!name.trim() || saving}
               onClick={() => void save()}
@@ -816,10 +816,10 @@ function PlannerEditorPage({
               Сохранено
             </span>
           ) : null}
-	          <Button intent="cancel" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} disabled={saving}>Отмена</Button>
+            <Button intent="cancel" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} disabled={saving}>Отмена</Button>
           {canManage ? (
             <Button
-	              intent={mode === "edit" ? "save" : "create"}
+                intent={mode === "edit" ? "save" : "create"}
               loading={saving}
               disabled={!name.trim() || saving}
               onClick={() => void save()}
@@ -1045,7 +1045,7 @@ function PlannerForm({
         description="По умолчанию — Dev и Test (как в гайде). Хочешь гранулярнее (Backend, Frontend, QA, Design и т.д.) — переименуй и добавь свои. Каждой роли потом назначается один трек, план считается отдельно по каждому треку."
         action={
           !disabled ? (
-	            <Button size="sm" intent="add" onClick={addTrack}>
+              <Button size="sm" intent="add" onClick={addTrack}>
               + Добавить трек
             </Button>
           ) : null
@@ -1064,7 +1064,7 @@ function PlannerForm({
               />
               <Button
                 size="sm"
-	                intent="delete"
+                  intent="delete"
                 onClick={() => removeTrack(index)}
                 disabled={disabled || inputs.tracks.length <= 1}
                 title={inputs.tracks.length <= 1 ? "Нужен хотя бы один трек" : "Удалить трек"}
@@ -1081,7 +1081,7 @@ function PlannerForm({
         description="Закрытые SP по каждому треку за 3–5 последних спринтов. Velocity трека = среднее по непустым значениям. Если истории нет — будет использовано стартовое значение 50 SP, распределённое между треками с командой."
         action={
           !disabled ? (
-	            <Button size="sm" intent="add" onClick={addVelocity}>
+              <Button size="sm" intent="add" onClick={addVelocity}>
               + Добавить спринт
             </Button>
           ) : null
@@ -1136,7 +1136,7 @@ function PlannerForm({
         description="Каждой роли — один трек. Capacity роли (человек × рабочие дни − отсутствия) пойдёт в план соответствующего трека."
         action={
           !disabled ? (
-	            <Button size="sm" intent="add" onClick={addRole}>
+              <Button size="sm" intent="add" onClick={addRole}>
               + Добавить роль
             </Button>
           ) : null
