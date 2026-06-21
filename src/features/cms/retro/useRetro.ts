@@ -5,7 +5,7 @@ import {
   saveWebIdentity,
   type WebParticipantIdentity,
 } from "../../../shared/lib/participantIdentity";
-import { useReconnectOnVisible } from "../../../shared/lib/useReconnectOnVisible";
+import { useRealtimeChannel, useStoredParticipantId } from "../../../hooks/useRealtimeChannel";
 import type { ParticipantRole } from "../../../hooks/useSession";
 import {
   canAddToSection,
@@ -65,24 +65,22 @@ export function useRetro(
     (typeof window !== "undefined" ? isRetroMockEnabled(window.location.search) : false);
   const pidKey = `pp_retro_pid_${token}`;
   const anonKey = `pp_retro_anon_${token}`;
-  const [participantId, setParticipantId] = useState<string | null>(() => {
-    if (mockEnabled && options.participant) return MOCK_PARTICIPANT_ID;
-    try {
-      return options.participant ? localStorage.getItem(pidKey) : null;
-    } catch {
-      return null;
-    }
-  });
+  const storedParticipantOverride =
+    mockEnabled && options.participant
+      ? MOCK_PARTICIPANT_ID
+      : options.participant
+        ? undefined
+        : null;
+  const { participantId, persistParticipantId } = useStoredParticipantId(
+    pidKey,
+    storedParticipantOverride,
+  );
   const [state, setState] = useState<RetroLiveState | null>(() =>
     mockEnabled ? createMockRetroLiveState() : null,
   );
   const [myVotes, setMyVotes] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reconnectDelay = useRef(1000);
-  const unmounted = useRef(false);
   const autoJoinStarted = useRef(false);
   const participantIdRef = useRef<string | null>(participantId);
   participantIdRef.current = participantId;
@@ -95,13 +93,13 @@ export function useRetro(
   }, []);
 
   const refreshState = useCallback(async () => {
-    if (mockEnabled || unmounted.current) return;
+    if (mockEnabled) return;
     const pidQuery = participantIdRef.current
       ? `?participant_id=${encodeURIComponent(participantIdRef.current)}`
       : "";
     try {
       const resp = await fetch(apiUrl(`/retro/state/${token}${pidQuery}`));
-      if (!resp.ok || unmounted.current) return;
+      if (!resp.ok) return;
       const data = (await resp.json()) as RetroLiveState;
       applyState(data);
       if (participantIdRef.current) setMyVotes(new Set(data.my_votes ?? []));
@@ -135,12 +133,7 @@ export function useRetro(
     let cancelled = false;
 
     if (mockEnabled) {
-      try {
-        localStorage.setItem(pidKey, MOCK_PARTICIPANT_ID);
-      } catch {
-        // ignore storage errors
-      }
-      setParticipantId(MOCK_PARTICIPANT_ID);
+      persistParticipantId(MOCK_PARTICIPANT_ID);
       setState(createMockRetroLiveState());
       setMyVotes(new Set());
       return;
@@ -154,12 +147,7 @@ export function useRetro(
     })
       .then((data) => {
         if (cancelled) return;
-        try {
-          localStorage.setItem(pidKey, data.participant_id);
-        } catch {
-          // ignore storage errors
-        }
-        setParticipantId(data.participant_id);
+        persistParticipantId(data.participant_id);
         setState(data.state);
         setMyVotes(new Set(data.state.my_votes ?? []));
       })
@@ -176,91 +164,38 @@ export function useRetro(
       cancelled = true;
       autoJoinStarted.current = false;
     };
-  }, [anonKey, mockEnabled, options.participant, participantId, pidKey, token]);
+  }, [anonKey, mockEnabled, options.participant, participantId, persistParticipantId, pidKey, token]);
 
-  const connect = useCallback(() => {
-    if (mockEnabled) return;
-    if (unmounted.current) return;
-
-    if (wsRef.current) {
-      wsRef.current.onclose = null;
-      wsRef.current.close();
-      wsRef.current = null;
+  const handleMessage = useCallback((msg: Record<string, unknown>) => {
+    if (msg.type !== "retro_state") return;
+    const incoming = msg.state as RetroLiveState;
+    setState((prev) =>
+      mergeRetroState(prev, incoming, { preserveMyVotes: Boolean(participantIdRef.current) }),
+    );
+    if (participantIdRef.current && incoming.my_votes?.length) {
+      setMyVotes(new Set(incoming.my_votes));
     }
+  }, []);
 
-    const ws = new WebSocket(retroWsUrl(token));
-    wsRef.current = ws;
-    ws.onopen = () => {
-      reconnectDelay.current = 1000;
-      void refreshState();
-    };
-    ws.onmessage = (ev) => {
-      try {
-        const msg = JSON.parse(ev.data as string);
-        if (msg.type === "ping") return;
-        if (msg.type === "retro_state") {
-          const incoming = msg.state as RetroLiveState;
-          setState((prev) =>
-            mergeRetroState(prev, incoming, { preserveMyVotes: Boolean(participantIdRef.current) }),
-          );
-          if (participantIdRef.current && incoming.my_votes?.length) {
-            setMyVotes(new Set(incoming.my_votes));
-          }
-          reconnectDelay.current = 1000;
-        }
-      } catch {
-        // ignore parse errors
-      }
-    };
-    ws.onclose = (ev) => {
-      if (unmounted.current) return;
-      if (ev.code === 4004) {
-        setError("Ретро недоступно или ссылка истекла.");
-        return;
-      }
-      const delay = reconnectDelay.current;
-      reconnectDelay.current = Math.min(delay * 2, 30000);
-      reconnectTimer.current = setTimeout(connect, delay);
-    };
-    ws.onerror = () => ws.close();
-  }, [mockEnabled, refreshState, token]);
-
-  const reconnectNow = useCallback(() => {
-    if (mockEnabled || unmounted.current) return;
-    void refreshState();
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
-    if (reconnectTimer.current) {
-      clearTimeout(reconnectTimer.current);
-      reconnectTimer.current = null;
-    }
-    reconnectDelay.current = 1000;
-    connect();
-  }, [connect, mockEnabled, refreshState]);
-
-  useReconnectOnVisible(reconnectNow);
-
-  useEffect(() => {
-    if (mockEnabled) return;
-    unmounted.current = false;
-    connect();
-    return () => {
-      unmounted.current = true;
-      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
-    };
-  }, [connect, mockEnabled]);
+  useRealtimeChannel({
+    enabled: !mockEnabled,
+    buildUrl: () => retroWsUrl(token),
+    onMessage: handleMessage,
+    refreshState,
+    resetBackoffOnTypes: ["retro_state"],
+    onClose: (ev) => {
+      if (ev.code !== 4004) return false;
+      setError("Ретро недоступно или ссылка истекла.");
+      return true;
+    },
+  });
 
   const join = useCallback(
     async (name: string, role: ParticipantRole) => {
       setError(null);
       if (mockEnabled) {
         saveWebIdentity(name, role);
-        try {
-          localStorage.setItem(pidKey, MOCK_PARTICIPANT_ID);
-        } catch {
-          // ignore storage errors
-        }
-        setParticipantId(MOCK_PARTICIPANT_ID);
+        persistParticipantId(MOCK_PARTICIPANT_ID);
         setState(createMockRetroLiveState());
         setMyVotes(new Set());
         return;
@@ -271,12 +206,7 @@ export function useRetro(
           { token, name, role },
         );
         saveWebIdentity(name, role);
-        try {
-          localStorage.setItem(pidKey, data.participant_id);
-        } catch {
-          // ignore storage errors
-        }
-        setParticipantId(data.participant_id);
+        persistParticipantId(data.participant_id);
         setState(data.state);
         setMyVotes(new Set(data.state.my_votes ?? []));
       } catch (e) {
@@ -285,7 +215,7 @@ export function useRetro(
         throw e;
       }
     },
-    [mockEnabled, token, pidKey],
+    [mockEnabled, persistParticipantId, token],
   );
 
   const addCard = useCallback(

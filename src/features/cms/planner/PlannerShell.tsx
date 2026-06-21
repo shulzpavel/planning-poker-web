@@ -21,12 +21,9 @@ import {
   type SprintPlanRoleInput,
 } from "../api/cmsClient";
 import {
-  HelpCallout,
   InlineError,
   MobileFeatureCard,
-  MobileFilterBar,
   MobilePageHero,
-  Toolbar,
   SectionHeader,
   Skeleton,
 } from "../components/CmsPrimitives";
@@ -47,13 +44,14 @@ import { useUnsavedChangesGuard } from "../hooks/useUnsavedChangesGuard";
 
 import type { CmsPrincipal } from "../api/cmsTypes";
 import { TeamBadge } from "../components/TeamBadge";
-import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
+import { teamFilterParams } from "../components/TeamFilter";
 import {
   TeamSelect,
   needsTeamPicker,
   teamPickerRequired,
   useTeamIdState,
 } from "../components/TeamSelect";
+import { CmsTeamListPage } from "../components/CmsTeamListPage";
 import { useCmsTeams } from "../hooks/useCmsTeams";
 import { ListTableSurface, TeamGroupedSections } from "../components/TeamGroupedSections";
 
@@ -83,7 +81,6 @@ export default function PlannerShell({ principal, canManage }: PlannerShellProps
 
 function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; canManage: boolean }) {
   const navigate = useNavigate();
-  const { teams } = useCmsTeams(principal);
   const [teamFilter, setTeamFilter] = useState("");
   const [items, setItems] = useState<SprintPlanRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,66 +129,54 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
   );
 
   return (
-    <section className="space-y-5">
-      <MobilePageHero
-        title="Калькулятор спринта"
-        description="Последние расчёты capacity, velocity и буфера. Открывайте актуальный план или создавайте новый без перехода через таблицу."
-        action={
-          canManage ? (
-              <Button intent="create" size="sm" onClick={() => navigate("new")}>
-              Новый
-            </Button>
-          ) : undefined
-        }
-        stats={[
-          { label: "Планы", value: loading ? "..." : items.length },
-          { label: "Команды", value: loading ? "..." : teamsInList || "0" },
-          { label: "Последний", value: latestPlan ? latestPlan.name : "нет", hint: latestPlan ? formatDate(latestPlan.updated_at) : undefined },
-          { label: "Треки", value: latestPlan?.payload.tracks?.length ?? "—", hint: latestPlan?.payload.result_summary ?? undefined },
-        ]}
-      />
-
-      <div className="hidden lg:block">
-        <SectionHeader
-          title="Планирование SP"
-          description="Калькулятор Velocity/Capacity по командному гайду. Сохранённые расчёты остаются здесь для следующего спринта."
-          actions={
-            canManage ? (
-                <Button intent="create" size="sm" onClick={() => navigate("new")}>
-                Новый план
-              </Button>
-            ) : undefined
-          }
-        />
-      </div>
-
-      <div className="hidden lg:block">
-        <HelpCallout title="Кратко">
+    <CmsTeamListPage
+      principal={principal}
+      className="space-y-5"
+      title="Планирование SP"
+      description="Калькулятор Velocity/Capacity по командному гайду. Сохранённые расчёты остаются здесь для следующего спринта."
+      mobileDescription="Последние расчёты capacity, velocity и буфера. Открывайте актуальный план или создавайте новый без перехода через таблицу."
+      mobileAction={
+        canManage ? (
+          <Button intent="create" size="sm" onClick={() => navigate("new")}>
+            Новый
+          </Button>
+        ) : undefined
+      }
+      headerActions={
+        canManage ? (
+          <Button intent="create" size="sm" onClick={() => navigate("new")}>
+            Новый план
+          </Button>
+        ) : undefined
+      }
+      mobileStats={[
+        { label: "Планы", value: loading ? "..." : items.length },
+        { label: "Команды", value: loading ? "..." : teamsInList || "0" },
+        {
+          label: "Последний",
+          value: latestPlan ? latestPlan.name : "нет",
+          hint: latestPlan ? formatDate(latestPlan.updated_at) : undefined,
+        },
+        {
+          label: "Треки",
+          value: latestPlan?.payload.tracks?.length ?? "—",
+          hint: latestPlan?.payload.result_summary ?? undefined,
+        },
+      ]}
+      helpCallout={{
+        title: "Кратко",
+        children: (
           <p>
             Команда разбивается на треки (back / front / qa / любые свои). Velocity и Capacity считаются
             для каждого трека отдельно. План каждого трека = Velocity × (Capacity спринта / Capacity база)
             минус буфер (по умолчанию 20%) на незапланированные задачи.
           </p>
-        </HelpCallout>
-      </div>
-
-      {error ? <InlineError text={error} /> : null}
-
-      {principal.is_superuser ? (
-        <>
-          <div className="lg:hidden">
-            <MobileFilterBar>
-              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-            </MobileFilterBar>
-          </div>
-          <div className="hidden lg:block">
-            <Toolbar>
-              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-            </Toolbar>
-          </div>
-        </>
-      ) : null}
-
+        ),
+      }}
+      teamFilter={teamFilter}
+      onTeamFilterChange={setTeamFilter}
+      error={error}
+    >
       {loading ? (
         <Skeleton height="h-40" />
       ) : items.length === 0 ? (
@@ -200,7 +185,7 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
           description="Создайте первый, чтобы оценить план на ближайший спринт."
           action={
             canManage ? (
-                <Button intent="create" onClick={() => navigate("new")}>
+              <Button intent="create" onClick={() => navigate("new")}>
                 Новый план
               </Button>
             ) : undefined
@@ -216,8 +201,7 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
           onDelete={(record) => void deletePlan(record)}
         />
       )}
-
-    </section>
+    </CmsTeamListPage>
   );
 }
 

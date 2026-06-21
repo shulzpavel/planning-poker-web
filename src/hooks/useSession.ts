@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { apiUrl, wsUrl } from "../app/config";
+import { useRealtimeChannel, useStoredParticipantId } from "./useRealtimeChannel";
 import { saveWebIdentity } from "../shared/lib/participantIdentity";
-import { useReconnectOnVisible } from "../shared/lib/useReconnectOnVisible";
 
 export interface TaskInfo {
   task_id?: string;
@@ -101,154 +101,85 @@ interface UseSessionReturn {
 
 export function useSession(token: string): UseSessionReturn {
   const pidKey = `pp_pid_${token}`;
-  const [participantId, setParticipantId] = useState<string | null>(
-    () => localStorage.getItem(pidKey)
-  );
+  const { participantId, persistParticipantId, clearParticipantId } =
+    useStoredParticipantId(pidKey);
   const [state, setState] = useState<WebSessionState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reconnectDelay = useRef(1000);
-  const unmounted = useRef(false);
 
   const phase: Phase = participantId === null ? "joining" : (state?.phase ?? "waiting");
 
   const refreshState = useCallback(async () => {
     try {
       const resp = await fetch(apiUrl(`/web/state/${encodeURIComponent(token)}`));
-      if (!resp.ok || unmounted.current) return;
+      if (!resp.ok) return;
       setState((await resp.json()) as WebSessionState);
     } catch {
       // WebSocket reconnect will keep retrying; this is only catch-up.
     }
   }, [token]);
 
-  const connect = useCallback(() => {
-    if (unmounted.current || !participantId) return;
-
-    if (wsRef.current) {
-      wsRef.current.onclose = null;
-      wsRef.current.close();
-      wsRef.current = null;
+  const handleMessage = useCallback((msg: Record<string, unknown>) => {
+    if (msg.type === "session_state") {
+      setState(msg.state as WebSessionState);
+    } else if (msg.type === "vote_cast") {
+      setState((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          participants: prev.participants.map((p) =>
+            p.name === msg.voter_name
+              ? { ...p, voted: true, value: (msg.voter_value as string | null | undefined) ?? p.value ?? null }
+              : p,
+          ),
+        };
+      });
+    } else if (msg.type === "results") {
+      setState((prev) => ({
+        ...(prev ?? { task: null, participants: [] }),
+        phase: "results",
+        results: msg.votes as VoteResult[],
+        track_results: (msg.track_results as Record<string, VoteResult[]> | null | undefined) ?? prev?.track_results ?? null,
+        task: (msg.task as TaskInfo | null | undefined) ?? prev?.task ?? null,
+        estimation_mode: (msg.estimation_mode as string | undefined) ?? prev?.estimation_mode,
+        estimation_mode_label: (msg.estimation_mode_label as string | undefined) ?? prev?.estimation_mode_label,
+        estimation_mode_description: (msg.estimation_mode_description as string | undefined) ?? prev?.estimation_mode_description,
+        estimation_tracks: (msg.estimation_tracks as EstimationTrackInfo[] | undefined) ?? prev?.estimation_tracks,
+      }));
+    } else if (msg.type === "next_task") {
+      setState((prev) => ({
+        ...(prev ?? { participants: [] }),
+        phase: "voting",
+        task: msg.task as TaskInfo,
+        results: undefined,
+        participants: (prev?.participants ?? []).map((p) => ({
+          ...p,
+          voted: false,
+          value: null,
+        })),
+      }));
+    } else if (msg.type === "batch_complete") {
+      setState((prev) => ({
+        ...(prev ?? { task: null, participants: [] }),
+        phase: "complete",
+      }));
     }
+  }, []);
 
-    const ws = new WebSocket(wsUrl(token));
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      // Reset backoff when we successfully establish a fresh connection,
-      // even if no session_state message arrives immediately afterwards.
-      reconnectDelay.current = 1000;
-      void refreshState();
-    };
-
-    ws.onmessage = (ev) => {
-      try {
-        const msg = JSON.parse(ev.data as string);
-        if (msg.type === "ping") return;
-
-        if (msg.type === "session_state") {
-          setState(msg.state as WebSessionState);
-          reconnectDelay.current = 1000;
-        } else if (msg.type === "vote_cast") {
-          // Live vote — patch both the `voted` flag and the actual value so
-          // every participant (and the manager) sees the same picture.
-          // `voter_value` is optional for backward compat with older builds.
-          setState((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              participants: prev.participants.map((p) =>
-                p.name === msg.voter_name
-                  ? { ...p, voted: true, value: msg.voter_value ?? p.value ?? null }
-                  : p,
-              ),
-            };
-          });
-        } else if (msg.type === "results") {
-          setState((prev) => ({
-            ...(prev ?? { task: null, participants: [] }),
-            phase: "results",
-            results: msg.votes as VoteResult[],
-            track_results: msg.track_results ?? prev?.track_results ?? null,
-            task: msg.task ?? prev?.task ?? null,
-            estimation_mode: msg.estimation_mode ?? prev?.estimation_mode,
-            estimation_mode_label: msg.estimation_mode_label ?? prev?.estimation_mode_label,
-            estimation_mode_description: msg.estimation_mode_description ?? prev?.estimation_mode_description,
-            estimation_tracks: msg.estimation_tracks ?? prev?.estimation_tracks,
-          }));
-        } else if (msg.type === "next_task") {
-          setState((prev) => ({
-            ...(prev ?? { participants: [] }),
-            phase: "voting",
-            task: msg.task as TaskInfo,
-            results: undefined,
-            participants: (prev?.participants ?? []).map((p) => ({
-              ...p,
-              voted: false,
-              value: null,
-            })),
-          }));
-        } else if (msg.type === "batch_complete") {
-          setState((prev) => ({
-            ...(prev ?? { task: null, participants: [] }),
-            phase: "complete",
-          }));
-        }
-      } catch {
-        // ignore parse errors
-      }
-    };
-
-    ws.onclose = (ev) => {
-      if (unmounted.current) return;
-      // 4004 = invalid/expired session token (see backend websocket_endpoint).
-      // Stop reconnecting and surface a clear "join again" state instead of an
-      // infinite backoff loop against a token that will never be valid.
-      if (ev.code === 4004) {
-        try {
-          localStorage.removeItem(pidKey);
-        } catch {
-          // ignore storage errors
-        }
-        setParticipantId(null);
-        setState(null);
-        setError("Сессия истекла. Откройте ссылку заново.");
-        return;
-      }
-      const delay = reconnectDelay.current;
-      reconnectDelay.current = Math.min(delay * 2, 30000);
-      reconnectTimer.current = setTimeout(connect, delay);
-    };
-
-    ws.onerror = () => {
-      ws.close();
-    };
-  }, [token, participantId, pidKey, refreshState]);
-
-  const reconnectNow = useCallback(() => {
-    if (!participantId || unmounted.current) return;
-    void refreshState();
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
-    if (reconnectTimer.current) {
-      clearTimeout(reconnectTimer.current);
-      reconnectTimer.current = null;
-    }
-    reconnectDelay.current = 1000;
-    connect();
-  }, [connect, participantId, refreshState]);
-
-  useReconnectOnVisible(reconnectNow);
-
-  useEffect(() => {
-    unmounted.current = false;
-    if (participantId) connect();
-    return () => {
-      unmounted.current = true;
-      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
-    };
-  }, [connect, participantId]);
+  useRealtimeChannel({
+    connectWhenJoined: true,
+    participantId,
+    buildUrl: () => wsUrl(token),
+    onMessage: handleMessage,
+    refreshState,
+    resetBackoffOnTypes: ["session_state"],
+    onClose: (ev) => {
+      if (ev.code !== 4004) return false;
+      clearParticipantId();
+      setState(null);
+      setError("Сессия истекла. Откройте ссылку заново.");
+      return true;
+    },
+  });
 
   const join = useCallback(
     async (name: string, role: ParticipantRole) => {
@@ -273,15 +204,10 @@ export function useSession(token: string): UseSessionReturn {
       }
       const data = (await resp.json()) as { participant_id: string; session: WebSessionState };
       saveWebIdentity(name, role);
-      try {
-        localStorage.setItem(pidKey, data.participant_id);
-      } catch {
-        // ignore storage errors
-      }
-      setParticipantId(data.participant_id);
+      persistParticipantId(data.participant_id);
       setState(data.session);
     },
-    [token, pidKey]
+    [token, persistParticipantId]
   );
 
   const vote = useCallback(
@@ -307,23 +233,15 @@ export function useSession(token: string): UseSessionReturn {
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
         setError((data as { detail?: string }).detail ?? "Vote failed");
-        // Participant token expired or was invalidated — clear local state so
-        // the user can rejoin instead of being stuck in a phantom "voted"
-        // state from a stale localStorage participant_id.
         if (resp.status === 403 || resp.status === 404) {
-          try {
-            localStorage.removeItem(pidKey);
-          } catch {
-            // ignore storage errors (private mode, etc.)
-          }
-          setParticipantId(null);
+          clearParticipantId();
           setState(null);
         }
         return false;
       }
       return true;
     },
-    [token, participantId, pidKey]
+    [token, participantId, clearParticipantId]
   );
 
   return { state, phase, participantId, join, vote, error };

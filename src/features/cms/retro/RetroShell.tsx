@@ -18,11 +18,9 @@ import { ApiError } from "../../../shared/api/http";
 import {
   InlineError,
   MobileFeatureCard,
-  MobileFilterBar,
-  MobilePageHero,
   SectionHeader,
-  Toolbar,
 } from "../components/CmsPrimitives";
+import { CmsTeamListPage } from "../components/CmsTeamListPage";
 import { GroupedDataTableList } from "../components/TeamGroupedSections";
 import {
   cmsRetroApi,
@@ -56,7 +54,7 @@ const DEFAULT_SECTIONS: RetroSectionConfig[] = DEFAULT_RETRO_SECTIONS.map((secti
 
 import type { CmsPrincipal } from "../api/cmsTypes";
 import { TeamBadge } from "../components/TeamBadge";
-import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
+import { teamFilterParams } from "../components/TeamFilter";
 import {
   TeamSelect,
   needsTeamPicker,
@@ -91,7 +89,6 @@ export default function RetroShell({
 function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canManage: boolean }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const { teams } = useCmsTeams(principal);
   const [teamFilter, setTeamFilter] = useState("");
   const [items, setItems] = useState<RetroRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -137,52 +134,39 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
   }, [rows]);
 
   return (
-    <section className="space-y-4">
-      <MobilePageHero
-        title="Ретроспективы"
-        description="Живые комнаты, итоги и AI-анализ. Сначала активные ретро и быстрый вход, затем архив по командам."
-        action={
-          canManage ? (
-              <Button intent="create" size="sm" onClick={() => navigate("new")}>
-              Создать
-            </Button>
-          ) : null
-        }
-        stats={[
-          { label: "Всего", value: loading ? "..." : rows.length },
-          { label: "Идёт", value: loading ? "..." : retroStats.liveCount, tone: retroStats.liveCount > 0 ? "info" : "neutral" },
-          { label: "AI", value: loading ? "..." : retroStats.aiCount },
-          { label: "Команды", value: loading ? "..." : retroStats.teamsCount || "0", hint: retroStats.latest ? `Обновлено ${formatRetroDate(retroStats.latest.updated_at)}` : undefined },
-        ]}
-      />
-      <div className="hidden lg:block">
-        <SectionHeader
-          title="Ретроспективы"
-          description="Настройте секции, поделитесь ссылкой с командой и проведите живое ретро. В конце — AI-анализ итогов."
-          actions={
-            canManage ? (
-                <Button intent="create" size="sm" onClick={() => navigate("new")}>
-                Создать ретро
-              </Button>
-            ) : null
-          }
-        />
-      </div>
-      {error ? <InlineError text={error} /> : null}
-      {principal.is_superuser ? (
-        <>
-          <div className="lg:hidden">
-            <MobileFilterBar>
-              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-            </MobileFilterBar>
-          </div>
-          <div className="hidden lg:block">
-            <Toolbar>
-              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-            </Toolbar>
-          </div>
-        </>
-      ) : null}
+    <CmsTeamListPage
+      principal={principal}
+      title="Ретроспективы"
+      description="Настройте секции, поделитесь ссылкой с командой и проведите живое ретро. В конце — AI-анализ итогов."
+      mobileDescription="Живые комнаты, итоги и AI-анализ. Сначала активные ретро и быстрый вход, затем архив по командам."
+      mobileAction={
+        canManage ? (
+          <Button intent="create" size="sm" onClick={() => navigate("new")}>
+            Создать
+          </Button>
+        ) : null
+      }
+      headerActions={
+        canManage ? (
+          <Button intent="create" size="sm" onClick={() => navigate("new")}>
+            Создать ретро
+          </Button>
+        ) : null
+      }
+      mobileStats={[
+        { label: "Всего", value: loading ? "..." : rows.length },
+        { label: "Идёт", value: loading ? "..." : retroStats.liveCount, tone: retroStats.liveCount > 0 ? "info" : "neutral" },
+        { label: "AI", value: loading ? "..." : retroStats.aiCount },
+        {
+          label: "Команды",
+          value: loading ? "..." : retroStats.teamsCount || "0",
+          hint: retroStats.latest ? `Обновлено ${formatRetroDate(retroStats.latest.updated_at)}` : undefined,
+        },
+      ]}
+      teamFilter={teamFilter}
+      onTeamFilterChange={setTeamFilter}
+      error={error}
+    >
       <GroupedDataTableList
         items={rows}
         teamFilter={teamFilter}
@@ -299,7 +283,7 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
           </tr>
         )}
       />
-    </section>
+    </CmsTeamListPage>
   );
 }
 

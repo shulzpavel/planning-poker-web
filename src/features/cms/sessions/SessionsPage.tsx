@@ -34,7 +34,7 @@ import type {
   WebParticipantItem,
 } from "../api/cmsTypes";
 import { TeamBadge } from "../components/TeamBadge";
-import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
+import { teamFilterParams } from "../components/TeamFilter";
 import {
   TeamSelect,
   resolveDefaultTeamId,
@@ -45,16 +45,14 @@ import { useCmsTeams } from "../hooks/useCmsTeams";
 import { Alert, Badge, BottomSheet, Button, ConfirmDialog, DropdownField, EmptyState, ScrollArea, SheetActionButton, SheetFooterActions, Surface, TextField } from "../../../design-system";
 import {
   CompactList,
-  HelpCallout,
   InlineError,
   LoadMoreFooter,
   MobileRecordCard,
   MobileRecordField,
-  SectionHeader,
   Skeleton,
   Status,
-  Toolbar,
 } from "../components/CmsPrimitives";
+import { CmsTeamListPage } from "../components/CmsTeamListPage";
 import { GroupedDataTableList } from "../components/TeamGroupedSections";
 import { useCmsList } from "../hooks/useCmsList";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
@@ -112,6 +110,33 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
   const navigate = useNavigate();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const focusSearch = () => searchInputRef.current?.focus();
+
+  const sessionToolbar = (
+    <>
+      <TextField
+        ref={searchInputRef}
+        className="md:max-w-sm"
+        aria-label="Поиск сессии"
+        placeholder="Поиск по названию или идентификатору"
+        value={q}
+        onChange={(event) => setQ(event.target.value)}
+      />
+      <DropdownField
+        className="md:max-w-[200px]"
+        aria-label="Статус сессии"
+        value={active}
+        options={[
+          { value: "", label: "Все статусы" },
+          { value: "true", label: "Идут сейчас" },
+          { value: "false", label: "Завершены / не запущены" },
+        ]}
+        onChange={setActive}
+      />
+      <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>
+        Обновить
+      </Button>
+    </>
+  );
 
   // Option B navigation: every session detail lives under
   // `/cms/sessions/:id/...`. Completed sessions auto-route to the
@@ -178,11 +203,27 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
   }
 
   return (
-    <section className="space-y-4">
-      <SectionHeader
+    <>
+      <CmsTeamListPage
+        principal={principal}
         title="Сессии"
         description="Все планинг-покер сессии. «Открыть» ведёт в управление голосованием (или отчёт, если сессия завершена). «Подробнее» открывает карточку с переименованием, закрытием и удалением."
-        actions={
+        mobileDescription="Активные и завершённые planning-сессии. Открывайте управление или отчёт прямо из списка."
+        mobileAction={
+          <Button
+            intent="create"
+            size="sm"
+            onClick={() => {
+              setCreateTitle("");
+              setCreateTeamId(resolveDefaultTeamId(teams));
+              setCreateError(null);
+              setCreateOpen(true);
+            }}
+          >
+            Новая
+          </Button>
+        }
+        headerActions={
           <Button
             intent="create"
             size="sm"
@@ -196,43 +237,44 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
             Новая сессия
           </Button>
         }
-      />
-      <HelpCallout title="Подсказки">
-        <p>«Открыть» — фасилитаторский экран для управления сессией: ставить SP, переключать задачи, видеть голоса участников.</p>
-        <p>«Открыть отчёт» — итоги завершённой сессии с экспортом в CSV. Работает даже если сессия ещё не закрыта (покажет текущие голосования).</p>
-        <p>«Закрыть» переносит все оставшиеся задачи в last_batch и фиксирует консенсус — после этого сессия доступна только для чтения.</p>
-        <p>«Удалить из истории» прячет сессию вместе с её задачами, голосами и invite-ссылками; запись в журнал действий остаётся.</p>
-      </HelpCallout>
-      {actionInfo ? <Alert tone="success">{actionInfo}</Alert> : null}
-      {actionError ? <InlineError text={actionError} /> : null}
-
-      <Toolbar>
-        <TextField
-          ref={searchInputRef}
-          className="md:max-w-sm"
-          aria-label="Поиск сессии"
-          placeholder="Поиск по названию или идентификатору"
-          value={q}
-          onChange={(event) => setQ(event.target.value)}
-        />
-        <DropdownField
-          className="md:max-w-[200px]"
-          aria-label="Статус сессии"
-          value={active}
-          options={[
-            { value: "", label: "Все статусы" },
-            { value: "true", label: "Идут сейчас" },
-            { value: "false", label: "Завершены / не запущены" },
-          ]}
-          onChange={setActive}
-        />
-        {principal.is_superuser ? (
-          <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-        ) : null}
-          <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
-      </Toolbar>
-
-      <GroupedDataTableList
+        mobileStats={[
+          { label: "Показано", value: list.loading ? "..." : list.items.length },
+          { label: "Всего", value: list.loading ? "..." : list.total ?? list.items.length },
+          {
+            label: "Активные",
+            value: list.loading ? "..." : list.items.filter((item) => item.is_active).length,
+            tone: "info",
+          },
+          {
+            label: "Завершены",
+            value: list.loading
+              ? "..."
+              : list.items.filter((item) => item.batch_completed && !item.is_active).length,
+          },
+        ]}
+        helpCallout={{
+          title: "Подсказки",
+          children: (
+            <>
+              <p>«Открыть» — фасилитаторский экран для управления сессией: ставить SP, переключать задачи, видеть голоса участников.</p>
+              <p>«Открыть отчёт» — итоги завершённой сессии с экспортом в CSV. Работает даже если сессия ещё не закрыта (покажет текущие голосования).</p>
+              <p>«Закрыть» переносит все оставшиеся задачи в last_batch и фиксирует консенсус — после этого сессия доступна только для чтения.</p>
+              <p>«Удалить из истории» прячет сессию вместе с её задачами, голосами и invite-ссылками; запись в журнал действий остаётся.</p>
+            </>
+          ),
+        }}
+        teamFilter={teamFilter}
+        onTeamFilterChange={setTeamFilter}
+        toolbar={sessionToolbar}
+        mobileToolbar={sessionToolbar}
+        banner={
+          <>
+            {actionInfo ? <Alert tone="success">{actionInfo}</Alert> : null}
+            {actionError ? <InlineError text={actionError} /> : null}
+          </>
+        }
+      >
+        <GroupedDataTableList
         items={list.items}
         teamFilter={teamFilter}
         error={list.error}
@@ -365,6 +407,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
           </tr>
         )}
       />
+      </CmsTeamListPage>
 
       <ConfirmDialog
         open={confirmAction?.kind === "close"}
@@ -436,7 +479,7 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
           actionBusyId={actionBusy}
         />
       ) : null}
-    </section>
+    </>
   );
 }
 
