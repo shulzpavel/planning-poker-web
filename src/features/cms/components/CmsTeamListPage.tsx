@@ -34,6 +34,7 @@ export interface CmsTeamListPageProps {
   toolbar?: ReactNode;
   onRefresh?: () => void;
   onReset?: () => void;
+  resetDisabled?: boolean;
   resetLabel?: string;
   refreshLoading?: boolean;
   error?: string | null;
@@ -68,6 +69,7 @@ export function CmsTeamListPage({
   toolbar,
   onRefresh,
   onReset,
+  resetDisabled,
   resetLabel,
   refreshLoading,
   error,
@@ -106,6 +108,7 @@ export function CmsTeamListPage({
         <FilterBar
           onRefresh={onRefresh}
           onReset={onReset}
+          resetDisabled={resetDisabled}
           resetLabel={resetLabel}
           refreshLoading={refreshLoading}
         >

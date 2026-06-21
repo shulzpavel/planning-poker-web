@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "./components";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Button, FieldLabel } from "./components";
 import { cn } from "./utils";
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -67,6 +67,7 @@ export function DatePickerPopover({
   disabled,
   loading,
   label = "Дата",
+  fieldLabel,
   placeholder = "не задан",
   reservePopoverSpace = true,
   className,
@@ -75,7 +76,10 @@ export function DatePickerPopover({
   value: string;
   disabled?: boolean;
   loading?: boolean;
+  /** Inline prefix inside the trigger (legacy) or calendar title when fieldLabel is set. */
   label?: string;
+  /** Renders a FieldLabel above the trigger — matches TextField / DropdownField filter rows. */
+  fieldLabel?: ReactNode;
   placeholder?: string;
   reservePopoverSpace?: boolean;
   className?: string;
@@ -170,22 +174,32 @@ export function DatePickerPopover({
   }
 
   const triggerText = selectedDate ? formatTriggerDate(value) : placeholder;
+  const calendarTitle = typeof fieldLabel === "string" ? fieldLabel : label;
 
   return (
-    <div ref={rootRef} className={cn("relative max-w-full", className)}>
+    <div ref={rootRef} className={cn("relative max-w-full", fieldLabel ? "space-y-1.5" : undefined, className)}>
+      {fieldLabel ? <FieldLabel>{fieldLabel}</FieldLabel> : null}
       <button
         type="button"
         disabled={disabled || loading}
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          "inline-flex w-full max-w-full min-h-11 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-line bg-surface px-3 py-2.5 text-left text-base transition-colors sm:min-h-10 sm:text-sm",
+          "inline-flex w-full max-w-full min-h-11 items-center justify-between gap-3 rounded-lg border border-line bg-surface px-3 py-2.5 text-left text-base transition-colors sm:min-h-10 sm:text-sm",
           "hover:border-blue/40 hover:bg-line2/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30",
           "disabled:cursor-not-allowed disabled:opacity-60"
         )}
       >
-        <span className="text-ink3">{label}:</span>
-        <span className={cn("font-semibold tabular-nums", selectedDate ? "text-ink" : "text-ink3")}>{triggerText}</span>
-        <span className="text-ink4" aria-hidden="true">▾</span>
+        <span className={cn("min-w-0 truncate font-semibold tabular-nums", selectedDate ? "text-ink" : "text-ink3")}>
+          {fieldLabel ? triggerText : (
+            <>
+              <span className="font-normal text-ink3">{label}:</span>{" "}
+              {triggerText}
+            </>
+          )}
+        </span>
+        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink3">
+          <span aria-hidden="true">▾</span>
+        </span>
       </button>
 
       {open ? (
@@ -203,7 +217,7 @@ export function DatePickerPopover({
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink3">{label}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink3">{calendarTitle}</p>
               <p className="mt-1 text-lg font-bold capitalize text-ink">{monthLabel(visibleMonth)}</p>
             </div>
             <div className="flex gap-1.5">

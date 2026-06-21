@@ -5,6 +5,7 @@ import type { CmsAdmin, CmsRoleRef } from "../api/cmsTypes";
 import {
   DataTable,
   FilterBar,
+  FilterResetButton,
   HelpCallout,
   MobileRecordCard,
   MobileRecordField,
@@ -118,8 +119,8 @@ export default function UsersListPage() {
       <FilterBar
         onRefresh={list.reload}
         refreshLoading={list.loading}
-        onReset={activeFiltersCount > 0 ? clearFilters : undefined}
-        resetLabel="Сбросить фильтры"
+        onReset={clearFilters}
+        resetDisabled={activeFiltersCount === 0}
       >
         <TextField
           ref={searchRef}
@@ -177,7 +178,7 @@ export default function UsersListPage() {
               }
               action={
                 activeFiltersCount > 0 ? (
-                    <Button intent="reset" onClick={clearFilters}>Сбросить фильтры</Button>
+                  <FilterResetButton onClick={clearFilters} />
                 ) : canManage ? (
                     <Button intent="create" onClick={onCreate}>+ Новый</Button>
                 ) : null

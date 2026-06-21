@@ -7,6 +7,7 @@ import { CMS_PERMISSIONS, hasPermission } from "../navigation";
 import {
   DataTable,
   FilterBar,
+  FilterResetButton,
   HelpCallout,
   MobileRecordCard,
   MobileRecordField,
@@ -31,6 +32,12 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
   const searchRef = useRef<HTMLInputElement | null>(null);
   const canHardDeleteParticipants = hasPermission(principal, CMS_PERMISSIONS.webParticipantsDelete);
   const deleteConfirmed = deleteTarget !== null && deleteConfirmName.trim() === deleteTarget.name;
+  const hasActiveFilters = Boolean(q.trim() || role);
+
+  function clearFilters() {
+    setQ("");
+    setRole("");
+  }
 
   function openDeleteDialog(item: UserItem) {
     setDeleteTarget(item);
@@ -64,7 +71,12 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
         <p>Поиск ищет по имени и id. Фильтр «Роль» оставит только Lead / Participant / Admin — удобно искать фасилитаторов.</p>
         <p>В одной сессии участники видны на её карточке (раздел «Сессии» → выберите сессию).</p>
       </HelpCallout>
-      <FilterBar onRefresh={list.reload} refreshLoading={list.loading}>
+      <FilterBar
+        onRefresh={list.reload}
+        refreshLoading={list.loading}
+        onReset={clearFilters}
+        resetDisabled={!hasActiveFilters}
+      >
         <TextField
           ref={searchRef}
           className={filterFieldWidth("search")}
@@ -107,15 +119,7 @@ export default function UsersPage({ principal }: { principal: CmsPrincipal }) {
               <EmptyState
                 title="Никого не нашли"
                 description="По текущим фильтрам участников нет. Сбросьте фильтры — посмотрите всех."
-                action={
-                    <Button
-                      intent="reset"
-                      size="sm"
-                    onClick={() => { setQ(""); setRole(""); }}
-                  >
-                    Сбросить фильтры
-                  </Button>
-                }
+                action={<FilterResetButton onClick={clearFilters} />}
               />
             ) : (
               <EmptyState
