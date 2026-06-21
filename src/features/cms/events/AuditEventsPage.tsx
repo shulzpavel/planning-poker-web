@@ -4,6 +4,7 @@ import { Alert, Badge, Button, DatePickerPopover, DropdownField, EmptyState, Tex
 import type { AuditEvent } from "../api/cmsTypes";
 import {
   DataTable,
+  FilterBar,
   HelpCallout,
   MobileRecordCard,
   MobileRecordField,
@@ -232,68 +233,72 @@ export default function AuditEventsPage() {
         <p>Если ввели «action», фильтр работает по точному совпадению (например, <code className="rounded bg-line2 px-1 text-xs">cms.session.delete</code>).</p>
       </HelpCallout>
       {dateRangeError ? <Alert tone="warning">{dateRangeError}</Alert> : null}
-      <div className="grid w-full max-w-7xl grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12">
-        <TextField
-          ref={searchRef}
-          className="xl:col-span-4"
-          aria-label="Тип события"
-          label="Action"
-          placeholder="Фильтр по action, например cms.task.create"
-          value={actionFilter}
-          onChange={(event) => setActionFilter(event.target.value)}
-        />
-        <TextField
-          className="xl:col-span-3"
-          aria-label="Кто (actor)"
-          label="Actor"
-          placeholder="username, например lead.user"
-          value={actorFilter}
-          onChange={(event) => setActorFilter(event.target.value)}
-        />
-        <DropdownField
-          className="xl:col-span-2"
-          aria-label="Статус"
-          label="Статус"
-          value={status}
-          options={[
-            { value: "", label: "Все статусы" },
-            { value: "ok", label: "Успех" },
-            { value: "failed", label: "Ошибка" },
-          ]}
-          onChange={setStatus}
-        />
-        <div className="grid grid-cols-2 gap-2 md:col-span-2 xl:col-span-6">
-          <DatePickerPopover
-            className="max-w-full"
-            label="С"
-            value={fromFilter}
-            placeholder="дата начала"
-            reservePopoverSpace={false}
-            onChange={setFromFilter}
+      <FilterBar
+        layout="grid"
+        onRefresh={list.reload}
+        refreshLoading={list.loading}
+        refreshDisabled={Boolean(dateRangeError)}
+        onReset={() => {
+          setActionFilter("");
+          setActorFilter("");
+          setStatus("");
+          setFromFilter("");
+          setToFilter("");
+        }}
+      >
+        <FilterBar.Cell xl={4}>
+          <TextField
+            ref={searchRef}
+            aria-label="Тип события"
+            label="Action"
+            placeholder="Фильтр по action, например cms.task.create"
+            value={actionFilter}
+            onChange={(event) => setActionFilter(event.target.value)}
           />
-          <DatePickerPopover
-            className="max-w-full"
-            label="По"
-            value={toFilter}
-            placeholder="дата конца"
-            reservePopoverSpace={false}
-            onChange={setToFilter}
+        </FilterBar.Cell>
+        <FilterBar.Cell xl={3}>
+          <TextField
+            aria-label="Кто (actor)"
+            label="Actor"
+            placeholder="username, например lead.user"
+            value={actorFilter}
+            onChange={(event) => setActorFilter(event.target.value)}
           />
-        </div>
-          <Button
-            intent="reset"
-          onClick={() => {
-            setActionFilter("");
-            setActorFilter("");
-            setStatus("");
-            setFromFilter("");
-            setToFilter("");
-          }}
-        >
-          Сбросить
-        </Button>
-          <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
-      </div>
+        </FilterBar.Cell>
+        <FilterBar.Cell xl={2}>
+          <DropdownField
+            aria-label="Статус"
+            label="Статус"
+            value={status}
+            options={[
+              { value: "", label: "Все статусы" },
+              { value: "ok", label: "Успех" },
+              { value: "failed", label: "Ошибка" },
+            ]}
+            onChange={setStatus}
+          />
+        </FilterBar.Cell>
+        <FilterBar.Cell xl={6} md={2}>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <DatePickerPopover
+              className="w-full"
+              label="С"
+              value={fromFilter}
+              placeholder="дата начала"
+              reservePopoverSpace={false}
+              onChange={setFromFilter}
+            />
+            <DatePickerPopover
+              className="w-full"
+              label="По"
+              value={toFilter}
+              placeholder="дата конца"
+              reservePopoverSpace={false}
+              onChange={setToFilter}
+            />
+          </div>
+        </FilterBar.Cell>
+      </FilterBar>
       <DataTable
         error={list.error}
         loading={list.loading}

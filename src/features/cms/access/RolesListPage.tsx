@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge, Button, EmptyState, TextField } from "../../../design-system";
 import { cmsAccessApi } from "../api/cmsClient";
 import type { CmsRole } from "../api/cmsTypes";
-import { DataTable, HelpCallout, MobileRecordCard, MobileRecordField, SectionHeader, Toolbar } from "../components/CmsPrimitives";
+import { DataTable, FilterBar, HelpCallout, MobileRecordCard, MobileRecordField, SectionHeader, filterFieldWidth } from "../components/CmsPrimitives";
 import { useAccessContext } from "./AccessShell";
 
 const ROLE_COUNT_THRESHOLD = 20;
@@ -107,15 +107,15 @@ export default function RolesListPage() {
         )}
       </HelpCallout>
 
-      <Toolbar>
+      <FilterBar>
         <TextField
-          className="md:max-w-sm"
+          className={filterFieldWidth("search")}
           aria-label="Поиск роли"
           placeholder="Поиск по названию или ключу"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-      </Toolbar>
+      </FilterBar>
 
       <DataTable
         error={null}

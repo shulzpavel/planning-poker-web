@@ -178,7 +178,7 @@ export function DatePickerPopover({
         disabled={disabled || loading}
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          "inline-flex max-w-full min-h-9 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-left text-xs transition-colors",
+          "inline-flex w-full max-w-full min-h-11 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-line bg-surface px-3 py-2.5 text-left text-base transition-colors sm:min-h-10 sm:text-sm",
           "hover:border-blue/40 hover:bg-line2/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30",
           "disabled:cursor-not-allowed disabled:opacity-60"
         )}

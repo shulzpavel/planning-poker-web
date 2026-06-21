@@ -45,12 +45,14 @@ import { useCmsTeams } from "../hooks/useCmsTeams";
 import { Alert, Badge, BottomSheet, Button, ConfirmDialog, DropdownField, EmptyState, ScrollArea, SheetActionButton, SheetFooterActions, Surface, TextField } from "../../../design-system";
 import {
   CompactList,
+  FilterBar,
   InlineError,
   LoadMoreFooter,
   MobileRecordCard,
   MobileRecordField,
   Skeleton,
   Status,
+  filterFieldWidth,
 } from "../components/CmsPrimitives";
 import { CmsTeamListPage } from "../components/CmsTeamListPage";
 import { GroupedDataTableList } from "../components/TeamGroupedSections";
@@ -115,14 +117,14 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
     <>
       <TextField
         ref={searchInputRef}
-        className="md:max-w-sm"
+        className={filterFieldWidth("search")}
         aria-label="Поиск сессии"
         placeholder="Поиск по названию или идентификатору"
         value={q}
         onChange={(event) => setQ(event.target.value)}
       />
       <DropdownField
-        className="md:max-w-[200px]"
+        className={filterFieldWidth("status")}
         aria-label="Статус сессии"
         value={active}
         options={[
@@ -132,9 +134,6 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
         ]}
         onChange={setActive}
       />
-      <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>
-        Обновить
-      </Button>
     </>
   );
 
@@ -266,7 +265,8 @@ export default function SessionsPage({ principal, canManageTasks, canManageSessi
         teamFilter={teamFilter}
         onTeamFilterChange={setTeamFilter}
         toolbar={sessionToolbar}
-        mobileToolbar={sessionToolbar}
+        onRefresh={list.reload}
+        refreshLoading={list.loading}
         banner={
           <>
             {actionInfo ? <Alert tone="success">{actionInfo}</Alert> : null}
@@ -1075,15 +1075,17 @@ function TaskQueueEditor({
             Показано {tasks.length} · в очереди {detail.tasks_queue_count} · версия очереди v{detail.tasks_version}
           </p>
         </div>
-        <div className="grid w-full max-w-full grid-cols-1 gap-2 sm:grid-cols-[minmax(180px,1fr)_180px]">
+        <FilterBar>
           <TextField
             aria-label="Поиск задач"
+            className={filterFieldWidth("search", "sm:max-w-none md:max-w-md")}
             placeholder="Поиск по summary, jira_key, id"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
           />
           <DropdownField
             aria-label="Раздел очереди"
+            className={filterFieldWidth("bucket")}
             value={bucket}
             options={[
               { value: "tasks_queue", label: "Очередь" },
@@ -1093,7 +1095,7 @@ function TaskQueueEditor({
             ]}
             onChange={onBucketChange}
           />
-        </div>
+        </FilterBar>
       </div>
 
       {canManage ? (

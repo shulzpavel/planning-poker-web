@@ -5,7 +5,7 @@ import { cmsFetch } from "../api/cmsClient";
 import type { CmsPrincipal, Overview } from "../api/cmsTypes";
 import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
 import { useCmsTeams } from "../hooks/useCmsTeams";
-import { HelpCallout, InlineError, SectionHeader, Skeleton, Toolbar } from "../components/CmsPrimitives";
+import { HelpCallout, InlineError, FilterBar, SectionHeader, Skeleton } from "../components/CmsPrimitives";
 import { formatNumber } from "../../../shared/lib/format";
 
 interface OverviewTile {
@@ -68,9 +68,9 @@ export default function OverviewPage({ principal }: { principal: CmsPrincipal })
         </p>
       </HelpCallout>
       {principal.is_superuser ? (
-        <Toolbar>
+        <FilterBar>
           <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-        </Toolbar>
+        </FilterBar>
       ) : null}
       {error ? <InlineError text={error} /> : null}
       {overview ? <OverviewCards overview={overview} onSelect={(to) => navigate(to)} /> : <Skeleton height="h-24" />}

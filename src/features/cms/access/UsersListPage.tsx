@@ -4,11 +4,12 @@ import { Badge, Button, DropdownField, EmptyState, TextField } from "../../../de
 import type { CmsAdmin, CmsRoleRef } from "../api/cmsTypes";
 import {
   DataTable,
+  FilterBar,
   HelpCallout,
   MobileRecordCard,
   MobileRecordField,
   SectionHeader,
-  Toolbar,
+  filterFieldWidth,
 } from "../components/CmsPrimitives";
 import { useCmsList } from "../hooks/useCmsList";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
@@ -114,17 +115,22 @@ export default function UsersListPage() {
         <p>Все фильтры сохраняются в URL — ссылку можно отправить коллеге.</p>
       </HelpCallout>
 
-      <Toolbar>
+      <FilterBar
+        onRefresh={list.reload}
+        refreshLoading={list.loading}
+        onReset={activeFiltersCount > 0 ? clearFilters : undefined}
+        resetLabel="Сбросить фильтры"
+      >
         <TextField
           ref={searchRef}
-          className="md:max-w-sm"
+          className={filterFieldWidth("search")}
           aria-label="Поиск пользователя"
           placeholder="username или отображаемое имя"
           value={qInput}
           onChange={(event) => setQInput(event.target.value)}
         />
         <DropdownField
-          className="md:max-w-[200px]"
+          className={filterFieldWidth("status")}
           aria-label="Статус"
           value={activeParam}
           options={[
@@ -135,7 +141,7 @@ export default function UsersListPage() {
           onChange={(value) => setParam("active", value)}
         />
         <DropdownField
-          className="md:max-w-[220px]"
+          className={filterFieldWidth("role")}
           aria-label="Роль"
           value={roleIdParam}
           options={[
@@ -146,15 +152,7 @@ export default function UsersListPage() {
           searchPlaceholder="Поиск роли..."
           onChange={(value) => setParam("role_id", value)}
         />
-        {activeFiltersCount > 0 ? (
-            <Button intent="reset" onClick={clearFilters}>
-            Сбросить фильтры
-          </Button>
-        ) : null}
-          <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload} disabled={list.loading}>
-          Обновить
-        </Button>
-      </Toolbar>
+      </FilterBar>
 
       <DataTable
         error={list.error}

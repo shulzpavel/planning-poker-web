@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, EmptyState, Surface, TextField } from "../../../design-system";
 import type { CmsPermission, CmsRole } from "../api/cmsTypes";
-import { HelpCallout, SectionHeader, Toolbar } from "../components/CmsPrimitives";
+import { HelpCallout, FilterBar, SectionHeader, filterFieldWidth } from "../components/CmsPrimitives";
 import { useAccessContext } from "./AccessShell";
 import { filterPermissions, groupPermissionsByPrefix } from "./parts/helpers";
 
@@ -34,15 +34,15 @@ export default function PermissionsRefPage() {
         </p>
       </HelpCallout>
 
-      <Toolbar>
+      <FilterBar>
         <TextField
-          className="md:max-w-sm"
+          className={filterFieldWidth("search")}
           aria-label="Поиск права"
           placeholder="Поиск по permission или роли"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-      </Toolbar>
+      </FilterBar>
 
       {flatPermissions.length === 0 ? (
         <Surface className="p-4">

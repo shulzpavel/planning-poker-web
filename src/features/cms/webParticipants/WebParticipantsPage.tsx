@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { Button, DropdownField, EmptyState } from "../../../design-system";
+import { DropdownField, EmptyState } from "../../../design-system";
 import type { WebParticipantItem } from "../api/cmsTypes";
-import { DataTable, MobileRecordCard, MobileRecordField, Toolbar } from "../components/CmsPrimitives";
+import { DataTable, FilterBar, MobileRecordCard, MobileRecordField, filterFieldWidth } from "../components/CmsPrimitives";
 import { useCmsList } from "../hooks/useCmsList";
 import { formatDate, shortHash } from "../../../shared/lib/format";
 import { sessionKeyChip } from "../sessions/sessionTitle";
@@ -12,9 +12,9 @@ export default function WebParticipantsPage() {
   const list = useCmsList<WebParticipantItem>("/web-participants", params, { scrollKey: "cms-web-participants" });
   return (
     <section className="space-y-4">
-      <Toolbar>
+      <FilterBar onRefresh={list.reload} refreshLoading={list.loading}>
         <DropdownField
-          className="md:max-w-[180px]"
+          className={filterFieldWidth("status")}
           aria-label="Web participant status"
           value={active}
           options={[
@@ -24,8 +24,7 @@ export default function WebParticipantsPage() {
           ]}
           onChange={setActive}
         />
-        <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
-      </Toolbar>
+      </FilterBar>
       <DataTable
         error={list.error}
         loading={list.loading}
