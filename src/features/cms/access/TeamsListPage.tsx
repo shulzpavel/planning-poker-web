@@ -82,7 +82,7 @@ export default function TeamsListPage() {
             onChange={(e) => setDescription(e.target.value)}
           />
           <div className="sm:col-span-2">
-            <Button variant="primary" size="sm" loading={saving} disabled={!name.trim()} onClick={() => void createTeam()}>
+            <Button intent="create" size="sm" loading={saving} disabled={!name.trim()} onClick={() => void createTeam()}>
               Создать команду
             </Button>
           </div>

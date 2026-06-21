@@ -24,7 +24,7 @@ export default function WebParticipantsPage() {
           ]}
           onChange={setActive}
         />
-        <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
+        <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
       </Toolbar>
       <DataTable
         error={list.error}

@@ -42,7 +42,7 @@ export function ScopeSectionEditor({
         </div>
         <Button
           size="sm"
-          variant="secondary"
+          intent="add"
           disabled={disabled}
           onClick={() => onChange(normalizeScopeSectionOrder([...sections, createScopeSection({ order: sections.length })]))}
         >
@@ -69,7 +69,7 @@ export function ScopeSectionEditor({
               >
                 ↓
               </Button>
-              <Button size="sm" variant="ghost" disabled={disabled || sections.length <= 1} onClick={() => removeSection(index)}>
+              <Button size="sm" intent="delete" disabled={disabled || sections.length <= 1} onClick={() => removeSection(index)}>
                 Удалить
               </Button>
             </div>

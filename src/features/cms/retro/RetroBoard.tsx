@@ -277,10 +277,10 @@ function GroupInlineActions({ group, actions }: { group: RetroGroupView; actions
             }
           }}
         />
-        <Button variant="secondary" size="sm" onClick={save} disabled={actions.busy || !draft.trim()}>
+        <Button intent="save" size="sm" onClick={save} disabled={actions.busy || !draft.trim()}>
           Сохранить
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={actions.busy}>
+        <Button intent="cancel" size="sm" onClick={() => setEditing(false)} disabled={actions.busy}>
           Отмена
         </Button>
       </div>
@@ -336,7 +336,7 @@ function AddCardForm({ onSubmit }: { onSubmit: (text: string) => Promise<boolean
           }
         }}
       />
-      <Button className="w-full" variant="primary" onClick={() => void submit()} loading={busy} disabled={!text.trim()}>
+      <Button className="w-full" intent="add" onClick={() => void submit()} loading={busy} disabled={!text.trim()}>
         Добавить карточку
       </Button>
     </div>

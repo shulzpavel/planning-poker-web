@@ -22,8 +22,26 @@ export function Surface({
   );
 }
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
-type ButtonSize = "sm" | "md" | "lg";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
+export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonIntent =
+  | "primary"
+  | "open"
+  | "create"
+  | "add"
+  | "save"
+  | "apply"
+  | "success"
+  | "back"
+  | "cancel"
+  | "neutral"
+  | "refresh"
+  | "reset"
+  | "edit"
+  | "more"
+  | "danger"
+  | "delete"
+  | "finish";
 
 const buttonVariants: Record<ButtonVariant, string> = {
   primary: "border-blue bg-blue text-white hover:bg-blue2 active:bg-blue",
@@ -36,6 +54,30 @@ const buttonVariants: Record<ButtonVariant, string> = {
   success: "border-green/30 bg-green/10 text-green hover:bg-green/15",
 };
 
+const buttonIntentVariants: Record<ButtonIntent, ButtonVariant> = {
+  primary: "primary",
+  open: "primary",
+  create: "primary",
+  add: "primary",
+  save: "primary",
+  apply: "primary",
+  success: "success",
+  back: "secondary",
+  cancel: "secondary",
+  neutral: "secondary",
+  refresh: "secondary",
+  reset: "secondary",
+  edit: "secondary",
+  more: "secondary",
+  danger: "danger",
+  delete: "danger",
+  finish: "danger",
+};
+
+export function resolveButtonVariant(intent: ButtonIntent | undefined, fallback: ButtonVariant = "secondary"): ButtonVariant {
+  return intent ? buttonIntentVariants[intent] : fallback;
+}
+
 const buttonSizes: Record<ButtonSize, string> = {
   sm: "min-h-11 px-3.5 text-base sm:min-h-9 sm:px-3 sm:text-sm",
   md: "min-h-12 px-4 text-base sm:min-h-11 sm:text-sm",
@@ -45,7 +87,8 @@ const buttonSizes: Record<ButtonSize, string> = {
 export function Button({
   children,
   className,
-  variant = "secondary",
+  variant,
+  intent,
   size = "md",
   loading = false,
   type = "button",
@@ -53,9 +96,12 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
+  intent?: ButtonIntent;
   size?: ButtonSize;
   loading?: boolean;
 }) {
+  const resolvedVariant = variant ?? resolveButtonVariant(intent);
+
   return (
     <button
       type={type}
@@ -69,7 +115,7 @@ export function Button({
         "active:scale-[0.98] motion-reduce:active:scale-100",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
         "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45",
-        buttonVariants[variant],
+        buttonVariants[resolvedVariant],
         buttonSizes[size],
         className,
       )}
@@ -620,11 +666,11 @@ export function ConfirmDialog({
           {/* Keep actions thumb-friendly until the layout becomes a
               desktop-style centered dialog. */}
           <div className="mt-5 flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-            <Button variant="ghost" onClick={onCancel} disabled={busy} className="md:w-auto">
+            <Button intent="cancel" onClick={onCancel} disabled={busy} className="md:w-auto">
               {cancelLabel}
             </Button>
             <Button
-              variant={tone === "danger" ? "danger" : "primary"}
+              intent={tone === "danger" ? "danger" : "primary"}
               onClick={onConfirm}
               loading={busy}
               disabled={busy || confirmDisabled}

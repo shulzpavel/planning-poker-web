@@ -109,7 +109,7 @@ export function ManagerTopBar({
               {inviteUrl ? (
                 <Button
                   size="sm"
-                  variant="ghost"
+                  intent="open"
                   onClick={copyInvite}
                   className="hidden md:inline-flex"
                 >
@@ -119,7 +119,7 @@ export function ManagerTopBar({
               {onFinishSession ? (
                 <Button
                   size="sm"
-                  variant="danger"
+                  intent="finish"
                   onClick={onFinishSession}
                   loading={Boolean(finishBusy)}
                   className="hidden md:inline-flex"
@@ -186,7 +186,7 @@ export function ManagerTopBar({
                 Назад
               </SheetActionButton>
               <SheetActionButton
-                intent="danger"
+	                intent="finish"
                 loading={Boolean(finishBusy)}
                 disabled={Boolean(finishBusy)}
                 onClick={() => {

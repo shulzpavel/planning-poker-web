@@ -733,7 +733,7 @@ function QueueIssueCard({
             />
             {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
             <div className="mt-2 flex justify-end">
-              <Button size="sm" variant="ghost" disabled={saving || draft.trim().length === 0} onClick={() => void submitComment()}>
+              <Button size="sm" intent="add" disabled={saving || draft.trim().length === 0} onClick={() => void submitComment()}>
                 {saving ? <Spinner size="sm" /> : null}
                 Добавить комментарий
               </Button>

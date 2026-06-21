@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { SheetActionButton, SheetFooterActions } from "./BottomSheet";
+import { resolveButtonVariant } from "./components";
 import { MobileBottomDock } from "./MobileBottomDock";
 import { StickyActionFooter } from "./StickyActionFooter";
 import { SubnavBar } from "./SubnavBar";
@@ -52,5 +53,18 @@ describe("mobile layout primitives", () => {
     expect(markup).toContain("Назад");
     expect(markup).toContain("Удалить");
     expect(markup).toContain("text-red");
+  });
+
+  it("maps shared button intents to consistent visual variants", () => {
+    expect(resolveButtonVariant("add")).toBe("primary");
+    expect(resolveButtonVariant("create")).toBe("primary");
+    expect(resolveButtonVariant("save")).toBe("primary");
+    expect(resolveButtonVariant("delete")).toBe("danger");
+    expect(resolveButtonVariant("finish")).toBe("danger");
+    expect(resolveButtonVariant("cancel")).toBe("secondary");
+    expect(resolveButtonVariant("reset")).toBe("secondary");
+    expect(resolveButtonVariant("refresh")).toBe("secondary");
+    expect(resolveButtonVariant("edit")).toBe("secondary");
+    expect(resolveButtonVariant("more")).toBe("secondary");
   });
 });

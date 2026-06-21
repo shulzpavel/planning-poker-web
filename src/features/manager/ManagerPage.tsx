@@ -1288,8 +1288,8 @@ function CreateSessionPanel({
           />
         </div>
         {createError ? <Alert tone="danger">{createError}</Alert> : null}
-        <Button
-          variant="primary"
+	        <Button
+	          intent="create"
           className="w-full"
           loading={loading}
           disabled={loading || !title.trim()}
@@ -1316,7 +1316,7 @@ function InviteCard({ inviteUrl }: { inviteUrl: string }) {
           <h2 className="text-sm font-bold text-ink">Ссылка для участников</h2>
           <p className="mt-1 break-all text-xs text-ink3">{new URL(inviteUrl, window.location.origin).toString()}</p>
         </div>
-        <Button size="sm" variant="primary" onClick={copy}>{copied ? "Copied" : "Copy"}</Button>
+	        <Button size="sm" intent={copied ? "success" : "neutral"} onClick={copy}>{copied ? "Copied" : "Copy"}</Button>
       </div>
     </Surface>
   );
@@ -1433,13 +1433,13 @@ function QueuePanel({
           <h2 className="text-sm font-bold text-ink">Backlog</h2>
           <p className="text-xs text-ink3">v{tasksVersion} · {tasks.length} loaded · {completedCount} сыграно</p>
         </div>
-        <Button size="sm" variant="ghost" onClick={onReload}>Refresh</Button>
+        <Button size="sm" intent="refresh" onClick={onReload}>Refresh</Button>
       </div>
       <TextField className="mt-3" aria-label="Search tasks" placeholder="Search by Jira key or summary" value={query} onChange={(event) => onQuery(event.target.value)} />
       <div className="mt-3 pr-1 max-md:overflow-visible md:min-h-0 md:overflow-auto lg:flex-1">
         {queueList}
       </div>
-      {cursor ? <Button className="mt-3 w-full" variant="secondary" onClick={onLoadMore}>Load more</Button> : null}
+      {cursor ? <Button className="mt-3 w-full" intent="more" onClick={onLoadMore}>Load more</Button> : null}
       <ConfirmDialog
         open={Boolean(deleteTask)}
         title="Удалить задачу?"
@@ -1538,13 +1538,13 @@ function SortableQueueTaskCard({
       <div className="mt-3 flex flex-wrap gap-1.5 pl-9" onPointerDown={(event) => event.stopPropagation()}>
         {editing ? (
           <>
-            <Button size="sm" variant="primary" disabled={!editValue.trim() || busy !== null} onClick={onSaveEdit}>Save</Button>
-            <Button size="sm" variant="ghost" onClick={onCancelEdit}>Cancel</Button>
+            <Button size="sm" intent="save" disabled={!editValue.trim() || busy !== null} onClick={onSaveEdit}>Save</Button>
+            <Button size="sm" intent="cancel" onClick={onCancelEdit}>Cancel</Button>
           </>
         ) : (
           <>
-            <Button size="sm" variant="ghost" onClick={onStartEdit}>Edit</Button>
-            <Button size="sm" variant="danger" disabled={busy !== null} onClick={onDelete}>Delete</Button>
+            <Button size="sm" intent="edit" onClick={onStartEdit}>Edit</Button>
+            <Button size="sm" intent="delete" disabled={busy !== null} onClick={onDelete}>Delete</Button>
           </>
         )}
       </div>
@@ -1699,7 +1699,7 @@ function ControlRoom({
             <div className="mt-6 flex flex-wrap gap-2">
               {phase === "waiting" ? (
                 <Button
-                  variant="primary"
+	                  intent="open"
                   size="lg"
                   disabled={!canStart || busy !== null}
                   loading={busy === "start" || loading}
@@ -1723,7 +1723,7 @@ function ControlRoom({
               {(phase === "voting" || phase === "results") ? (
                 <>
                   <Button
-                    variant="secondary"
+	                    intent="open"
                     disabled={!task || busy !== null}
                     loading={busy === "next"}
                     onClick={onNext}
@@ -1732,7 +1732,7 @@ function ControlRoom({
                     Next →
                   </Button>
                   <Button
-                    variant="ghost"
+	                    intent="neutral"
                     disabled={!task || busy !== null}
                     loading={busy === "skip"}
                     onClick={onSkip}
@@ -1743,7 +1743,7 @@ function ControlRoom({
                 </>
               ) : null}
               {phase === "complete" ? (
-                <Button variant="primary" size="lg" onClick={onOpenReport}>
+	                <Button intent="open" size="lg" onClick={onOpenReport}>
                   📊 Открыть отчёт сессии
                 </Button>
               ) : null}
@@ -1854,7 +1854,7 @@ function ControlRoom({
           {completedHasMore ? (
             <div className="mt-3 flex justify-center">
               <Button
-                variant="secondary"
+	                intent="more"
                 size="sm"
                 onClick={onLoadMoreHistory}
                 disabled={historyLoadingMore}
@@ -2050,7 +2050,7 @@ function FinalEstimateTracksBlock({
       </div>
       <Button
         className="mt-4"
-        variant="primary"
+	        intent="save"
         disabled={!complete || busy !== null}
         loading={busy === "estimate"}
         onClick={() => onSubmit(values)}
@@ -2155,7 +2155,7 @@ function HistoryCard({
       ) : null}
       <Button
         size="sm"
-        variant="secondary"
+	        intent="edit"
         className="mt-2 w-full"
         disabled={busy !== null}
         onClick={() => onReopen(entry.task_id)}
@@ -2348,7 +2348,7 @@ function WizardManualForm({
       </div>
       <MobileStickyFormFooter>
         <Button
-          variant="primary"
+	          intent="add"
           className="w-full"
           disabled={!summary.trim() || busy !== null}
           onClick={() => onAction("add", async () => {
@@ -2456,7 +2456,7 @@ function WizardJiraForm({
       <MobileStickyFormFooter>
         <div className="flex gap-2">
           <Button
-            variant="secondary"
+	            intent="apply"
             className="flex-1"
             disabled={!jql.trim() || busy !== null || previewBusy}
             loading={previewBusy}
@@ -2465,7 +2465,7 @@ function WizardJiraForm({
             Preview
           </Button>
           <Button
-            variant="primary"
+	            intent="add"
             className="flex-1"
             disabled={!preview || selected.size === 0 || busy !== null}
             onClick={() => onAction("jira-import", async () => {
@@ -2558,7 +2558,7 @@ function TaskAddPanel({
           </Button>
           <Button
             className="flex-1"
-            variant="primary"
+	            intent="add"
             disabled={!preview || selected.size === 0 || busy !== null}
             onClick={() => onAction("jira-import", async () => {
               const result = await managerApi.jiraImport(chatId, {
@@ -2617,7 +2617,7 @@ function TaskAddPanel({
           </div>
           <Button
             className="w-full"
-            variant="primary"
+	            intent="add"
             disabled={!summary.trim() || busy !== null}
             onClick={() => onAction("add", async () => {
               const result = await managerApi.addTask(chatId, {

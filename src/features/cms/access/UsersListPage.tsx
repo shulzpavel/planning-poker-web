@@ -99,7 +99,7 @@ export default function UsersListPage() {
         description="Кто заходит в админку Planning Poker. Назначайте роли, отключайте доступ и сбрасывайте пароль через карточку пользователя."
         actions={
           <Button
-            variant="primary"
+	            intent="create"
             size="sm"
             onClick={onCreate}
             disabled={!canManage}
@@ -147,11 +147,11 @@ export default function UsersListPage() {
           onChange={(value) => setParam("role_id", value)}
         />
         {activeFiltersCount > 0 ? (
-          <Button variant="ghost" onClick={clearFilters}>
+	          <Button intent="reset" onClick={clearFilters}>
             Сбросить фильтры
           </Button>
         ) : null}
-        <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={list.reload} disabled={list.loading}>
+	        <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload} disabled={list.loading}>
           Обновить
         </Button>
       </Toolbar>
@@ -179,9 +179,9 @@ export default function UsersListPage() {
               }
               action={
                 activeFiltersCount > 0 ? (
-                  <Button variant="ghost" onClick={clearFilters}>Сбросить фильтры</Button>
+	                  <Button intent="reset" onClick={clearFilters}>Сбросить фильтры</Button>
                 ) : canManage ? (
-                  <Button variant="primary" onClick={onCreate}>+ Новый</Button>
+	                  <Button intent="create" onClick={onCreate}>+ Новый</Button>
                 ) : null
               }
             />

@@ -231,7 +231,7 @@ export function ScopeFloatingTodo({
               }
             }}
           />
-          <Button size="sm" variant="primary" loading={saving} onClick={() => void addItem()} disabled={draft.trim().length === 0}>
+          <Button size="sm" intent="add" loading={saving} onClick={() => void addItem()} disabled={draft.trim().length === 0}>
             Добавить
           </Button>
         </div>
@@ -258,8 +258,8 @@ export function ScopeFloatingTodo({
                 />
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="mt-0.5 min-h-8 px-2 text-xs text-ink3 hover:text-red"
+                  intent="delete"
+                  className="mt-0.5 min-h-8 px-2 text-xs"
                   disabled={pendingIds.has(item.id)}
                   onClick={() => void removeItem(item.id)}
                 >

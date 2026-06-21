@@ -106,7 +106,7 @@ export function ScopeTopItemsSection({
               <span className="text-xs text-ink3">
                 {atLimit ? "Достигнут лимит 10 пунктов — удалите один, чтобы добавить новый." : "Пункт появится в списке сразу после добавления."}
               </span>
-              <Button size="sm" variant="ghost" disabled={adding || atLimit || draft.trim().length === 0} onClick={() => void handleAdd()}>
+              <Button size="sm" intent="add" disabled={adding || atLimit || draft.trim().length === 0} onClick={() => void handleAdd()}>
                 {adding ? <Spinner size="sm" /> : null}
                 Добавить
               </Button>
@@ -150,7 +150,7 @@ function TopItemCard({
         ) : null}
       </div>
       {canManage ? (
-        <Button size="sm" variant="ghost" disabled={removing} onClick={onRemove}>
+        <Button size="sm" intent="delete" disabled={removing} onClick={onRemove}>
           {removing ? <Spinner size="sm" /> : "Удалить"}
         </Button>
       ) : null}

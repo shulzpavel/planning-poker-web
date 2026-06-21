@@ -45,13 +45,13 @@ export default function OverviewPage({ principal }: { principal: CmsPrincipal })
         description="KPI по четырём модулям delivery hub: калькулятор, отчёты месяца, planning sessions и ретро — плюс участники и активные invite-ссылки."
         actions={
           <>
-            <Button variant="primary" size="sm" onClick={() => navigate("/cms/scope")}>
+            <Button intent="open" size="sm" onClick={() => navigate("/cms/scope")}>
               Открыть отчёты
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => navigate("/cms/planner")}>
+            <Button intent="open" size="sm" onClick={() => navigate("/cms/planner")}>
               Калькулятор
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={loadOverview}>
+            <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={loadOverview}>
               Обновить
             </Button>
           </>

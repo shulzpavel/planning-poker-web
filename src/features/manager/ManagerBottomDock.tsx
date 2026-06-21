@@ -69,7 +69,7 @@ export function ManagerBottomDock({
       <MobileBottomDock aria-label="Действия сессии" className="shrink-0" contentClassName="max-w-[1440px]">
         {inviteUrl ? (
           <Button
-            variant={copied ? "success" : "primary"}
+            intent={copied ? "success" : "open"}
             size="md"
             className="flex-1 min-h-12"
             onClick={copyInvite}
@@ -79,7 +79,7 @@ export function ManagerBottomDock({
           </Button>
         ) : null}
         <Button
-          variant="secondary"
+          intent="more"
           size="md"
           className="min-h-12 px-3"
           onClick={() => setSheetMode("menu")}
@@ -129,7 +129,7 @@ export function ManagerBottomDock({
             <SheetFooterActions>
               <SheetActionButton intent="back" onClick={() => setSheetMode("menu")} disabled={Boolean(finishBusy)}>Назад</SheetActionButton>
               <SheetActionButton
-                intent="danger"
+                intent="finish"
                 loading={Boolean(finishBusy)}
                 disabled={Boolean(finishBusy)}
                 onClick={() => {

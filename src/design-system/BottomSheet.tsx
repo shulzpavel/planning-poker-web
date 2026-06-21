@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Button } from "./components";
+import { Button, resolveButtonVariant, type ButtonIntent } from "./components";
 import { findPreferredFocusTarget, useMobileKeyboardInset } from "./mobileKeyboard";
 import { ScrollArea } from "./ScrollArea";
 import { cn } from "./utils";
@@ -248,14 +248,6 @@ export function SheetItem({
   );
 }
 
-type SheetActionIntent = "back" | "cancel" | "neutral" | "primary" | "save" | "create" | "add" | "danger" | "delete";
-
-function resolveSheetActionVariant(intent: SheetActionIntent) {
-  if (intent === "danger" || intent === "delete") return "danger" as const;
-  if (intent === "primary" || intent === "save" || intent === "create" || intent === "add") return "primary" as const;
-  return "secondary" as const;
-}
-
 export function SheetFooterActions({
   children,
   className,
@@ -276,13 +268,13 @@ export function SheetActionButton({
   size = "md",
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  intent: SheetActionIntent;
+  intent: ButtonIntent;
   size?: "sm" | "md" | "lg";
   loading?: boolean;
 }) {
   return (
     <Button
-      variant={resolveSheetActionVariant(intent)}
+      variant={resolveButtonVariant(intent)}
       size={size}
       className={cn("w-full sm:w-auto", className)}
       {...props}

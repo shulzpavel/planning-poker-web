@@ -271,11 +271,11 @@ function RoleDetailContent({ role, isNew, canManage, permissions, onCreated, onU
       </div>
 
       <StickyActionFooter>
-          <Button variant="ghost" onClick={reset} disabled={!dirty || saving}>
+	          <Button intent="reset" onClick={reset} disabled={!dirty || saving}>
             Сбросить изменения
           </Button>
           <Button
-            variant="primary"
+	            intent={isNew ? "create" : "save"}
             onClick={save}
             loading={saving}
             disabled={!canSubmit}

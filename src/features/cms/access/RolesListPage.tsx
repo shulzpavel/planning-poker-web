@@ -79,7 +79,7 @@ export default function RolesListPage() {
         description="Набор permissions с понятным именем. Системные роли защищены — их можно открыть, но не редактировать."
         actions={
           <Button
-            variant="primary"
+	            intent="create"
             size="sm"
             onClick={onCreate}
             disabled={!canManage}
@@ -138,7 +138,7 @@ export default function RolesListPage() {
                   ? "Поменяйте поисковый запрос."
                   : "Создайте первую роль — для нее можно будет назначить CMS-пользователей."
               }
-              action={canManage ? <Button variant="primary" onClick={onCreate}>+ Новая роль</Button> : null}
+              action={canManage ? <Button intent="create" onClick={onCreate}>+ Новая роль</Button> : null}
             />
           ) : null
         }

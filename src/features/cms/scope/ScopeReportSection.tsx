@@ -668,7 +668,7 @@ function ReleaseCommentBlock({
             {atLimit ? "Достигнут лимит 10 комментариев — удалите один, чтобы добавить новый." : "Комментарий появится в списке после сохранения."}
           </p>
           {canManage ? (
-            <Button size="sm" variant="secondary" disabled={!cleaned || saving || atLimit || !onSave} onClick={() => void addComment()}>
+            <Button size="sm" intent="save" disabled={!cleaned || saving || atLimit || !onSave} onClick={() => void addComment()}>
               {saving ? <Spinner size="sm" /> : null}
               Сохранить комментарий
             </Button>
@@ -704,7 +704,7 @@ function ReleaseCommentCard({
         {createdLabel ? <p className="mt-1 text-xs text-ink3">{createdLabel}</p> : null}
       </div>
       {canManage ? (
-        <Button size="sm" variant="ghost" disabled={removing} onClick={onRemove}>
+        <Button size="sm" intent="delete" disabled={removing} onClick={onRemove}>
           {removing ? <Spinner size="sm" /> : "Удалить"}
         </Button>
       ) : null}
@@ -1097,7 +1097,7 @@ function OpenQuestionsBlock({
               onChange={(event) => setManualDraft(event.target.value)}
             />
             <div className="mt-2 flex justify-end">
-              <Button size="sm" variant="ghost" disabled={adding || manualDraft.trim().length === 0} onClick={() => void addManualQuestion()}>
+              <Button size="sm" intent="add" disabled={adding || manualDraft.trim().length === 0} onClick={() => void addManualQuestion()}>
                 {adding ? <Spinner size="sm" /> : null}
                 Добавить вопрос
               </Button>
@@ -1223,7 +1223,7 @@ function OpenQuestionCard({
             />
             {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
             <div className="mt-2 flex justify-end">
-              <Button size="sm" variant="secondary" disabled={saving || draft.trim().length === 0} onClick={() => void resolveQuestion()}>
+	              <Button size="sm" intent="apply" disabled={saving || draft.trim().length === 0} onClick={() => void resolveQuestion()}>
                 {saving ? <Spinner size="sm" /> : null}
                 Закрыть вопрос
               </Button>

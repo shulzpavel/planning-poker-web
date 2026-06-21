@@ -280,8 +280,8 @@ export default function AuditEventsPage() {
             onChange={setToFilter}
           />
         </div>
-        <Button
-          variant="ghost"
+	        <Button
+	          intent="reset"
           onClick={() => {
             setActionFilter("");
             setActorFilter("");
@@ -292,7 +292,7 @@ export default function AuditEventsPage() {
         >
           Сбросить
         </Button>
-        <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
+	        <Button intent="refresh" size="sm" className="whitespace-nowrap" onClick={list.reload}>Обновить</Button>
       </div>
       <DataTable
         error={list.error}
