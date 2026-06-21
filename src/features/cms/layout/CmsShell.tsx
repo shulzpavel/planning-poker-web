@@ -8,6 +8,7 @@ import {
   CMS_PERMISSIONS,
   groupVisibleTabs,
   hasPermission,
+  resolveCmsSectionKey,
   visibleCmsTabs,
   type CmsTab,
 } from "../navigation";
@@ -70,6 +71,11 @@ export default function CmsShell({
   const canManageRetro = hasPermission(principal, CMS_PERMISSIONS.retroManage);
   const canAnalyzeRetro = hasPermission(principal, CMS_PERMISSIONS.retroAnalyze);
   const canManageScope = hasPermission(principal, CMS_PERMISSIONS.planner);
+
+  const cmsTransitionKey = useMemo(
+    () => resolveCmsSectionKey(location.pathname),
+    [location.pathname],
+  );
 
   const activeTab = useMemo<CmsTab | null>(() => {
     const match = visibleTabs.find((item) => {
@@ -229,7 +235,7 @@ export default function CmsShell({
           </DeferredFallback>
         )}
         >
-          <RouteTransition transitionKey={location.pathname}>
+          <RouteTransition transitionKey={cmsTransitionKey}>
             <Routes>
               <Route index element={<CmsIndexRedirect firstPath={visibleTabs[0]?.path} principal={principal} />} />
               {hasPermission(principal, CMS_PERMISSIONS.overview) ? (

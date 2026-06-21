@@ -442,6 +442,7 @@ export function MobileFeatureCard({
   metrics,
   primaryAction,
   secondaryAction,
+  onActivate,
   children,
 }: {
   title: ReactNode;
@@ -452,6 +453,8 @@ export function MobileFeatureCard({
   metrics?: Array<{ label: ReactNode; value: ReactNode; hint?: ReactNode }>;
   primaryAction?: ReactNode;
   secondaryAction?: ReactNode;
+  /** Opens the record when the title area is clicked (mobile list cards). */
+  onActivate?: () => void;
   children?: ReactNode;
 }) {
   const accentClass = {
@@ -461,12 +464,23 @@ export function MobileFeatureCard({
     red: "border-l-red/70",
     neutral: "border-l-line",
   }[accent];
+  const titleNode = onActivate ? (
+    <button
+      type="button"
+      className="min-w-0 break-words text-left text-lg font-bold leading-snug text-ink hover:text-blue focus-visible:outline-none focus-visible:underline"
+      onClick={onActivate}
+    >
+      {title}
+    </button>
+  ) : (
+    <h3 className="min-w-0 break-words text-lg font-bold leading-snug text-ink">{title}</h3>
+  );
   return (
     <article className={cn("overflow-hidden rounded-xl border border-line border-l-4 bg-surface p-4 shadow-card", accentClass)}>
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {eyebrow ? <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink3">{eyebrow}</div> : null}
-          <h3 className="min-w-0 break-words text-lg font-bold leading-snug text-ink">{title}</h3>
+          {titleNode}
           {subtitle ? <div className="mt-1 text-sm leading-relaxed text-ink3">{subtitle}</div> : null}
         </div>
         {status ? <div className="shrink-0">{status}</div> : null}
@@ -485,8 +499,8 @@ export function MobileFeatureCard({
       {children ? <div className="mt-4 text-sm leading-relaxed text-ink2">{children}</div> : null}
       {primaryAction || secondaryAction ? (
         <div className="mt-4 flex items-stretch gap-2 border-t border-line pt-3">
-          {primaryAction ? <div className="min-w-0 flex-1 [&>*]:w-full">{primaryAction}</div> : null}
-          {secondaryAction ? <div className="shrink-0 [&>*]:h-full">{secondaryAction}</div> : null}
+          {primaryAction ? <div className="min-w-0 flex-1 [&>*]:w-full [&>*]:pointer-events-auto">{primaryAction}</div> : null}
+          {secondaryAction ? <div className="shrink-0 [&>*]:h-full [&>*]:pointer-events-auto">{secondaryAction}</div> : null}
         </div>
       ) : null}
     </article>

@@ -5,6 +5,8 @@ import {
   cmsTabs,
   groupVisibleTabs,
   hasPermission,
+  resolveAppTransitionKey,
+  resolveCmsSectionKey,
   visibleCmsTabs,
 } from "./navigation";
 
@@ -161,5 +163,28 @@ describe("groupVisibleTabs", () => {
     const grouped = groupVisibleTabs(admin);
     expect(grouped).toHaveLength(1);
     expect(grouped[0].group.key).toBe("core");
+  });
+});
+
+describe("resolveCmsSectionKey", () => {
+  it("keeps nested scope and planner paths on the parent section key", () => {
+    expect(resolveCmsSectionKey("/cms/scope")).toBe("/cms/scope");
+    expect(resolveCmsSectionKey("/cms/scope/42")).toBe("/cms/scope");
+    expect(resolveCmsSectionKey("/cms/scope/new")).toBe("/cms/scope");
+    expect(resolveCmsSectionKey("/cms/planner/7")).toBe("/cms/planner");
+  });
+
+  it("normalizes overview and access subtrees", () => {
+    expect(resolveCmsSectionKey("/cms")).toBe("/cms");
+    expect(resolveCmsSectionKey("/cms/overview")).toBe("/cms");
+    expect(resolveCmsSectionKey("/cms/access/users/3")).toBe("/cms/access");
+  });
+});
+
+describe("resolveAppTransitionKey", () => {
+  it("delegates cms paths to the section key and leaves other routes intact", () => {
+    expect(resolveAppTransitionKey("/cms/scope/42")).toBe("/cms/scope");
+    expect(resolveAppTransitionKey("/manage")).toBe("/manage");
+    expect(resolveAppTransitionKey("/s/token")).toBe("/s/token");
   });
 });

@@ -1,6 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { DeferredFallback, MaintenanceBanner, PageLoader, RouteTransition, ScrollHint, ThemeProvider, ToastProvider } from "./design-system";
+import { resolveAppTransitionKey } from "./features/cms/navigation";
 import { useMaintenanceStatus } from "./hooks/useMaintenanceStatus";
 
 // Each route ships its own bundle so the manager-only code (DnD, Jira import,
@@ -52,6 +53,10 @@ export default function App() {
 
 function AppRoutes() {
   const location = useLocation();
+  const transitionKey = useMemo(
+    () => resolveAppTransitionKey(location.pathname),
+    [location.pathname],
+  );
 
   return (
     <Suspense
@@ -61,7 +66,7 @@ function AppRoutes() {
         </DeferredFallback>
       )}
     >
-      <RouteTransition transitionKey={location.pathname}>
+      <RouteTransition transitionKey={transitionKey}>
         <Routes location={location}>
           {/* Root is the public landing page. Authenticated entry points
               (cockpit, CMS) are linked from there. */}

@@ -607,6 +607,7 @@ function ScopeBoardList({
                 <MobileFeatureCard
                   key={item.id}
                   title={item.name}
+                  onActivate={() => onOpen(item.id)}
                   eyebrow={
                     <span className="flex flex-wrap items-center gap-2">
                       {!grouped ? <TeamBadge teamId={item.team_id} team={item.team} /> : null}

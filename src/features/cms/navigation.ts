@@ -154,6 +154,36 @@ export function visibleCmsTabs(principal: CmsPrincipal): CmsTab[] {
  * Used by the mobile drawer in `CmsShell` to render a hierarchical menu. The
  * desktop tab bar still uses the flat `visibleCmsTabs` list.
  */
+/**
+ * Stable transition key for CMS route animations. Nested paths such as
+ * `/cms/scope/42` or `/cms/planner/new` share the parent section key so
+ * `RouteTransition` does not remount the whole CMS shell (and lazy feature
+ * bundles like ScopeBoardShell) on every in-section navigation.
+ */
+export function resolveCmsSectionKey(pathname: string): string {
+  const normalized = pathname.replace(/\/$/, "") || "/cms";
+  if (normalized === "/cms" || normalized === "/cms/overview") {
+    return "/cms";
+  }
+  if (!normalized.startsWith("/cms/")) {
+    return normalized;
+  }
+
+  const segments = normalized.split("/").filter(Boolean);
+  const section = segments[1];
+  if (!section) return "/cms";
+  if (section === "access") return "/cms/access";
+  return `/cms/${section}`;
+}
+
+/** App-level transition key — keeps `CmsPage` mounted across nested CMS URLs. */
+export function resolveAppTransitionKey(pathname: string): string {
+  if (pathname.startsWith("/cms")) {
+    return resolveCmsSectionKey(pathname);
+  }
+  return pathname;
+}
+
 export function groupVisibleTabs(
   principal: CmsPrincipal,
 ): { group: CmsNavGroup; items: CmsTab[] }[] {
