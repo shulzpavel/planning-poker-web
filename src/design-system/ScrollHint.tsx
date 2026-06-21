@@ -5,13 +5,36 @@ import { cn } from "./utils";
 const BOTTOM_THRESHOLD = 96;
 const SHOW_DELAY_MS = 450;
 
+function getViewportMetrics(): { scrollTop: number; height: number } {
+  if (typeof window === "undefined") return { scrollTop: 0, height: 0 };
+  const viewport = window.visualViewport;
+  if (viewport) {
+    return {
+      scrollTop: viewport.pageTop,
+      height: viewport.height,
+    };
+  }
+  return {
+    scrollTop: window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0,
+    height: window.innerHeight,
+  };
+}
+
 function canScrollFurther(): boolean {
   if (typeof window === "undefined") return false;
   const { documentElement, body } = document;
   const scrollHeight = Math.max(documentElement.scrollHeight, body.scrollHeight);
-  const viewportHeight = window.innerHeight;
-  const scrollTop = window.scrollY || documentElement.scrollTop || body.scrollTop || 0;
-  return scrollHeight - (scrollTop + viewportHeight) > BOTTOM_THRESHOLD;
+  const viewport = getViewportMetrics();
+  return scrollHeight - (viewport.scrollTop + viewport.height) > BOTTOM_THRESHOLD;
+}
+
+function syncVisualViewportOffset() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  const viewport = window.visualViewport;
+  const bottomOffset = viewport
+    ? Math.max(0, window.innerHeight - (viewport.offsetTop + viewport.height))
+    : 0;
+  document.documentElement.style.setProperty("--visual-viewport-bottom", `${Math.ceil(bottomOffset)}px`);
 }
 
 function pageScrollLocked(): boolean {
@@ -45,6 +68,7 @@ export function ScrollHint() {
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    syncVisualViewportOffset();
     if (viewportLocked) {
       setVisible(false);
       return;
@@ -68,10 +92,18 @@ export function ScrollHint() {
 
     update({ immediate: true });
 
-    const onScroll = () => update({ immediate: true });
-    const onResize = () => update();
+    const onScroll = () => {
+      syncVisualViewportOffset();
+      update({ immediate: true });
+    };
+    const onResize = () => {
+      syncVisualViewportOffset();
+      update();
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("scroll", onScroll, { passive: true });
 
     const resizeObserver = new ResizeObserver(() => update());
     resizeObserver.observe(document.documentElement);
@@ -89,6 +121,8 @@ export function ScrollHint() {
       clearTimer();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("scroll", onScroll);
       resizeObserver.disconnect();
       mutationObserver.disconnect();
     };
@@ -102,18 +136,17 @@ export function ScrollHint() {
     <div
       aria-hidden="true"
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[calc(var(--safe-bottom)+var(--mobile-dock-height)+0.75rem)] z-20 flex justify-center px-4 pb-1 pt-8",
-        "bg-gradient-to-t from-canvas/90 via-canvas/45 to-transparent md:bottom-[calc(var(--safe-bottom)+1.5rem)] md:z-40 md:bg-none md:pt-0",
+        "scroll-hint-global pointer-events-none fixed inset-x-0 z-20 flex justify-center px-4 md:z-40",
         "transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
         visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
       )}
     >
-      <div className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-line/60 bg-surface/75 px-2.5 py-1 text-[11px] font-semibold text-ink3 backdrop-blur-md md:bg-surface md:px-3 md:py-1.5 md:text-xs md:text-ink2">
-        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue/10 text-[11px] leading-none text-blue/80">
+      <div className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-line/70 bg-canvas text-[11px] font-semibold text-ink3 shadow-[0_1px_4px_rgba(0,0,0,0.08)] sm:w-auto sm:gap-1.5 sm:px-2.5 sm:py-1 md:bg-surface md:px-3 md:py-1.5 md:text-xs md:text-ink2">
+        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue/10 text-[11px] leading-none text-blue/75">
           ↓
         </span>
-        <span className="sm:hidden">Ещё ниже</span>
-        <span className="hidden sm:inline">Прокрутите ниже</span>
+        <span className="hidden sm:inline md:hidden">Ещё ниже</span>
+        <span className="hidden md:inline">Прокрутите ниже</span>
       </div>
     </div>
   );
