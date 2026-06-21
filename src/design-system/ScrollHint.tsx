@@ -102,16 +102,18 @@ export function ScrollHint() {
     <div
       aria-hidden="true"
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[calc(var(--safe-bottom)+5.75rem)] z-20 flex justify-center px-4 md:bottom-[calc(var(--safe-bottom)+1.5rem)] md:z-40",
+        "pointer-events-none fixed inset-x-0 bottom-[calc(var(--safe-bottom)+var(--mobile-dock-height)+0.75rem)] z-20 flex justify-center px-4 pb-1 pt-8",
+        "bg-gradient-to-t from-canvas/90 via-canvas/45 to-transparent md:bottom-[calc(var(--safe-bottom)+1.5rem)] md:z-40 md:bg-none md:pt-0",
         "transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
         visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
       )}
     >
-      <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink2 shadow-card">
-        <span className="scroll-hint-bob flex h-5 w-5 items-center justify-center rounded-full bg-blue/10 text-blue">
+      <div className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-line/60 bg-surface/75 px-2.5 py-1 text-[11px] font-semibold text-ink3 backdrop-blur-md md:bg-surface md:px-3 md:py-1.5 md:text-xs md:text-ink2">
+        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue/10 text-[11px] leading-none text-blue/80">
           ↓
         </span>
-        <span>Прокрутите ниже</span>
+        <span className="sm:hidden">Ещё ниже</span>
+        <span className="hidden sm:inline">Прокрутите ниже</span>
       </div>
     </div>
   );
