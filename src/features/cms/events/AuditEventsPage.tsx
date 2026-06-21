@@ -280,8 +280,7 @@ export default function AuditEventsPage() {
           onChange={setStatus}
         />
         <DatePickerPopover
-          fieldLabel="С"
-          label="Начало периода"
+          label="С"
           className={filterFieldWidth("date")}
           value={fromFilter}
           placeholder="дата начала"
@@ -289,8 +288,7 @@ export default function AuditEventsPage() {
           onChange={setFromFilter}
         />
         <DatePickerPopover
-          fieldLabel="По"
-          label="Конец периода"
+          label="По"
           className={filterFieldWidth("date")}
           value={toFilter}
           placeholder="дата конца"

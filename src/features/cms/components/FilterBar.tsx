@@ -3,10 +3,10 @@ import { Button } from "../../../design-system";
 import { cn } from "../../../design-system/utils";
 import {
   FILTER_RESET_LABEL,
-  filterActionsRailClass,
   filterRefreshButtonClass,
   filterResetButtonClass,
 } from "./cmsFilterLayout";
+import { compactFilterFields } from "./filterFieldUtils";
 
 export type FilterBarProps = {
   children: ReactNode;
@@ -27,15 +27,14 @@ function FilterBarActionsSlot({
   resetLabel = FILTER_RESET_LABEL,
   refreshDisabled,
   refreshLoading,
-  className,
 }: Pick<
   FilterBarProps,
-  "onRefresh" | "onReset" | "resetDisabled" | "resetLabel" | "refreshDisabled" | "refreshLoading" | "className"
+  "onRefresh" | "onReset" | "resetDisabled" | "resetLabel" | "refreshDisabled" | "refreshLoading"
 >) {
   if (!onRefresh && !onReset) return null;
 
   return (
-    <div className={cn(filterActionsRailClass, className)}>
+    <>
       {onReset ? (
         <Button
           intent="reset"
@@ -59,7 +58,7 @@ function FilterBarActionsSlot({
           Обновить
         </Button>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -80,6 +79,11 @@ export function FilterResetButton({
   );
 }
 
+/**
+ * CMS list filters: fields on the left (wrap), actions grouped on the right.
+ * Children should use `reserveMessageSpace={false}` on TextField/DropdownField
+ * (FilterBar injects this automatically for direct field children).
+ */
 export function FilterBar({
   children,
   onRefresh,
@@ -90,17 +94,31 @@ export function FilterBar({
   refreshLoading,
   className,
 }: FilterBarProps) {
+  const hasActions = Boolean(onRefresh || onReset);
+
   return (
-    <div className={cn("flex w-full max-w-4xl flex-wrap items-stretch gap-2", className)}>
-      {children}
-      <FilterBarActionsSlot
-        onRefresh={onRefresh}
-        onReset={onReset}
-        resetDisabled={resetDisabled}
-        resetLabel={resetLabel}
-        refreshDisabled={refreshDisabled}
-        refreshLoading={refreshLoading}
-      />
+    <div
+      className={cn(
+        "w-full max-w-4xl rounded-xl border border-line/80 bg-surface/40 p-3 shadow-none",
+        className,
+      )}
+      data-filter-bar=""
+    >
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{compactFilterFields(children)}</div>
+        {hasActions ? (
+          <div className="flex shrink-0 items-center justify-end gap-2 md:justify-start">
+            <FilterBarActionsSlot
+              onRefresh={onRefresh}
+              onReset={onReset}
+              resetDisabled={resetDisabled}
+              resetLabel={resetLabel}
+              refreshDisabled={refreshDisabled}
+              refreshLoading={refreshLoading}
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

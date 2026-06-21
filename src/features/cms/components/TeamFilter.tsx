@@ -1,6 +1,6 @@
 import { DropdownField } from "../../../design-system";
 import type { CmsTeam } from "../api/cmsTypes";
-import { filterFieldWidth } from "./cmsFilterLayout";
+import { filterFieldProps, filterFieldWidth } from "./cmsFilterLayout";
 
 interface TeamFilterProps {
   teams: CmsTeam[];
@@ -27,6 +27,7 @@ export function TeamFilter({ teams, value, onChange, disabled, className }: Team
       searchable={teams.length > 8}
       searchPlaceholder="Поиск команды..."
       onChange={onChange}
+      {...filterFieldProps}
     />
   );
 }
