@@ -2,14 +2,14 @@ import { cn } from "../../../design-system/utils";
 
 /** Shared width slots for CMS list filters — use via {@link filterFieldWidth}. */
 export const FILTER_WIDTH = {
-  search: "w-full md:max-w-sm",
-  medium: "w-full md:max-w-[240px]",
-  status: "w-full md:max-w-[200px]",
-  role: "w-full md:max-w-[220px]",
-  team: "w-full md:max-w-[220px]",
-  id: "w-full md:max-w-[160px]",
-  date: "w-full md:max-w-[200px]",
-  bucket: "w-full md:max-w-[200px]",
+  search: "w-full sm:w-auto sm:min-w-[12rem] sm:max-w-xs",
+  medium: "w-full sm:w-auto sm:min-w-[10rem] sm:max-w-[240px]",
+  status: "w-full sm:w-auto sm:min-w-[9rem] sm:max-w-[200px]",
+  role: "w-full sm:w-auto sm:min-w-[9rem] sm:max-w-[220px]",
+  team: "w-full sm:w-auto sm:min-w-[9rem] sm:max-w-[220px]",
+  id: "w-full sm:w-auto sm:min-w-[7rem] sm:max-w-[160px]",
+  date: "w-full sm:w-auto sm:min-w-[9rem] sm:max-w-[200px]",
+  bucket: "w-full sm:w-auto sm:min-w-[9rem] sm:max-w-[200px]",
 } as const;
 
 export type FilterWidthSlot = keyof typeof FILTER_WIDTH;
@@ -18,17 +18,18 @@ export function filterFieldWidth(slot: FilterWidthSlot, className?: string) {
   return cn(FILTER_WIDTH[slot], "min-w-0 shrink-0", className);
 }
 
-const filterActionButtonBase = "whitespace-nowrap min-h-11 sm:min-h-10 self-stretch min-w-[7.25rem]";
+/** Match TextField / DropdownField control height — never stretch with field wrappers. */
+export const filterResetButtonClass =
+  "h-11 min-h-0 w-auto min-w-[6.5rem] shrink-0 whitespace-nowrap px-3.5 sm:h-10 sm:min-h-0 sm:px-3";
 
-/** Reset / refresh in FilterBar — fixed min-width so the action rail never jumps. */
-export const filterResetButtonClass = filterActionButtonBase;
-export const filterRefreshButtonClass = filterActionButtonBase;
+export const filterRefreshButtonClass = filterResetButtonClass;
 
 /** @deprecated use filterResetButtonClass */
-export const filterActionButtonClass = filterActionButtonBase;
+export const filterActionButtonClass = filterResetButtonClass;
 
 export const FILTER_RESET_LABEL = "Сбросить";
 
-/** Fixed-width action rail for reset + refresh (prevents layout shift). */
-export const filterActionsRailClass =
-  "ml-auto flex w-full shrink-0 basis-full items-stretch justify-end gap-2 sm:w-auto sm:basis-auto";
+/** Compact toolbar fields — no reserved hint/error row under the control. */
+export const filterFieldProps = {
+  reserveMessageSpace: false as const,
+};

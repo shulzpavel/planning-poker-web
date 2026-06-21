@@ -3,7 +3,7 @@ import { Alert, Badge, Button, EmptyState, ListSkeleton, Skeleton as DsSkeleton,
 import { FilterBar } from "./FilterBar";
 
 export { FilterBar, FilterResetButton } from "./FilterBar";
-export { filterFieldWidth, FILTER_WIDTH, FILTER_RESET_LABEL } from "./cmsFilterLayout";
+export { filterFieldWidth, FILTER_WIDTH, FILTER_RESET_LABEL, filterFieldProps } from "./cmsFilterLayout";
 
 export function SectionHeader({
   title,
