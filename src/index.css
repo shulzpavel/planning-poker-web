@@ -50,6 +50,7 @@
     --safe-left: env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
     --mobile-dock-height: 0px;
+    --visual-viewport-bottom: 0px;
   }
 
   :root[data-theme="dark"] {
@@ -560,6 +561,22 @@
   /* Space for the manager mobile bottom dock so page scroll does not hide CTAs. */
   .pb-mobile-dock {
     padding-bottom: calc(var(--safe-bottom) + 5.5rem);
+  }
+
+  .scroll-hint-global {
+    --scroll-hint-dock-or-safe: max(var(--mobile-dock-height), var(--safe-bottom));
+    --scroll-hint-viewport-anchor: max(
+      calc(var(--visual-viewport-bottom) + var(--scroll-hint-dock-or-safe)),
+      max(var(--scroll-hint-dock-or-safe), 3.5rem)
+    );
+    bottom: calc(var(--safe-bottom) + 4.25rem);
+    bottom: calc(var(--scroll-hint-viewport-anchor) + 0.75rem);
+  }
+
+  @media (min-width: 768px) {
+    .scroll-hint-global {
+      bottom: calc(var(--safe-bottom) + 1.5rem);
+    }
   }
 
   /* Mobile viewport helpers. `dvh`/`svh` are already in Tailwind 3.4, this
