@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "../../../design-system/utils";
 import {
   cmsMobileSectionShell,
@@ -37,6 +37,9 @@ export function CmsSection({
   presentation = false,
   noPrint = false,
 }: CmsSectionProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(Boolean(defaultOpen));
+  const resolvedOpen = open ?? uncontrolledOpen;
+
   return (
     <details
       className={cn(
@@ -46,15 +49,14 @@ export function CmsSection({
         noPrint && "scope-no-print",
         className,
       )}
-      defaultOpen={defaultOpen}
-      open={open}
-      onToggle={
-        onToggle
-          ? (event) => {
-              onToggle(event.currentTarget.open);
-            }
-          : undefined
-      }
+      open={resolvedOpen}
+      onToggle={(event) => {
+        const nextOpen = event.currentTarget.open;
+        if (open === undefined) {
+          setUncontrolledOpen(nextOpen);
+        }
+        onToggle?.(nextOpen);
+      }}
     >
       <summary
         className={cn(

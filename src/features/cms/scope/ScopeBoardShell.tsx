@@ -50,7 +50,7 @@ import {
   SectionHeader,
   Skeleton,
 } from "../components/CmsPrimitives";
-import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad, cmsMobileSurface } from "../components/cmsMobileLayout";
+import { cmsMobileSectionShell, cmsSectionHeaderPad, cmsMobileSurface } from "../components/cmsMobileLayout";
 import { TeamBadge } from "../components/TeamBadge";
 import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
 import {
