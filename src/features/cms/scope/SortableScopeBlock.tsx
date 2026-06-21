@@ -23,7 +23,7 @@ export function SortableScopeBlock({
       ref={sortable.setNodeRef}
       style={style}
       className={cn(
-        "group/scope-sortable flex items-start gap-2",
+        "group/scope-sortable flex items-start gap-0 lg:gap-2",
         sortable.isDragging ? "relative z-30" : "",
       )}
     >
@@ -31,7 +31,7 @@ export function SortableScopeBlock({
         <button
           type="button"
           className={cn(
-            "scope-no-print mt-2 inline-flex h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-full text-ink4 opacity-0",
+            "scope-no-print mt-2 hidden h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-full text-ink4 opacity-0 lg:inline-flex",
             "touch-manipulation transition-[background-color,color,opacity] hover:bg-line2/60 hover:text-ink2 hover:opacity-100 active:cursor-grabbing",
             "focus-visible:opacity-100 group-hover/scope-sortable:opacity-60 group-focus-within/scope-sortable:opacity-100",
             sortable.isDragging ? "opacity-100" : "",

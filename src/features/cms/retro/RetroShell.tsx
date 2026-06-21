@@ -4,6 +4,7 @@ import {
   AiGenerationProgress,
   AiSparkleButton,
   Alert,
+  BackButton,
   Badge,
   Button,
   ConfirmDialog,
@@ -17,8 +18,9 @@ import {
 import { ApiError } from "../../../shared/api/http";
 import {
   InlineError,
-  MobileRecordCard,
-  MobileRecordField,
+  MobileFeatureCard,
+  MobileFilterBar,
+  MobilePageHero,
   SectionHeader,
   Toolbar,
 } from "../components/CmsPrimitives";
@@ -126,25 +128,63 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
 
   const loading = items === null;
   const rows = items ?? [];
+  const retroStats = useMemo(() => {
+    const liveCount = rows.filter((retro) => retro.status === "live").length;
+    const aiCount = rows.filter((retro) => Boolean(retro.ai_summary)).length;
+    const teamsCount = new Set(rows.map((retro) => retro.team_id ?? `legacy-${retro.team?.name ?? "none"}`)).size;
+    const latest = rows.reduce<RetroRecord | null>((current, retro) => {
+      if (!current) return retro;
+      return new Date(retro.updated_at).getTime() > new Date(current.updated_at).getTime() ? retro : current;
+    }, null);
+    return { liveCount, aiCount, teamsCount, latest };
+  }, [rows]);
 
   return (
     <section className="space-y-4">
-      <SectionHeader
+      <MobilePageHero
         title="Ретроспективы"
-        description="Настройте секции, поделитесь ссылкой с командой и проведите живое ретро. В конце — AI-анализ итогов."
-        actions={
+        description="Живые комнаты, итоги и AI-анализ. Сначала активные ретро и быстрый вход, затем архив по командам."
+        action={
           canManage ? (
             <Button variant="primary" size="sm" onClick={() => navigate("new")}>
-              Создать ретро
+              Создать
             </Button>
           ) : null
         }
+        stats={[
+          { label: "Всего", value: loading ? "..." : rows.length },
+          { label: "Идёт", value: loading ? "..." : retroStats.liveCount, tone: retroStats.liveCount > 0 ? "info" : "neutral" },
+          { label: "AI", value: loading ? "..." : retroStats.aiCount },
+          { label: "Команды", value: loading ? "..." : retroStats.teamsCount || "0", hint: retroStats.latest ? `Обновлено ${formatRetroDate(retroStats.latest.updated_at)}` : undefined },
+        ]}
       />
+      <div className="hidden lg:block">
+        <SectionHeader
+          title="Ретроспективы"
+          description="Настройте секции, поделитесь ссылкой с командой и проведите живое ретро. В конце — AI-анализ итогов."
+          actions={
+            canManage ? (
+              <Button variant="primary" size="sm" onClick={() => navigate("new")}>
+                Создать ретро
+              </Button>
+            ) : null
+          }
+        />
+      </div>
       {error ? <InlineError text={error} /> : null}
       {principal.is_superuser ? (
-        <Toolbar>
-          <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-        </Toolbar>
+        <>
+          <div className="lg:hidden">
+            <MobileFilterBar>
+              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
+            </MobileFilterBar>
+          </div>
+          <div className="hidden lg:block">
+            <Toolbar>
+              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
+            </Toolbar>
+          </div>
+        </>
       ) : null}
       <GroupedDataTableList
         items={rows}
@@ -174,42 +214,48 @@ function RetroListPage({ principal, canManage }: { principal: CmsPrincipal; canM
           ) : null
         }
         renderMobileCard={(retro, grouped) => (
-          <MobileRecordCard
+          <MobileFeatureCard
             key={retro.id}
             title={
               <Link to={`${retro.id}`} className="hover:text-blue">
                 {retro.title}
               </Link>
             }
-            meta={
+            eyebrow={
               <span className="flex flex-wrap items-center gap-2">
                 {!grouped ? <TeamBadge teamId={retro.team_id} team={retro.team} /> : null}
-                <span>Обновлено {formatRetroDate(retro.updated_at)}</span>
+                <span>{retro.status === "live" ? "Живая комната" : retro.status === "done" ? "Архив" : "Черновик"}</span>
               </span>
             }
+            subtitle={`Обновлено ${formatRetroDate(retro.updated_at)}`}
             status={<StatusBadge status={retro.status} />}
-            footer={
-              <>
-                <Button variant="secondary" size="sm" onClick={() => navigate(`${retro.id}`)}>
-                  Открыть
-                </Button>
-                {canManage ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setConfirmTarget(retro)}
-                    loading={busyDelete === retro.id}
-                    disabled={busyDelete !== null}
-                  >
-                    Удалить
-                  </Button>
-                ) : null}
-              </>
+            accent={retro.status === "live" ? "green" : retro.status === "done" ? "blue" : "neutral"}
+            metrics={[
+              { label: "Секции", value: retro.config?.sections?.length ?? 0 },
+              { label: "AI", value: retro.ai_summary ? "есть" : "нет" },
+              { label: "Статус", value: retro.status === "live" ? "идёт" : retro.status === "done" ? "завершено" : "черновик" },
+              { label: "Обновлено", value: formatRetroDate(retro.updated_at) },
+            ]}
+            primaryAction={
+              <Button variant={retro.status === "live" ? "primary" : "secondary"} size="sm" onClick={() => navigate(`${retro.id}`)}>
+                Открыть
+              </Button>
             }
-          >
-            <MobileRecordField label="Секции" value={retro.config?.sections?.length ?? 0} />
-            <MobileRecordField label="AI" value={retro.ai_summary ? "есть анализ" : "нет"} />
-          </MobileRecordCard>
+            secondaryAction={
+              canManage ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="px-3 text-red hover:bg-red/10 hover:text-red"
+                  onClick={() => setConfirmTarget(retro)}
+                  loading={busyDelete === retro.id}
+                  disabled={busyDelete !== null}
+                >
+                  Удалить
+                </Button>
+              ) : null
+            }
+          />
         )}
         renderRow={(retro, grouped) => (
           <tr key={retro.id} className="border-t border-line align-top">
@@ -427,7 +473,7 @@ function RetroConfigForm({
                 onChange={(e) => updateSection(index, e.target.value)}
               />
               <Button
-                variant="ghost"
+                variant="danger"
                 size="sm"
                 onClick={() => removeSection(index)}
                 disabled={sections.length <= 1}
@@ -439,7 +485,7 @@ function RetroConfigForm({
             </div>
           ))}
         </div>
-        <Button variant="secondary" size="sm" onClick={addSection}>
+        <Button variant="primary" size="sm" onClick={addSection}>
           + Секция
         </Button>
       </div>
@@ -473,7 +519,7 @@ function RetroConfigForm({
         <Button variant="primary" onClick={() => void submit()} loading={busy}>
           {submitLabel}
         </Button>
-        <Button variant="ghost" onClick={() => unsavedGuard.confirmIfNeeded(onCancel)}>
+        <Button variant="secondary" onClick={() => unsavedGuard.confirmIfNeeded(onCancel)}>
           Отмена
         </Button>
       </div>
@@ -550,9 +596,7 @@ function RetroDetailPage({ canManage, canAnalyze }: { canManage: boolean; canAna
           title={record.title}
           description="Черновик. Отредактируйте секции и запустите ретро, чтобы получить ссылку для команды."
           actions={
-            <Button variant="ghost" onClick={() => navigate("/cms/retro")}>
-              ← К списку
-            </Button>
+            <BackButton label="К списку" onClick={() => navigate("/cms/retro")} />
           }
         />
         {canManage ? (
@@ -750,9 +794,7 @@ function RetroCockpit({
         title={state.title}
         description={`Фаза: ${phaseLabel(state.phase)}`}
         actions={
-          <Button variant="ghost" onClick={onBack}>
-            ← К списку
-          </Button>
+          <BackButton label="К списку" onClick={onBack} />
         }
       />
 
@@ -1054,7 +1096,7 @@ function ActionItemsPanel({
           value={assignee}
           onChange={(e) => setAssignee(e.target.value)}
         />
-        <Button variant="secondary" size="sm" onClick={submit} disabled={busy || !text.trim()}>
+        <Button variant="primary" size="sm" onClick={submit} disabled={busy || !text.trim()}>
           Добавить
         </Button>
       </div>

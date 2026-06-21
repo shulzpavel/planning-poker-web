@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { type MouseEvent, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { AutoHideAppHeader, BrandHomeLink, Button, ConfirmDialog, Spinner as DsSpinner, Surface, ThemeToggle } from "../design-system";
+import { AutoHideAppHeader, BrandHomeLink, Button, ConfirmDialog, Spinner as DsSpinner, Surface, ThemeHeaderControl } from "../design-system";
 import { useSession } from "../hooks/useSession";
 import JoinPage from "./JoinPage";
 import ResultsPage from "./ResultsPage";
@@ -135,7 +135,7 @@ function FullScreen({ children, onLogoClick }: { children: React.ReactNode; onLo
   // Shared "single message + brand" layout used by all transient
   // session states (joining / waiting / complete / error). Keeping the
   // brand visible avoids the "where am I?" feeling between phases and
-  // gives the ThemeToggle a stable anchor instead of a floating overlay.
+  // gives the theme control a stable anchor instead of a floating overlay.
   return (
     <div className="flex min-h-screen-mobile flex-col app-gradient-bg">
       <AutoHideAppHeader className="z-10 border-line/60 bg-surface/85">
@@ -143,7 +143,7 @@ function FullScreen({ children, onLogoClick }: { children: React.ReactNode; onLo
           <BrandHomeLink size="sm" showWordmark={false} onClick={onLogoClick} />
           <span className="ml-2 text-sm font-semibold text-ink2">Planning Poker</span>
           <div className="ml-auto">
-            <ThemeToggle />
+            <ThemeHeaderControl />
           </div>
         </div>
       </AutoHideAppHeader>

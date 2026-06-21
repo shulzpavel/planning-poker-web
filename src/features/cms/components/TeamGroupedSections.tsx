@@ -90,7 +90,7 @@ export function GroupedDataTableList<T extends TeamScopedRow>({
 
   return (
     <>
-      <div className="space-y-8 lg:hidden">
+      <div className="space-y-5 lg:hidden">
         {error ? <InlineError text={error} /> : null}
         {showInitialSkeleton ? (
           <ListSkeleton rows={6} />

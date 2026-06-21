@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
+  BackButton,
   Badge,
   Button,
   ConfirmDialog,
   DropdownField,
   EmptyState,
+  MobileBottomDock,
   Spinner,
   TextField,
   TextareaField,
@@ -22,9 +24,10 @@ import {
 import {
   HelpCallout,
   InlineError,
-  MobileRecordCard,
+  MobileFeatureCard,
+  MobileFilterBar,
+  MobilePageHero,
   Toolbar,
-  MobileRecordField,
   SectionHeader,
   Skeleton,
 } from "../components/CmsPrimitives";
@@ -122,34 +125,75 @@ function PlannerListPage({ principal, canManage }: { principal: CmsPrincipal; ca
     }
   }
 
+  const teamsInList = useMemo(() => new Set(items.map((item) => item.team_id ?? `legacy-${item.team?.name ?? "none"}`)).size, [items]);
+  const latestPlan = useMemo(
+    () =>
+      items.reduce<SprintPlanRecord | null>((latest, item) => {
+        if (!latest) return item;
+        return new Date(item.updated_at).getTime() > new Date(latest.updated_at).getTime() ? item : latest;
+      }, null),
+    [items],
+  );
+
   return (
     <section className="space-y-5">
-      <SectionHeader
-        title="Планирование SP"
-        description="Калькулятор Velocity/Capacity по командному гайду. Сохранённые расчёты остаются здесь для следующего спринта."
-        actions={
+      <MobilePageHero
+        title="Калькулятор спринта"
+        description="Последние расчёты capacity, velocity и буфера. Открывайте актуальный план или создавайте новый без перехода через таблицу."
+        action={
           canManage ? (
             <Button variant="primary" size="sm" onClick={() => navigate("new")}>
-              Новый план
+              Новый
             </Button>
           ) : undefined
         }
+        stats={[
+          { label: "Планы", value: loading ? "..." : items.length },
+          { label: "Команды", value: loading ? "..." : teamsInList || "0" },
+          { label: "Последний", value: latestPlan ? latestPlan.name : "нет", hint: latestPlan ? formatDate(latestPlan.updated_at) : undefined },
+          { label: "Треки", value: latestPlan?.payload.tracks?.length ?? "—", hint: latestPlan?.payload.result_summary ?? undefined },
+        ]}
       />
 
-      <HelpCallout title="Кратко">
-        <p>
-          Команда разбивается на треки (back / front / qa / любые свои). Velocity и Capacity считаются
-          для каждого трека отдельно. План каждого трека = Velocity × (Capacity спринта / Capacity база)
-          минус буфер (по умолчанию 20%) на незапланированные задачи.
-        </p>
-      </HelpCallout>
+      <div className="hidden lg:block">
+        <SectionHeader
+          title="Планирование SP"
+          description="Калькулятор Velocity/Capacity по командному гайду. Сохранённые расчёты остаются здесь для следующего спринта."
+          actions={
+            canManage ? (
+              <Button variant="primary" size="sm" onClick={() => navigate("new")}>
+                Новый план
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
+
+      <div className="hidden lg:block">
+        <HelpCallout title="Кратко">
+          <p>
+            Команда разбивается на треки (back / front / qa / любые свои). Velocity и Capacity считаются
+            для каждого трека отдельно. План каждого трека = Velocity × (Capacity спринта / Capacity база)
+            минус буфер (по умолчанию 20%) на незапланированные задачи.
+          </p>
+        </HelpCallout>
+      </div>
 
       {error ? <InlineError text={error} /> : null}
 
       {principal.is_superuser ? (
-        <Toolbar>
-          <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-        </Toolbar>
+        <>
+          <div className="lg:hidden">
+            <MobileFilterBar>
+              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
+            </MobileFilterBar>
+          </div>
+          <div className="hidden lg:block">
+            <Toolbar>
+              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
+            </Toolbar>
+          </div>
+        </>
       ) : null}
 
       {loading ? (
@@ -222,32 +266,36 @@ function PlannerList({
             {sectionItems.map((item) => {
               const summary = item.payload.result_summary ?? "—";
               return (
-                <MobileRecordCard
+                <MobileFeatureCard
                   key={item.id}
                   title={item.name}
-                  meta={
+                  eyebrow={
                     <span className="flex flex-wrap items-center gap-2">
                       {!grouped ? <TeamBadge teamId={item.team_id} team={item.team} /> : null}
-                      <span>{summary}</span>
+                      <span>{item.payload.tracks?.length ? `${item.payload.tracks.length} трека` : "Расчёт"}</span>
                     </span>
                   }
-                  footer={
-                    <>
-                      <Button size="sm" variant="primary" className="w-full min-[420px]:w-auto" onClick={() => onEdit(item.id)}>
-                        Открыть
-                      </Button>
-                      {canManage ? (
-                        <Button size="sm" variant="ghost" className="w-full min-[420px]:w-auto" onClick={() => onDelete(item)}>
-                          Удалить
-                        </Button>
-                      ) : null}
-                    </>
+                  subtitle={summary}
+                  accent="blue"
+                  metrics={[
+                    { label: "Создан", value: formatDate(item.created_at) },
+                    { label: "Обновлён", value: formatDate(item.updated_at) },
+                    { label: "Автор", value: item.created_by_display_name || item.created_by_username || "—" },
+                    { label: "Буфер", value: `${item.payload.buffer_percent ?? DEFAULT_BUFFER_PERCENT}%` },
+                  ]}
+                  primaryAction={
+                    <Button size="sm" variant="primary" onClick={() => onEdit(item.id)}>
+                      Открыть
+                    </Button>
                   }
-                >
-                  <MobileRecordField label="Создан" value={formatDate(item.created_at)} />
-                  <MobileRecordField label="Обновлён" value={formatDate(item.updated_at)} />
-                  <MobileRecordField label="Автор" value={item.created_by_display_name || item.created_by_username || "—"} />
-                </MobileRecordCard>
+                  secondaryAction={
+                    canManage ? (
+                      <Button size="sm" variant="danger" onClick={() => onDelete(item)}>
+                        Удалить
+                      </Button>
+                    ) : null
+                  }
+                />
               );
             })}
           </div>
@@ -657,20 +705,36 @@ function PlannerEditorPage({
 
   return (
     <section className="space-y-5">
-      <SectionHeader
-        title={mode === "edit" ? "Редактировать план" : "Новый план"}
-        description="Заполните поля — расчёт обновляется по мере ввода. Сохраните, чтобы вернуться позже."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" size="sm" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))}>К списку</Button>
-            {mode === "edit" && canManage ? (
-              <Button variant="danger" size="sm" onClick={() => setPendingDelete(true)}>
-                Удалить
-              </Button>
-            ) : null}
-          </div>
+      <MobilePageHero
+        title={mode === "edit" ? "План спринта" : "Новый план"}
+        description="Рекомендация обновляется сразу. Сначала проверьте итог, затем корректируйте параметры ниже."
+        action={
+          <BackButton label="Назад" size="sm" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} />
         }
+        stats={[
+          { label: "Рекомендация", value: `${formatSp(result.totalPlanLimit)} SP`, tone: "info" },
+          { label: "Буфер", value: `${formatSp(result.totalReserveSp)} SP`, hint: `${result.bufferPercent}%` },
+          { label: "Capacity", value: `${formatSp(result.totalNetCapacity)} дн.` },
+          { label: "Треки", value: result.tracks.length },
+        ]}
       />
+
+      <div className="hidden lg:block">
+        <SectionHeader
+          title={mode === "edit" ? "Редактировать план" : "Новый план"}
+          description="Заполните поля — расчёт обновляется по мере ввода. Сохраните, чтобы вернуться позже."
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <BackButton label="К списку" size="sm" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} />
+              {mode === "edit" && canManage ? (
+                <Button variant="danger" size="sm" onClick={() => setPendingDelete(true)}>
+                  Удалить
+                </Button>
+              ) : null}
+            </div>
+          }
+        />
+      </div>
 
       {error ? <InlineError text={error} /> : null}
       {legacyBackendDetected ? (
@@ -715,13 +779,34 @@ function PlannerEditorPage({
               inputs={inputs}
               onInputs={setInputs}
             />
-            <ResultPanel result={result} />
+            <div className="hidden lg:block">
+              <ResultPanel result={result} />
+            </div>
           </div>
         </>
       )}
 
       {!loading ? (
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
+        <MobileBottomDock aria-label="Действия плана" contentClassName="w-full">
+          <Button className="flex-1" variant="secondary" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} disabled={saving}>
+            Отмена
+          </Button>
+          {canManage ? (
+            <Button
+              className="flex-1"
+              variant="primary"
+              loading={saving}
+              disabled={!name.trim() || saving}
+              onClick={() => void save()}
+            >
+              {mode === "edit" ? "Сохранить" : "Создать"}
+            </Button>
+          ) : null}
+        </MobileBottomDock>
+      ) : null}
+
+      {!loading ? (
+        <div className="hidden flex-wrap items-center justify-end gap-2 border-t border-line pt-4 md:flex">
           {savedAt ? (
             <span
               className="motion-safe:animate-fade-up inline-flex items-center gap-1.5 text-xs font-semibold text-green"
@@ -731,7 +816,7 @@ function PlannerEditorPage({
               Сохранено
             </span>
           ) : null}
-          <Button variant="ghost" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} disabled={saving}>Отмена</Button>
+          <Button variant="secondary" onClick={() => unsavedGuard.confirmIfNeeded(() => navigate(".."))} disabled={saving}>Отмена</Button>
           {canManage ? (
             <Button
               variant="primary"
@@ -960,7 +1045,7 @@ function PlannerForm({
         description="По умолчанию — Dev и Test (как в гайде). Хочешь гранулярнее (Backend, Frontend, QA, Design и т.д.) — переименуй и добавь свои. Каждой роли потом назначается один трек, план считается отдельно по каждому треку."
         action={
           !disabled ? (
-            <Button size="sm" variant="ghost" onClick={addTrack}>
+            <Button size="sm" variant="primary" onClick={addTrack}>
               + Добавить трек
             </Button>
           ) : null
@@ -979,7 +1064,7 @@ function PlannerForm({
               />
               <Button
                 size="sm"
-                variant="ghost"
+                variant="danger"
                 onClick={() => removeTrack(index)}
                 disabled={disabled || inputs.tracks.length <= 1}
                 title={inputs.tracks.length <= 1 ? "Нужен хотя бы один трек" : "Удалить трек"}
@@ -996,7 +1081,7 @@ function PlannerForm({
         description="Закрытые SP по каждому треку за 3–5 последних спринтов. Velocity трека = среднее по непустым значениям. Если истории нет — будет использовано стартовое значение 50 SP, распределённое между треками с командой."
         action={
           !disabled ? (
-            <Button size="sm" variant="ghost" onClick={addVelocity}>
+            <Button size="sm" variant="primary" onClick={addVelocity}>
               + Добавить спринт
             </Button>
           ) : null
@@ -1051,7 +1136,7 @@ function PlannerForm({
         description="Каждой роли — один трек. Capacity роли (человек × рабочие дни − отсутствия) пойдёт в план соответствующего трека."
         action={
           !disabled ? (
-            <Button size="sm" variant="ghost" onClick={addRole}>
+            <Button size="sm" variant="primary" onClick={addRole}>
               + Добавить роль
             </Button>
           ) : null

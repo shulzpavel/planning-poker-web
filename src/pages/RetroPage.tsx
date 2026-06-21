@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { AutoHideAppHeader, Alert, BrandHomeLink, Spinner, ThemeToggle } from "../design-system";
+import { AutoHideAppHeader, Alert, BrandHomeLink, Spinner, ThemeHeaderControl } from "../design-system";
 import { RetroBoard, RetroOutcomesPanel } from "../features/cms/retro/RetroBoard";
 import { formatCountdown, phaseLabel } from "../features/cms/retro/retroLogic";
 import { useRetro } from "../features/cms/retro/useRetro";
@@ -99,7 +99,7 @@ function Shell({
             {subtitle ? <span className="block text-[11px] text-ink3">{subtitle}</span> : null}
           </div>
           <div className="ml-auto">
-            <ThemeToggle />
+            <ThemeHeaderControl />
           </div>
         </div>
       </AutoHideAppHeader>

@@ -3,6 +3,9 @@ import {
   BackLink,
   BottomSheet,
   Button,
+  HeaderMenuButton,
+  SheetActionButton,
+  SheetFooterActions,
   SheetItem,
   Spinner,
   ThemeMenuControl,
@@ -124,14 +127,11 @@ export function ManagerTopBar({
                   Завершить
                 </Button>
               ) : null}
-              <button
-                type="button"
+              <HeaderMenuButton
                 onClick={() => setMenuOpen(true)}
-                aria-label="Действия сессии"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-line bg-surface text-ink transition-colors hover:bg-line2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/40 active:scale-[0.96] motion-reduce:active:scale-100"
-              >
-                <DotsIcon />
-              </button>
+                label="Действия сессии"
+                icon="more"
+              />
             </div>
           </div>
 
@@ -159,12 +159,12 @@ export function ManagerTopBar({
         }
         footer={
           renameOpen ? (
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button variant="ghost" onClick={() => setRenameOpen(false)} disabled={Boolean(renameBusy)}>
+            <SheetFooterActions>
+              <SheetActionButton intent="back" onClick={() => setRenameOpen(false)} disabled={Boolean(renameBusy)}>
                 Назад
-              </Button>
-              <Button
-                variant="primary"
+              </SheetActionButton>
+              <SheetActionButton
+                intent="save"
                 disabled={!renameValue.trim() || renameValue.trim() === title || Boolean(renameBusy)}
                 loading={Boolean(renameBusy)}
                 onClick={() => {
@@ -178,15 +178,15 @@ export function ManagerTopBar({
                 }}
               >
                 Сохранить
-              </Button>
-            </div>
+              </SheetActionButton>
+            </SheetFooterActions>
           ) : finishConfirmOpen ? (
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button variant="ghost" onClick={() => setFinishConfirmOpen(false)} disabled={Boolean(finishBusy)}>
+            <SheetFooterActions>
+              <SheetActionButton intent="back" onClick={() => setFinishConfirmOpen(false)} disabled={Boolean(finishBusy)}>
                 Назад
-              </Button>
-              <Button
-                variant="danger"
+              </SheetActionButton>
+              <SheetActionButton
+                intent="danger"
                 loading={Boolean(finishBusy)}
                 disabled={Boolean(finishBusy)}
                 onClick={() => {
@@ -197,8 +197,8 @@ export function ManagerTopBar({
                 }}
               >
                 Завершить
-              </Button>
-            </div>
+              </SheetActionButton>
+            </SheetFooterActions>
           ) : undefined
         }
       >
@@ -405,16 +405,6 @@ function PencilIcon({ className }: { className?: string }) {
     >
       <path d="M3 14.25V17h2.75L14.81 7.94l-2.75-2.75L3 14.25z" />
       <path d="M14.06 4.94l1.41-1.41a1.5 1.5 0 0 1 2.12 0l.88.88a1.5 1.5 0 0 1 0 2.12L17.06 7.94" />
-    </svg>
-  );
-}
-
-function DotsIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
-      <circle cx="4.5" cy="10" r="1.5" />
-      <circle cx="10" cy="10" r="1.5" />
-      <circle cx="15.5" cy="10" r="1.5" />
     </svg>
   );
 }

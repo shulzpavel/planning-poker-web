@@ -47,6 +47,12 @@ export function RetroBoard({
   const groups = groupsBySection(state);
   const cardById = new Map(state.cards.map((card) => [card.card_id, card]));
   const voting = state.phase === "voting";
+  const orderedSections = state.active_section_id
+    ? [
+        ...state.sections.filter((section) => section.section_id === state.active_section_id),
+        ...state.sections.filter((section) => section.section_id !== state.active_section_id),
+      ]
+    : state.sections;
   const [pendingVote, setPendingVote] = useState<string | null>(null);
 
   async function vote(targetId: string, targetType: "card" | "group") {
@@ -61,7 +67,7 @@ export function RetroBoard({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 text-sm lg:text-sm">
         <Badge tone={state.phase === "done" ? "success" : "info"}>{phaseLabel(state.phase)}</Badge>
         <span className="text-sm text-ink3">Участников: {state.participants_count}</span>
         {voting && typeof votesRemaining === "number" ? (
@@ -74,18 +80,20 @@ export function RetroBoard({
         ) : null}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-        {state.sections.map((section) => {
+      <div className="grid gap-3 lg:gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        {orderedSections.map((section) => {
           const cards = grouped.get(section.section_id) ?? [];
           const sectionGroups = groups.get(section.section_id) ?? [];
           const isActive = state.active_section_id === section.section_id;
           const canWrite = Boolean(onAddCard) && canAddToSection(state, section.section_id);
           const hasContent = cards.length > 0 || sectionGroups.length > 0;
+          const compactOnMobile = state.phase === "collecting" && !isActive;
           return (
             <Surface
               key={section.section_id}
               className={[
-                "flex min-h-72 flex-col gap-4 p-4 sm:p-5",
+                "flex flex-col gap-4 p-4 sm:p-5",
+                compactOnMobile ? "min-h-0 lg:min-h-72" : "min-h-72",
                 isActive && state.phase === "collecting" ? "ring-2 ring-blue/40" : "",
               ].join(" ")}
             >
@@ -98,12 +106,20 @@ export function RetroBoard({
                 ) : null}
               </div>
 
-              {!hasContent ? (
-                <p className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-ink4">
-                  Пока нет карточек
-                </p>
-              ) : (
-                <ul className="space-y-3">
+              {compactOnMobile ? (
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-line2/35 px-3 py-3 text-sm text-ink3 lg:hidden">
+                  <span>{hasContent ? `${cards.length + sectionGroups.length} карточек` : "Пока нет карточек"}</span>
+                  <Badge tone="neutral">закрыта</Badge>
+                </div>
+              ) : null}
+
+              <div className={compactOnMobile ? "hidden lg:block" : undefined}>
+                {!hasContent ? (
+                  <p className="rounded-xl border border-dashed border-line px-4 py-4 text-center text-sm text-ink4 lg:py-6">
+                    Пока нет карточек
+                  </p>
+                ) : (
+                  <ul className="space-y-3">
                   {sectionGroups.map((group) => {
                     const mine = myVotes?.has(group.group_id) ?? false;
                     const budgetBlocked =
@@ -209,8 +225,9 @@ export function RetroBoard({
                       </li>
                     );
                   })}
-                </ul>
-              )}
+                  </ul>
+                )}
+              </div>
 
               {canWrite ? <AddCardForm onSubmit={(text) => onAddCard?.(section.section_id, text)} /> : null}
             </Surface>
@@ -304,13 +321,12 @@ function AddCardForm({ onSubmit }: { onSubmit: (text: string) => Promise<boolean
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <TextareaField
         label="Ваша мысль"
-        hint="Cmd/Ctrl + Enter — добавить"
         placeholder="Ваша мысль…"
         value={text}
-        rows={4}
+        rows={2}
         reserveMessageSpace={false}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
@@ -320,7 +336,7 @@ function AddCardForm({ onSubmit }: { onSubmit: (text: string) => Promise<boolean
           }
         }}
       />
-      <Button variant="secondary" onClick={() => void submit()} loading={busy} disabled={!text.trim()}>
+      <Button className="w-full" variant="primary" onClick={() => void submit()} loading={busy} disabled={!text.trim()}>
         Добавить карточку
       </Button>
     </div>

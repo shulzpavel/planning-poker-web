@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Alert, Badge, Button, EmptyState, ListSkeleton, Skeleton as DsSkeleton, Spinner } from "../../../design-system";
+import { Alert, Badge, Button, EmptyState, ListSkeleton, Skeleton as DsSkeleton, Spinner, cn } from "../../../design-system";
 
 export function SectionHeader({
   title,
@@ -35,6 +35,82 @@ export function HelpCallout({
       {title ? <p className="mb-1 text-xs font-bold uppercase tracking-wide text-ink3">{title}</p> : null}
       <div className="space-y-1">{children}</div>
     </aside>
+  );
+}
+
+export function MobilePageHero({
+  title,
+  description,
+  action,
+  meta,
+  stats,
+  children,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  meta?: ReactNode;
+  stats?: Array<{ label: ReactNode; value: ReactNode; hint?: ReactNode; tone?: "neutral" | "info" | "success" | "warning" | "danger" }>;
+  children?: ReactNode;
+}) {
+  return (
+    <section className="-mx-3 border-y border-line bg-surface/85 px-3 py-4 shadow-sm backdrop-blur sm:-mx-4 sm:px-4 lg:hidden">
+      <div className="space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            {meta ? <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink3">{meta}</div> : null}
+            <h2 className="text-xl font-bold leading-tight text-ink">{title}</h2>
+            {description ? <p className="mt-2 text-sm leading-relaxed text-ink2">{description}</p> : null}
+          </div>
+          {action ? <div className="shrink-0">{action}</div> : null}
+        </div>
+        {stats && stats.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2">
+            {stats.map((item, index) => (
+              <MobileMetricTile key={index} {...item} />
+            ))}
+          </div>
+        ) : null}
+        {children ? <div>{children}</div> : null}
+      </div>
+    </section>
+  );
+}
+
+export function MobileMetricTile({
+  label,
+  value,
+  hint,
+  tone = "neutral",
+  className,
+}: {
+  label: ReactNode;
+  value: ReactNode;
+  hint?: ReactNode;
+  tone?: "neutral" | "info" | "success" | "warning" | "danger";
+  className?: string;
+}) {
+  const toneClass = {
+    neutral: "bg-line2/45 text-ink",
+    info: "bg-blue/10 text-blue",
+    success: "bg-green/10 text-green",
+    warning: "bg-amber/10 text-amber",
+    danger: "bg-red/10 text-red",
+  }[tone];
+  return (
+    <div className={cn("min-w-0 rounded-lg px-3 py-3", toneClass, className)}>
+      <p className="text-[11px] font-semibold uppercase tracking-wide opacity-70">{label}</p>
+      <div className="mt-1 min-w-0 text-lg font-bold leading-tight tabular-nums">{value}</div>
+      {hint ? <p className="mt-1 text-xs leading-snug opacity-75">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function MobileFilterBar({ children }: { children: ReactNode }) {
+  return (
+    <div className="-mx-3 overflow-x-auto px-3 pb-1 sm:-mx-4 sm:px-4 lg:mx-0 lg:overflow-visible lg:px-0 lg:pb-0">
+      <div className="flex min-w-full gap-2 [&>*]:min-w-0 [&>*]:flex-1 lg:min-w-0 lg:flex-wrap lg:[&>*]:flex-none">{children}</div>
+    </div>
   );
 }
 
@@ -354,6 +430,66 @@ export function MobileRecordField({ label, value }: { label: string; value: Reac
       <p className="font-semibold text-ink4">{label}</p>
       <div className="mt-0.5 whitespace-normal break-words text-ink2">{value}</div>
     </div>
+  );
+}
+
+export function MobileFeatureCard({
+  title,
+  eyebrow,
+  subtitle,
+  status,
+  accent = "blue",
+  metrics,
+  primaryAction,
+  secondaryAction,
+  children,
+}: {
+  title: ReactNode;
+  eyebrow?: ReactNode;
+  subtitle?: ReactNode;
+  status?: ReactNode;
+  accent?: "blue" | "green" | "amber" | "red" | "neutral";
+  metrics?: Array<{ label: ReactNode; value: ReactNode; hint?: ReactNode }>;
+  primaryAction?: ReactNode;
+  secondaryAction?: ReactNode;
+  children?: ReactNode;
+}) {
+  const accentClass = {
+    blue: "border-l-blue/70",
+    green: "border-l-green/70",
+    amber: "border-l-amber/70",
+    red: "border-l-red/70",
+    neutral: "border-l-line",
+  }[accent];
+  return (
+    <article className={cn("overflow-hidden rounded-xl border border-line border-l-4 bg-surface p-4 shadow-card", accentClass)}>
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          {eyebrow ? <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink3">{eyebrow}</div> : null}
+          <h3 className="min-w-0 break-words text-lg font-bold leading-snug text-ink">{title}</h3>
+          {subtitle ? <div className="mt-1 text-sm leading-relaxed text-ink3">{subtitle}</div> : null}
+        </div>
+        {status ? <div className="shrink-0">{status}</div> : null}
+      </div>
+      {metrics && metrics.length > 0 ? (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {metrics.map((metric, index) => (
+            <div key={index} className="min-w-0 rounded-lg bg-line2/35 px-3 py-2.5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink4">{metric.label}</p>
+              <div className="mt-1 min-w-0 break-words text-base font-bold leading-tight text-ink2 tabular-nums">{metric.value}</div>
+              {metric.hint ? <p className="mt-1 text-xs leading-snug text-ink3">{metric.hint}</p> : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {children ? <div className="mt-4 text-sm leading-relaxed text-ink2">{children}</div> : null}
+      {primaryAction || secondaryAction ? (
+        <div className="mt-4 flex items-stretch gap-2 border-t border-line pt-3">
+          {primaryAction ? <div className="min-w-0 flex-1 [&>*]:w-full">{primaryAction}</div> : null}
+          {secondaryAction ? <div className="shrink-0 [&>*]:h-full">{secondaryAction}</div> : null}
+        </div>
+      ) : null}
+    </article>
   );
 }
 

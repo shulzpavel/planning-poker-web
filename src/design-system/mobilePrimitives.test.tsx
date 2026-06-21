@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { SheetActionButton, SheetFooterActions } from "./BottomSheet";
 import { MobileBottomDock } from "./MobileBottomDock";
 import { StickyActionFooter } from "./StickyActionFooter";
 import { SubnavBar } from "./SubnavBar";
@@ -38,5 +39,18 @@ describe("mobile layout primitives", () => {
 
     expect(markup).toContain("Отмена");
     expect(markup).toContain("Сохранить");
+  });
+
+  it("renders sheet footer actions with semantic button intents", () => {
+    const markup = renderToStaticMarkup(
+      <SheetFooterActions>
+        <SheetActionButton intent="back">Назад</SheetActionButton>
+        <SheetActionButton intent="delete">Удалить</SheetActionButton>
+      </SheetFooterActions>,
+    );
+
+    expect(markup).toContain("Назад");
+    expect(markup).toContain("Удалить");
+    expect(markup).toContain("text-red");
   });
 });

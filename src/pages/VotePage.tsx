@@ -13,7 +13,7 @@ import {
   LoadingDots,
   ProgressBar,
   Surface,
-  ThemeToggle,
+  ThemeHeaderControl,
 } from "../design-system";
 import { ParticipantStatus, TaskInfo, WebSessionState } from "../hooks/useSession";
 import { loadWebIdentity } from "../shared/lib/participantIdentity";
@@ -99,7 +99,7 @@ export default function VotePage({
             <span className="text-xs font-medium tabular-nums text-ink3">
               {task.index}&thinsp;/&thinsp;{task.total}
             </span>
-            <ThemeToggle />
+            <ThemeHeaderControl />
           </div>
         </div>
       </AutoHideAppHeader>

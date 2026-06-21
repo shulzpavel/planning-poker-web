@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { AutoHideAppHeader, BottomSheet, BrandHomeLink, Button, DeferredFallback, RouteTransition, SheetItem, ThemeMenuControl, ThemeToggle, useTheme, type ThemeMode } from "../../../design-system";
+import { AutoHideAppHeader, BottomSheet, BrandHomeLink, Button, DeferredFallback, HeaderMenuButton, RouteTransition, SheetActionButton, SheetFooterActions, SheetItem, ThemeMenuControl, ThemeToggle, useTheme, type ThemeMode } from "../../../design-system";
 import { cmsAuthApi } from "../api/cmsClient";
 import type { CmsPrincipal } from "../api/cmsTypes";
 import { InlineError, Skeleton } from "../components/CmsPrimitives";
@@ -126,16 +126,14 @@ export default function CmsShell({
                 cockpit, theme, logout) lives in the bottom sheet, but the
                 trigger names the current section so it reads as navigation
                 rather than an overflow-only menu. */}
-            <button
-              type="button"
+            <HeaderMenuButton
               onClick={() => setMobileOpen(true)}
-              aria-label="Открыть разделы CMS"
+              label="Открыть разделы CMS"
               aria-expanded={mobileOpen}
-              className="lg:hidden inline-flex min-h-10 min-w-0 max-w-[9rem] items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-semibold text-ink transition-colors hover:bg-line2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/40 active:scale-[0.96] motion-reduce:active:scale-100"
+              className="lg:hidden"
             >
-              <span className="truncate">{activeTab?.label ?? "Разделы"}</span>
-              <ChevronDownIcon />
-            </button>
+              Меню
+            </HeaderMenuButton>
           </div>
           </div>
         </AutoHideAppHeader>
@@ -173,26 +171,26 @@ export default function CmsShell({
         title="Меню CMS"
         description={`${principal.display_name || principal.username}${principal.is_superuser ? " · суперпользователь" : ""}`}
         footer={
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="primary"
+          <SheetFooterActions>
+            <SheetActionButton
+              intent="primary"
               onClick={() => {
                 setMobileOpen(false);
                 navigate("/manage");
               }}
             >
               Открыть управление
-            </Button>
-            <Button
-              variant="ghost"
+            </SheetActionButton>
+            <SheetActionButton
+              intent="cancel"
               onClick={() => {
                 setMobileOpen(false);
                 void logout();
               }}
             >
               Выйти из CMS
-            </Button>
-          </div>
+            </SheetActionButton>
+          </SheetFooterActions>
         }
       >
         <div className="space-y-3 px-1 pb-2">
@@ -209,7 +207,6 @@ export default function CmsShell({
                     <SheetItem
                       key={item.key}
                       label={item.label}
-                      description={item.description}
                       trailing={isActive ? <CheckIcon /> : undefined}
                       onClick={() => navigateTo(item.path)}
                     />
@@ -310,14 +307,6 @@ function CmsIndexRedirect({
     return <OverviewPage principal={principal} />;
   }
   return <Navigate to={firstPath} replace />;
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden="true">
-      <path d="M5 7.5 10 12.5 15 7.5" />
-    </svg>
-  );
 }
 
 function CheckIcon() {

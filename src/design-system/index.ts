@@ -4,6 +4,8 @@ export * from "./utils";
 export * from "./theme";
 export { ThemeToggle } from "./ThemeToggle";
 export { ThemeMenuControl } from "./ThemeMenuControl";
+export { ThemeHeaderControl } from "./ThemeHeaderControl";
+export { HeaderMenuButton } from "./HeaderMenuButton";
 export { MobileBottomDock } from "./MobileBottomDock";
 export { SubnavBar } from "./SubnavBar";
 export { StickyActionFooter } from "./StickyActionFooter";
@@ -20,11 +22,11 @@ export {
   SCROLL_HIDE_THRESHOLD_PX,
   type ScrollDirection,
 } from "./scrollHideHeader";
-export { BackLink, resolveBackTarget, type BackLinkProps, type BackTarget } from "./BackLink";
+export { BackButton, BackLink, resolveBackTarget, type BackLinkProps, type BackTarget } from "./BackLink";
 export { ToastProvider, useToast, type ToastTone, type ToastInput } from "./Toast";
 export { BrandMark } from "./BrandMark";
 export { BrandHomeLink } from "./BrandHomeLink";
-export { BottomSheet, SheetItem } from "./BottomSheet";
+export { BottomSheet, SheetActionButton, SheetFooterActions, SheetItem } from "./BottomSheet";
 export { DeferredFallback, RouteTransition } from "./RouteTransition";
 export { AiIntelligenceSurface, AiSparkleIcon, AiSparklePill } from "./AiIntelligenceSurface";
 export { AiSparkleButton } from "./AiSparkleButton";

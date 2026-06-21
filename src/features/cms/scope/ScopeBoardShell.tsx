@@ -41,6 +41,10 @@ import type { CmsPrincipal } from "../api/cmsTypes";
 import {
   HelpCallout,
   InlineError,
+  MobileFeatureCard,
+  MobileFilterBar,
+  MobileMetricTile,
+  MobilePageHero,
   MobileRecordCard,
   MobileRecordField,
   SectionHeader,
@@ -455,33 +459,75 @@ function ScopeBoardListPage({ principal, canManage }: { principal: CmsPrincipal;
     }
   }
 
+  const boardStats = useMemo(() => {
+    const teamsCount = new Set(items.map((item) => item.team_id ?? `legacy-${item.team?.name ?? "none"}`)).size;
+    const stopCount = items.filter((item) => item.snapshot?.metrics?.intake_status === "stop").length;
+    const latest = items.reduce<ScopeBoardRecord | null>((current, item) => {
+      if (!current) return item;
+      return new Date(item.updated_at).getTime() > new Date(current.updated_at).getTime() ? item : current;
+    }, null);
+    const totalCapacity = items.reduce((sum, item) => sum + (item.snapshot?.metrics?.capacity_sp ?? 0), 0);
+    return { teamsCount, stopCount, latest, totalCapacity };
+  }, [items]);
+
   return (
     <section className="space-y-5">
-      <SectionHeader
-        title="Отчёт месяца"
-        description="JQL-секции, буфер capacity, статус задач и очереди на груминг — по команде."
-        actions={
+      <MobilePageHero
+        title="Отчёты месяца"
+        description="Capacity, буфер, intake-статус и последний Jira-срез по командам. Важные риски видны до открытия отчёта."
+        action={
           canManage ? (
             <Button variant="primary" size="sm" onClick={() => navigate("new")}>
-              Новый отчёт
+              Новый
             </Button>
           ) : undefined
         }
+        stats={[
+          { label: "Отчёты", value: loading ? "..." : items.length },
+          { label: "Команды", value: loading ? "..." : boardStats.teamsCount || "0" },
+          { label: "Stop intake", value: loading ? "..." : boardStats.stopCount, tone: boardStats.stopCount > 0 ? "danger" : "success" },
+          { label: "Capacity", value: loading ? "..." : `${formatScopeSp(boardStats.totalCapacity)} SP`, hint: boardStats.latest ? `Обновлено ${formatDate(boardStats.latest.updated_at)}` : undefined },
+        ]}
       />
 
-      <HelpCallout title="Кратко">
-        <p>
-          Создайте отчёт для команды, задайте capacity и JQL-секции. Нажмите «Обновить из Jira» —
-          несохранённые JQL применятся автоматически. Другие команды ваш отчёт не видят.
-        </p>
-      </HelpCallout>
+      <div className="hidden lg:block">
+        <SectionHeader
+          title="Отчёт месяца"
+          description="JQL-секции, буфер capacity, статус задач и очереди на груминг — по команде."
+          actions={
+            canManage ? (
+              <Button variant="primary" size="sm" onClick={() => navigate("new")}>
+                Новый отчёт
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
+
+      <div className="hidden lg:block">
+        <HelpCallout title="Кратко">
+          <p>
+            Создайте отчёт для команды, задайте capacity и JQL-секции. Нажмите «Обновить из Jira» —
+            несохранённые JQL применятся автоматически. Другие команды ваш отчёт не видят.
+          </p>
+        </HelpCallout>
+      </div>
 
       {error ? <InlineError text={error} /> : null}
 
       {principal.is_superuser ? (
-        <Toolbar>
-          <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
-        </Toolbar>
+        <>
+          <div className="lg:hidden">
+            <MobileFilterBar>
+              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
+            </MobileFilterBar>
+          </div>
+          <div className="hidden lg:block">
+            <Toolbar>
+              <TeamFilter teams={teams} value={teamFilter} onChange={setTeamFilter} />
+            </Toolbar>
+          </div>
+        </>
       ) : null}
 
       {loading ? (
@@ -558,33 +604,37 @@ function ScopeBoardList({
               const metrics = item.snapshot?.metrics;
               const intake = metrics ? intakeStatusMeta(metrics.intake_status, metrics) : null;
               return (
-                <MobileRecordCard
+                <MobileFeatureCard
                   key={item.id}
                   title={item.name}
-                  meta={
+                  eyebrow={
                     <span className="flex flex-wrap items-center gap-2">
                       {!grouped ? <TeamBadge teamId={item.team_id} team={item.team} /> : null}
                       <span>{formatScopeDisplayMonth(item.month)}</span>
-                      {intake ? <Badge tone={intake.tone}>{intake.label}</Badge> : null}
                     </span>
                   }
-                  footer={
-                    <>
-                      <Button size="sm" variant="primary" className="w-full min-[420px]:w-auto" onClick={() => onOpen(item.id)}>
-                        Открыть
-                      </Button>
-                      {canManage ? (
-                        <Button size="sm" variant="ghost" className="w-full min-[420px]:w-auto" onClick={() => onDelete(item)}>
-                          Удалить
-                        </Button>
-                      ) : null}
-                    </>
+                  status={intake ? <Badge tone={intake.tone}>{intake.label}</Badge> : null}
+                  accent={intake?.tone === "danger" ? "red" : intake?.tone === "warning" ? "amber" : intake?.tone === "success" ? "green" : "blue"}
+                  subtitle={`Обновлено ${formatDate(item.updated_at)}`}
+                  metrics={[
+                    { label: "Capacity", value: metrics ? `${formatScopeSp(metrics.capacity_sp)} SP` : "—" },
+                    { label: "Буфер", value: metrics ? `${formatScopeSp(metrics.buffer_sp)} SP` : "—" },
+                    { label: "Внеплан", value: metrics ? `${formatScopeSp(metrics.unplan_sp)} SP` : "—" },
+                    { label: "Обновлён", value: formatDate(item.updated_at) },
+                  ]}
+                  primaryAction={
+                    <Button size="sm" variant="primary" onClick={() => onOpen(item.id)}>
+                      Открыть
+                    </Button>
                   }
-                >
-                  <MobileRecordField label="Capacity" value={metrics ? `${formatScopeSp(metrics.capacity_sp)} SP` : "—"} />
-                  <MobileRecordField label="Буфер" value={metrics ? `${formatScopeSp(metrics.buffer_sp)} SP` : "—"} />
-                  <MobileRecordField label="Обновлён" value={formatDate(item.updated_at)} />
-                </MobileRecordCard>
+                  secondaryAction={
+                    canManage ? (
+                      <Button size="sm" variant="danger" onClick={() => onDelete(item)}>
+                        Удалить
+                      </Button>
+                    ) : null
+                  }
+                />
               );
             })}
           </div>
@@ -777,7 +827,7 @@ function ReleaseQueriesEditor({
             Прошедшие релизы появятся над текущим, будущие — после текущего.
           </p>
         </div>
-        <Button size="sm" variant="ghost" disabled={disabled} onClick={addQuery}>
+        <Button size="sm" variant="primary" disabled={disabled} onClick={addQuery}>
           + Добавить запрос
         </Button>
       </div>
@@ -802,7 +852,7 @@ function ReleaseQueriesEditor({
                   onChange={(event) => updateQuery(index, { label: event.target.value })}
                 />
                 <div className="flex items-end">
-                  <Button size="sm" variant="ghost" disabled={disabled} onClick={() => removeQuery(index)}>
+                  <Button size="sm" variant="danger" disabled={disabled} onClick={() => removeQuery(index)}>
                     Удалить
                   </Button>
                 </div>
@@ -1306,6 +1356,7 @@ function ScopeBoardEditorPage({
   const snapshotRefreshedLabel = snapshot?.refreshed_at
     ? new Date(snapshot.refreshed_at).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })
     : null;
+  const detailIntake = metrics ? intakeStatusMeta(metrics.intake_status, metrics, workloadMode === "sp_dev_test") : null;
   const showFlowPace = shouldShowFlowPaceBlock(
     board?.team ?? selectedTeam ?? (board?.name ? { name: board.name } : null),
     snapshot?.flow_pace,
@@ -1694,6 +1745,27 @@ function ScopeBoardEditorPage({
 
       {error ? <InlineError text={error} /> : null}
       {loading ? <Skeleton height="h-64" /> : null}
+      {!loading && mode === "edit" && metrics ? (
+        <section className="-mx-3 border-y border-line bg-surface/85 px-3 py-4 shadow-sm sm:-mx-4 sm:px-4 lg:hidden">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base font-bold text-ink">Состояние отчёта</h2>
+            {detailIntake ? <Badge tone={detailIntake.tone}>{detailIntake.label}</Badge> : null}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <MobileMetricTile label="Capacity" value={`${formatScopeSp(metrics.capacity_sp)} SP`} />
+            <MobileMetricTile label="План" value={`${formatScopeSp(metrics.plan_sp)} SP`} />
+            <MobileMetricTile label="Внеплан" value={`${formatScopeSp(metrics.unplan_sp)} SP`} />
+            <MobileMetricTile
+              label="Буфер"
+              value={`${formatScopeSp(metrics.buffer_sp)} SP`}
+              tone={metrics.buffer_sp < 0 ? "danger" : metrics.buffer_sp === 0 ? "warning" : "success"}
+            />
+          </div>
+          {snapshotRefreshedLabel ? (
+            <p className="mt-3 text-xs leading-relaxed text-ink3">Snapshot Jira: {snapshotRefreshedLabel}</p>
+          ) : null}
+        </section>
+      ) : null}
       {mode === "edit" && snapshot && boardId !== null && !Number.isNaN(boardId) ? (
         <ScopeFloatingTodo
           key={boardId}

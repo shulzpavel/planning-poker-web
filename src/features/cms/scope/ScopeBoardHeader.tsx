@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Button } from "../../../design-system";
+import { BackButton } from "../../../design-system";
 
 export function ScopeBoardHeader({
   title,
@@ -14,12 +14,10 @@ export function ScopeBoardHeader({
 }) {
   return (
     <header className="scope-board-header scope-no-print min-w-0">
-      <div className="flex items-center justify-between gap-3">
-        <Button className="-ml-2 shrink-0" size="sm" variant="ghost" onClick={onBack}>
-          Назад
-        </Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <BackButton className="-ml-2 self-start sm:shrink-0" label="Назад" size="sm" onClick={onBack} />
         {toolbar ? (
-          <div className="scope-board-header__toolbar flex min-w-0 shrink-0 items-center gap-1.5 overflow-x-auto sm:gap-2">
+          <div className="scope-board-header__toolbar -mx-1 flex w-full min-w-0 items-center gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:w-auto sm:shrink-0 sm:pb-0 [&>*]:shrink-0">
             {toolbar}
           </div>
         ) : null}

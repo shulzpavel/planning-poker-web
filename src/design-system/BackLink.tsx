@@ -1,4 +1,4 @@
-import type { MouseEvent, ReactNode } from "react";
+import type { ButtonHTMLAttributes, MouseEvent, ReactNode } from "react";
 import { Link, useLocation, useNavigate, type Location } from "react-router-dom";
 import { cn } from "./utils";
 
@@ -114,6 +114,32 @@ export function BackLink({
 
   return (
     <button type="button" onClick={handleClick} className={classes}>
+      {showArrow ? <ArrowIcon /> : null}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+export function BackButton({
+  label,
+  onClick,
+  showArrow = true,
+  className,
+  size = "md",
+  type = "button",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  label: ReactNode;
+  showArrow?: boolean;
+  size?: "sm" | "md";
+}) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      className={cn(baseClass, sizeStyles[size], className)}
+      {...props}
+    >
       {showArrow ? <ArrowIcon /> : null}
       <span>{label}</span>
     </button>

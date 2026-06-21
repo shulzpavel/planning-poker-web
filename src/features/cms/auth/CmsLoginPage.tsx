@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, AutoHideAppHeader, BrandHomeLink, Button, Surface, TextField, ThemeToggle } from "../../../design-system";
+import { Alert, AutoHideAppHeader, BrandHomeLink, Button, Surface, TextField, ThemeHeaderControl } from "../../../design-system";
 import { cmsAuthApi } from "../api/cmsClient";
 import type { CmsPrincipal } from "../api/cmsTypes";
 
@@ -30,7 +30,7 @@ export default function CmsLoginPage({ onLogin }: { onLogin: (principal: CmsPrin
         <div className="flex min-h-14 w-full items-center gap-2 px-3 pt-safe sm:px-4 lg:px-6">
           <BrandHomeLink size="sm" />
           <div className="ml-auto shrink-0">
-            <ThemeToggle />
+            <ThemeHeaderControl />
           </div>
         </div>
       </AutoHideAppHeader>

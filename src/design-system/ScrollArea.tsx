@@ -9,7 +9,7 @@ type ScrollAreaProps = {
   className?: string;
   viewportClassName?: string;
   viewportRef?: MutableRefObject<HTMLDivElement | null>;
-  hint?: string;
+  hint?: string | null;
 };
 
 function hasMoreContent(node: HTMLElement | null): boolean {
@@ -66,22 +66,24 @@ export function ScrollArea({
     <Component className={cn("flex min-h-0 flex-col", className)}>
       <div ref={viewportRef} className={cn("min-h-0 flex-1 overflow-auto", viewportClassName)}>
         {children}
-        <div
-          role="status"
-          aria-live="polite"
-          className={cn(
-            "pointer-events-none sticky inset-x-0 bottom-0 z-20 -mt-10 flex justify-center px-3 pb-3 pt-6",
-            "transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
-            canScrollDown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
-          )}
-        >
-          <div className="flex items-center gap-2 rounded-full border border-blue/25 bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-card">
-            <span className="scroll-hint-bob flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue/15 text-sm text-blue" aria-hidden="true">
-              ↓
-            </span>
-            <span>{hint}</span>
+        {hint ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className={cn(
+              "pointer-events-none sticky inset-x-0 bottom-0 z-20 -mt-10 flex justify-center px-3 pb-3 pt-6",
+              "transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
+              canScrollDown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
+            )}
+          >
+            <div className="flex items-center gap-2 rounded-full border border-blue/25 bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-card">
+              <span className="scroll-hint-bob flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue/15 text-sm text-blue" aria-hidden="true">
+                ↓
+              </span>
+              <span>{hint}</span>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </Component>
   );

@@ -20,7 +20,7 @@ import { apiUrl } from "../../app/config";
 import TaskTextBlock from "../../components/TaskTextBlock";
 import JiraDescriptionPanel from "../../components/JiraDescriptionPanel";
 import AiSummaryView from "../../components/AiSummaryView";
-import { AiGenerationProgress, AiSparkleButton, Alert, Badge, Button, ConfirmDialog, EmptyState, ScrollArea, Spinner, Surface, TextField, TextareaField, ThemeToggle, cn, useTheme, useToast, type ThemeMode } from "../../design-system";
+import { AiGenerationProgress, AiSparkleButton, Alert, Badge, Button, ConfirmDialog, EmptyState, ScrollArea, Spinner, Surface, TextField, TextareaField, ThemeHeaderControl, cn, useTheme, useToast, type ThemeMode } from "../../design-system";
 import { cmsAuthApi, hasCmsAuthHint } from "../cms/api/cmsClient";
 import type { CmsPrincipal } from "../cms/api/cmsTypes";
 import CmsLoginPage from "../cms/auth/CmsLoginPage";
@@ -347,7 +347,7 @@ function ManagerLogin({ onLogin }: { onLogin: (principal: CmsPrincipal) => void 
   return (
     <main className="relative grid min-h-screen-mobile app-gradient-bg px-4 pb-safe-6 pt-safe md:grid-cols-[minmax(0,1fr)_420px] md:px-8 md:pt-safe-4">
       <div className="absolute right-4 top-4 z-10">
-        <ThemeToggle />
+        <ThemeHeaderControl />
       </div>
       <section className="hidden min-h-[calc(100dvh-64px)] flex-col justify-between rounded-lg border border-line bg-surface px-8 py-7 md:flex">
         <div>

@@ -42,7 +42,7 @@ import {
   useTeamIdState,
 } from "../components/TeamSelect";
 import { useCmsTeams } from "../hooks/useCmsTeams";
-import { Alert, Badge, BottomSheet, Button, ConfirmDialog, DropdownField, EmptyState, ScrollArea, Surface, TextField } from "../../../design-system";
+import { Alert, Badge, BottomSheet, Button, ConfirmDialog, DropdownField, EmptyState, ScrollArea, SheetActionButton, SheetFooterActions, Surface, TextField } from "../../../design-system";
 import {
   CompactList,
   HelpCallout,
@@ -537,43 +537,40 @@ function CreateSessionDialog({
       description="Создадим пустую сессию и сразу откроем управление, чтобы вы могли добавить задачи и пригласить участников."
       initialFocus="container"
       footer={
-        <div className="flex flex-col-reverse gap-2 md:flex-row md:justify-end">
-          <Button
+        <SheetFooterActions>
+          <SheetActionButton
             type="button"
-            variant="ghost"
+            intent={confirmCancel ? "danger" : "cancel"}
             size="md"
             disabled={busy}
             onClick={requestCancel}
-            className="w-full md:w-auto"
           >
             {confirmCancel ? "Да, закрыть" : "Отмена"}
-          </Button>
+          </SheetActionButton>
           {confirmCancel ? (
-            <Button
+            <SheetActionButton
               type="button"
-              variant="secondary"
+              intent="neutral"
               size="md"
               disabled={busy}
               onClick={() => setConfirmCancel(false)}
-              className="w-full md:w-auto"
             >
               Продолжить
-            </Button>
+            </SheetActionButton>
           ) : null}
           {!confirmCancel ? (
-            <Button
+            <SheetActionButton
               type="submit"
               form="cms-create-session-form"
-              variant="primary"
+              intent="create"
               size="md"
               loading={busy}
               disabled={busy}
-              className="w-full md:w-auto"
             >
               Создать и открыть
-            </Button>
+            </SheetActionButton>
           ) : null}
-        </div>
+        </SheetFooterActions>
       }
     >
       <form
@@ -756,7 +753,7 @@ function SessionDetails({
                   <Button type="submit" variant="primary" size="sm" disabled={renameBusy} loading={renameBusy}>
                     Сохранить
                   </Button>
-                  <Button type="button" variant="ghost" size="sm" disabled={renameBusy} onClick={cancelRename}>
+                  <Button type="button" variant="secondary" size="sm" disabled={renameBusy} onClick={cancelRename}>
                     Отмена
                   </Button>
                 </div>
@@ -1600,7 +1597,7 @@ function TaskRow({
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="submit" variant="primary" size="sm" disabled={busy !== null || !summary.trim()}>Сохранить</Button>
-            <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Отмена</Button>
+            <Button variant="secondary" size="sm" onClick={() => setEditing(false)}>Отмена</Button>
           </div>
         </form>
       ) : (

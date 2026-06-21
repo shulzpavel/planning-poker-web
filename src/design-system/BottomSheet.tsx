@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "./components";
 import { findPreferredFocusTarget, useMobileKeyboardInset } from "./mobileKeyboard";
 import { ScrollArea } from "./ScrollArea";
 import { cn } from "./utils";
@@ -39,12 +40,15 @@ export function BottomSheet({
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
+  const closeTimerRef = useRef<number | null>(null);
+  const closingAnimationRef = useRef(false);
   const dragRef = useRef<{
     pointerId: number;
     startY: number;
     lastY: number;
     startTime: number;
     moved: boolean;
+    closeOnTap: boolean;
   } | null>(null);
   const suppressHandleClickRef = useRef(false);
   const keyboardInset = useMobileKeyboardInset(open);
@@ -53,8 +57,49 @@ export function BottomSheet({
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  const resetSheetDrag = useCallback(() => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    sheet.style.transform = "";
+    sheet.style.transition = "";
+    sheet.style.willChange = "";
+  }, []);
+
+  const closeSheetAnimated = useCallback((velocity = 0) => {
+    const sheet = sheetRef.current;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isDesktopDialog = window.matchMedia("(min-width: 768px)").matches;
+    if (!sheet || reduceMotion || isDesktopDialog) {
+      onCloseRef.current();
+      return;
+    }
+
+    if (closingAnimationRef.current) return;
+    closingAnimationRef.current = true;
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+    }
+
+    const duration = Math.max(180, Math.min(280, 260 - Math.min(70, velocity * 80)));
+    sheet.style.willChange = "transform";
+    sheet.style.transition = `transform ${duration}ms cubic-bezier(0.32, 0.72, 0, 1)`;
+    sheet.style.transform = `translate3d(0, ${sheet.offsetHeight + 48}px, 0)`;
+    closeTimerRef.current = window.setTimeout(() => {
+      closingAnimationRef.current = false;
+      resetSheetDrag();
+      onCloseRef.current();
+    }, duration);
+  }, [resetSheetDrag]);
+
   useEffect(() => {
     if (!open) return;
+    closingAnimationRef.current = false;
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    resetSheetDrag();
+
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const focusableSelector = "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
     const focusFirst = () => {
@@ -74,7 +119,7 @@ export function BottomSheet({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onCloseRef.current();
+        closeSheetAnimated();
         return;
       }
       if (event.key !== "Tab") return;
@@ -108,28 +153,25 @@ export function BottomSheet({
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       window.cancelAnimationFrame(frame);
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
       document.body.style.paddingRight = previousPaddingRight;
       previousFocusRef.current?.focus();
     };
-  }, [initialFocus, open]);
+  }, [closeSheetAnimated, initialFocus, open, resetSheetDrag]);
 
   const handleBackdrop = useCallback((event: React.MouseEvent | React.TouchEvent) => {
-    if (event.target === event.currentTarget) onClose();
-  }, [onClose]);
+    if (event.target === event.currentTarget) closeSheetAnimated();
+  }, [closeSheetAnimated]);
 
-  const resetSheetDrag = useCallback(() => {
-    const sheet = sheetRef.current;
-    if (!sheet) return;
-    sheet.style.transform = "";
-    sheet.style.transition = "";
-  }, []);
-
-  const handleDragPointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+  const handleDragPointerDown = useCallback((event: React.PointerEvent<HTMLElement>, closeOnTap = false) => {
     if (window.matchMedia("(min-width: 768px)").matches) return;
     const sheet = sheetRef.current;
-    if (!sheet) return;
+    if (!sheet || closingAnimationRef.current) return;
 
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -139,22 +181,25 @@ export function BottomSheet({
       lastY: event.clientY,
       startTime: performance.now(),
       moved: false,
+      closeOnTap,
     };
     sheet.style.transition = "none";
+    sheet.style.willChange = "transform";
   }, []);
 
-  const handleDragPointerMove = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+  const handleDragPointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     const sheet = sheetRef.current;
     if (!drag || !sheet || drag.pointerId !== event.pointerId) return;
 
-    const offset = Math.max(0, event.clientY - drag.startY);
+    const delta = event.clientY - drag.startY;
+    const offset = delta >= 0 ? delta : -Math.min(28, Math.sqrt(Math.abs(delta)) * 4);
     drag.lastY = event.clientY;
-    drag.moved = drag.moved || offset > 4;
-    sheet.style.transform = `translateY(${offset}px)`;
+    drag.moved = drag.moved || Math.abs(delta) > 4;
+    sheet.style.transform = `translate3d(0, ${offset}px, 0)`;
   }, []);
 
-  const handleDragPointerEnd = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+  const handleDragPointerEnd = useCallback((event: React.PointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     const sheet = sheetRef.current;
     if (!drag || !sheet || drag.pointerId !== event.pointerId) return;
@@ -164,7 +209,11 @@ export function BottomSheet({
     event.currentTarget.releasePointerCapture(event.pointerId);
 
     if (!drag.moved) {
-      onCloseRef.current();
+      if (drag.closeOnTap) {
+        closeSheetAnimated();
+      } else {
+        resetSheetDrag();
+      }
       return;
     }
 
@@ -174,16 +223,16 @@ export function BottomSheet({
     const closeDistance = Math.min(160, Math.max(72, sheet.offsetHeight * 0.22));
 
     if (offset > closeDistance || (offset > 32 && velocity > 0.7)) {
-      onCloseRef.current();
+      closeSheetAnimated(velocity);
       return;
     }
 
-    sheet.style.transition = "transform 160ms ease-out";
-    sheet.style.transform = "";
-    window.setTimeout(resetSheetDrag, 180);
-  }, [resetSheetDrag]);
+    sheet.style.transition = "transform 440ms cubic-bezier(0.16, 1, 0.3, 1)";
+    sheet.style.transform = "translate3d(0, 0, 0)";
+    window.setTimeout(resetSheetDrag, 460);
+  }, [closeSheetAnimated, resetSheetDrag]);
 
-  const handleDragPointerCancel = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+  const handleDragPointerCancel = useCallback((event: React.PointerEvent<HTMLElement>) => {
     if (dragRef.current?.pointerId !== event.pointerId) return;
     dragRef.current = null;
     suppressHandleClickRef.current = true;
@@ -195,8 +244,8 @@ export function BottomSheet({
       suppressHandleClickRef.current = false;
       return;
     }
-    onClose();
-  }, [onClose]);
+    closeSheetAnimated();
+  }, [closeSheetAnimated]);
 
   if (!open) return null;
 
@@ -221,7 +270,7 @@ export function BottomSheet({
           // Edge-to-edge below md (looks broken otherwise — see the
           // narrow centered "rectangle in the middle of the screen"
           // bug). On md+ this becomes a normal centered dialog.
-          "relative flex w-full flex-col outline-none md:max-w-md",
+          "relative flex w-full flex-col outline-none will-change-transform md:max-w-md",
           "rounded-t-sheet border border-line border-b-0 bg-surface shadow-card md:rounded-sheet md:border-b",
           "motion-safe:animate-scale-in",
           // Keep the sheet above the on-screen keyboard on mobile.
@@ -229,24 +278,35 @@ export function BottomSheet({
           className,
         )}
       >
-        <div className="flex shrink-0 justify-center px-5 pt-2.5 md:hidden">
+        <div className="flex shrink-0 justify-center px-5 pb-1 pt-2 md:hidden">
           <button
             type="button"
             aria-label="Закрыть меню"
-            title="Смахните вниз или нажмите, чтобы закрыть"
-            className="flex h-8 w-20 touch-none items-start justify-center rounded-full border border-blue/25 bg-blue/10 pt-1.5 shadow-sm transition-colors active:bg-blue/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/40"
+            title="Потяните вниз, чтобы закрыть"
+            className="group flex h-10 w-24 touch-none items-center justify-center rounded-full text-ink4 transition-colors hover:bg-line2/70 active:bg-line2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/35"
             onClick={handleGrabberClick}
-            onPointerDown={handleDragPointerDown}
+            onPointerDown={(event) => handleDragPointerDown(event, true)}
             onPointerMove={handleDragPointerMove}
             onPointerUp={handleDragPointerEnd}
             onPointerCancel={handleDragPointerCancel}
           >
-            <span className="h-1 w-10 rounded-full bg-blue/70" />
+            <span className="flex flex-col items-center gap-1" aria-hidden="true">
+              <span className="h-1 w-10 rounded-full bg-current transition-colors group-hover:text-ink3" />
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 opacity-80">
+                <path d="M5.5 7.5 10 12l4.5-4.5" />
+              </svg>
+            </span>
           </button>
         </div>
 
         {(title || description) ? (
-          <div className="shrink-0 px-5 pb-2 pt-3">
+          <div
+            className="shrink-0 cursor-grab select-none px-5 pb-2 pt-2 active:cursor-grabbing md:cursor-auto md:select-auto"
+            onPointerDown={(event) => handleDragPointerDown(event, false)}
+            onPointerMove={handleDragPointerMove}
+            onPointerUp={handleDragPointerEnd}
+            onPointerCancel={handleDragPointerCancel}
+          >
             {title ? <h2 id={titleId} className="text-base font-bold text-ink">{title}</h2> : null}
             {description ? <p id={descriptionId} className="mt-1 text-base text-ink3 sm:text-sm">{description}</p> : null}
           </div>
@@ -255,7 +315,7 @@ export function BottomSheet({
         <ScrollArea
           className="min-h-0 flex-1"
           viewportClassName="px-2 pb-2 pt-1"
-          hint="Ещё пункты"
+          hint={null}
         >
           {children}
         </ScrollArea>
@@ -293,7 +353,7 @@ export function SheetItem({
   trailing?: ReactNode;
   onClick?: () => void;
   disabled?: boolean;
-  tone?: "default" | "danger";
+  tone?: "default" | "primary" | "danger";
   type?: "button" | "submit";
 }) {
   return (
@@ -307,15 +367,61 @@ export function SheetItem({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30",
         "active:scale-[0.99] motion-reduce:active:scale-100",
         "disabled:pointer-events-none disabled:opacity-50",
-        tone === "danger" ? "text-red" : "text-ink",
+        tone === "danger" ? "text-red" : tone === "primary" ? "text-blue" : "text-ink",
       )}
     >
-      {icon ? <span className="shrink-0 text-ink3">{icon}</span> : null}
+      {icon ? (
+        <span className={cn("shrink-0", tone === "danger" ? "text-red" : tone === "primary" ? "text-blue" : "text-ink3")}>
+          {icon}
+        </span>
+      ) : null}
       <span className="min-w-0 flex-1">
         <span className="block whitespace-normal break-words font-semibold">{label}</span>
         {description ? <span className="mt-0.5 block whitespace-normal break-words text-sm font-normal text-ink3 sm:text-xs">{description}</span> : null}
       </span>
       {trailing ? <span className="shrink-0 text-ink3">{trailing}</span> : null}
     </button>
+  );
+}
+
+type SheetActionIntent = "back" | "cancel" | "neutral" | "primary" | "save" | "create" | "add" | "danger" | "delete";
+
+function resolveSheetActionVariant(intent: SheetActionIntent) {
+  if (intent === "danger" || intent === "delete") return "danger" as const;
+  if (intent === "primary" || intent === "save" || intent === "create" || intent === "add") return "primary" as const;
+  return "secondary" as const;
+}
+
+export function SheetFooterActions({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}>
+      {children}
+    </div>
+  );
+}
+
+export function SheetActionButton({
+  intent,
+  className,
+  size = "md",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  intent: SheetActionIntent;
+  size?: "sm" | "md" | "lg";
+  loading?: boolean;
+}) {
+  return (
+    <Button
+      variant={resolveSheetActionVariant(intent)}
+      size={size}
+      className={cn("w-full sm:w-auto", className)}
+      {...props}
+    />
   );
 }

@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import TaskTextBlock from "../components/TaskTextBlock";
-import { Alert, AutoHideAppHeader, Badge, BrandHomeLink, Button, ProgressBar, Surface, TextField, ThemeToggle, cn } from "../design-system";
+import { Alert, AutoHideAppHeader, Badge, BrandHomeLink, Button, ProgressBar, Surface, TextField, ThemeHeaderControl, cn } from "../design-system";
 import { ParticipantRole, TaskInfo } from "../hooks/useSession";
 import {
   PARTICIPANT_EMAIL_DOMAIN,
@@ -62,7 +62,7 @@ export default function JoinPage({ task, onJoin, error }: JoinPageProps) {
           <BrandHomeLink size="sm" showWordmark={false} />
           <span className="ml-2 text-sm font-semibold text-ink2">Вход в сессию</span>
           <div className="ml-auto shrink-0">
-            <ThemeToggle />
+            <ThemeHeaderControl />
           </div>
         </div>
       </AutoHideAppHeader>

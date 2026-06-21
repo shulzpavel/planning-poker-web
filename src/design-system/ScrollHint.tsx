@@ -102,7 +102,7 @@ export function ScrollHint() {
     <div
       aria-hidden="true"
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[calc(var(--safe-bottom)+1.5rem)] z-40 flex justify-center px-4",
+        "pointer-events-none fixed inset-x-0 bottom-[calc(var(--safe-bottom)+5.75rem)] z-20 flex justify-center px-4 md:bottom-[calc(var(--safe-bottom)+1.5rem)] md:z-40",
         "transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none",
         visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
       )}

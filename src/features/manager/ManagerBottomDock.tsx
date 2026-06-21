@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BottomSheet, Button, MobileBottomDock, SheetItem, ThemeMenuControl } from "../../design-system";
+import { BottomSheet, Button, MobileBottomDock, SheetActionButton, SheetFooterActions, SheetItem, ThemeMenuControl } from "../../design-system";
 import { keepFocusedFieldVisible } from "../../design-system/mobileKeyboard";
 import type { CmsPrincipal } from "../cms/api/cmsTypes";
 
@@ -109,10 +109,10 @@ export function ManagerBottomDock({
         }
         footer={
           sheetMode === "rename" ? (
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button variant="ghost" onClick={() => setSheetMode("menu")} disabled={Boolean(renameBusy)}>Назад</Button>
-              <Button
-                variant="primary"
+            <SheetFooterActions>
+              <SheetActionButton intent="back" onClick={() => setSheetMode("menu")} disabled={Boolean(renameBusy)}>Назад</SheetActionButton>
+              <SheetActionButton
+                intent="save"
                 disabled={!renameValue.trim() || renameValue.trim() === currentTitle || Boolean(renameBusy)}
                 loading={Boolean(renameBusy)}
                 onClick={() => {
@@ -123,13 +123,13 @@ export function ManagerBottomDock({
                 }}
               >
                 Сохранить
-              </Button>
-            </div>
+              </SheetActionButton>
+            </SheetFooterActions>
           ) : sheetMode === "finish-confirm" ? (
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button variant="ghost" onClick={() => setSheetMode("menu")} disabled={Boolean(finishBusy)}>Назад</Button>
-              <Button
-                variant="danger"
+            <SheetFooterActions>
+              <SheetActionButton intent="back" onClick={() => setSheetMode("menu")} disabled={Boolean(finishBusy)}>Назад</SheetActionButton>
+              <SheetActionButton
+                intent="danger"
                 loading={Boolean(finishBusy)}
                 disabled={Boolean(finishBusy)}
                 onClick={() => {
@@ -139,8 +139,8 @@ export function ManagerBottomDock({
                 }}
               >
                 Завершить
-              </Button>
-            </div>
+              </SheetActionButton>
+            </SheetFooterActions>
           ) : undefined
         }
       >
