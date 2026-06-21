@@ -4,6 +4,7 @@ import { Button } from "./components";
 import { findPreferredFocusTarget, useMobileKeyboardInset } from "./mobileKeyboard";
 import { ScrollArea } from "./ScrollArea";
 import { cn } from "./utils";
+import { useBottomSheetDrag } from "./useBottomSheetDrag";
 
 /**
  * Responsive modal primitive: bottom sheet on mobile, centered dialog on desktop.
@@ -38,67 +39,24 @@ export function BottomSheet({
   const titleId = useId();
   const descriptionId = useId();
   const sheetRef = useRef<HTMLDivElement | null>(null);
+  const backdropRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
-  const closeTimerRef = useRef<number | null>(null);
-  const closingAnimationRef = useRef(false);
-  const dragRef = useRef<{
-    pointerId: number;
-    startY: number;
-    lastY: number;
-    startTime: number;
-    moved: boolean;
-    closeOnTap: boolean;
-  } | null>(null);
-  const suppressHandleClickRef = useRef(false);
   const keyboardInset = useMobileKeyboardInset(open);
+
+  const { animateClose, dragHandleProps, handleGrabberClick, sheetMotionStyle } = useBottomSheetDrag({
+    open,
+    sheetRef,
+    backdropRef,
+    onClose,
+  });
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  const resetSheetDrag = useCallback(() => {
-    const sheet = sheetRef.current;
-    if (!sheet) return;
-    sheet.style.transform = "";
-    sheet.style.transition = "";
-    sheet.style.willChange = "";
-  }, []);
-
-  const closeSheetAnimated = useCallback((velocity = 0) => {
-    const sheet = sheetRef.current;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isDesktopDialog = window.matchMedia("(min-width: 768px)").matches;
-    if (!sheet || reduceMotion || isDesktopDialog) {
-      onCloseRef.current();
-      return;
-    }
-
-    if (closingAnimationRef.current) return;
-    closingAnimationRef.current = true;
-    if (closeTimerRef.current !== null) {
-      window.clearTimeout(closeTimerRef.current);
-    }
-
-    const duration = Math.max(180, Math.min(280, 260 - Math.min(70, velocity * 80)));
-    sheet.style.willChange = "transform";
-    sheet.style.transition = `transform ${duration}ms cubic-bezier(0.32, 0.72, 0, 1)`;
-    sheet.style.transform = `translate3d(0, ${sheet.offsetHeight + 48}px, 0)`;
-    closeTimerRef.current = window.setTimeout(() => {
-      closingAnimationRef.current = false;
-      resetSheetDrag();
-      onCloseRef.current();
-    }, duration);
-  }, [resetSheetDrag]);
-
   useEffect(() => {
     if (!open) return;
-    closingAnimationRef.current = false;
-    if (closeTimerRef.current !== null) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    resetSheetDrag();
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const focusableSelector = "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
@@ -119,7 +77,7 @@ export function BottomSheet({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        closeSheetAnimated();
+        animateClose();
         return;
       }
       if (event.key !== "Tab") return;
@@ -141,8 +99,6 @@ export function BottomSheet({
       }
     };
 
-    // Lock background scroll while the sheet is open (matches
-    // ConfirmDialog behavior).
     const previousOverflow = document.body.style.overflow;
     const previousPaddingRight = document.body.style.paddingRight;
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -153,106 +109,22 @@ export function BottomSheet({
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       window.cancelAnimationFrame(frame);
-      if (closeTimerRef.current !== null) {
-        window.clearTimeout(closeTimerRef.current);
-        closeTimerRef.current = null;
-      }
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
       document.body.style.paddingRight = previousPaddingRight;
       previousFocusRef.current?.focus();
     };
-  }, [closeSheetAnimated, initialFocus, open, resetSheetDrag]);
+  }, [animateClose, initialFocus, open]);
 
   const handleBackdrop = useCallback((event: React.MouseEvent | React.TouchEvent) => {
-    if (event.target === event.currentTarget) closeSheetAnimated();
-  }, [closeSheetAnimated]);
-
-  const handleDragPointerDown = useCallback((event: React.PointerEvent<HTMLElement>, closeOnTap = false) => {
-    if (window.matchMedia("(min-width: 768px)").matches) return;
-    const sheet = sheetRef.current;
-    if (!sheet || closingAnimationRef.current) return;
-
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startY: event.clientY,
-      lastY: event.clientY,
-      startTime: performance.now(),
-      moved: false,
-      closeOnTap,
-    };
-    sheet.style.transition = "none";
-    sheet.style.willChange = "transform";
-  }, []);
-
-  const handleDragPointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
-    const drag = dragRef.current;
-    const sheet = sheetRef.current;
-    if (!drag || !sheet || drag.pointerId !== event.pointerId) return;
-
-    const delta = event.clientY - drag.startY;
-    const offset = delta >= 0 ? delta : -Math.min(28, Math.sqrt(Math.abs(delta)) * 4);
-    drag.lastY = event.clientY;
-    drag.moved = drag.moved || Math.abs(delta) > 4;
-    sheet.style.transform = `translate3d(0, ${offset}px, 0)`;
-  }, []);
-
-  const handleDragPointerEnd = useCallback((event: React.PointerEvent<HTMLElement>) => {
-    const drag = dragRef.current;
-    const sheet = sheetRef.current;
-    if (!drag || !sheet || drag.pointerId !== event.pointerId) return;
-
-    dragRef.current = null;
-    suppressHandleClickRef.current = drag.moved;
-    event.currentTarget.releasePointerCapture(event.pointerId);
-
-    if (!drag.moved) {
-      if (drag.closeOnTap) {
-        closeSheetAnimated();
-      } else {
-        resetSheetDrag();
-      }
-      return;
-    }
-
-    const offset = Math.max(0, drag.lastY - drag.startY);
-    const elapsed = Math.max(1, performance.now() - drag.startTime);
-    const velocity = offset / elapsed;
-    const closeDistance = Math.min(160, Math.max(72, sheet.offsetHeight * 0.22));
-
-    if (offset > closeDistance || (offset > 32 && velocity > 0.7)) {
-      closeSheetAnimated(velocity);
-      return;
-    }
-
-    sheet.style.transition = "transform 440ms cubic-bezier(0.16, 1, 0.3, 1)";
-    sheet.style.transform = "translate3d(0, 0, 0)";
-    window.setTimeout(resetSheetDrag, 460);
-  }, [closeSheetAnimated, resetSheetDrag]);
-
-  const handleDragPointerCancel = useCallback((event: React.PointerEvent<HTMLElement>) => {
-    if (dragRef.current?.pointerId !== event.pointerId) return;
-    dragRef.current = null;
-    suppressHandleClickRef.current = true;
-    resetSheetDrag();
-  }, [resetSheetDrag]);
-
-  const handleGrabberClick = useCallback(() => {
-    if (suppressHandleClickRef.current) {
-      suppressHandleClickRef.current = false;
-      return;
-    }
-    closeSheetAnimated();
-  }, [closeSheetAnimated]);
+    if (event.target === event.currentTarget) animateClose();
+  }, [animateClose]);
 
   if (!open) return null;
 
-  // Portaled so ancestors with `backdrop-filter` / `transform` do not
-  // trap `position: fixed` inside a tiny header strip (empty blur bug).
   return createPortal(
     <div
+      ref={backdropRef}
       className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-up md:items-center md:p-6"
       style={{ "--keyboard-bottom-inset": `${keyboardInset}px` } as CSSProperties}
       role="presentation"
@@ -266,51 +138,43 @@ export function BottomSheet({
         aria-labelledby={title ? titleId : undefined}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
+        style={sheetMotionStyle}
         className={cn(
-          // Edge-to-edge below md (looks broken otherwise — see the
-          // narrow centered "rectangle in the middle of the screen"
-          // bug). On md+ this becomes a normal centered dialog.
-          "relative flex w-full flex-col outline-none will-change-transform md:max-w-md",
+          "relative flex w-full flex-col outline-none md:max-w-md",
           "rounded-t-sheet border border-line border-b-0 bg-surface shadow-card md:rounded-sheet md:border-b",
-          "motion-safe:animate-scale-in",
-          // Keep the sheet above the on-screen keyboard on mobile.
+          "motion-safe:md:animate-scale-in",
           "max-h-[calc(100dvh-var(--safe-top)-var(--keyboard-bottom-inset)-0.75rem)] overflow-hidden md:max-h-[min(760px,calc(100dvh-3rem))]",
           className,
         )}
       >
-        <div className="flex shrink-0 justify-center px-5 pb-1 pt-2 md:hidden">
-          <button
-            type="button"
-            aria-label="Закрыть меню"
-            title="Потяните вниз, чтобы закрыть"
-            className="group flex h-10 w-24 touch-none items-center justify-center rounded-full text-ink4 transition-colors hover:bg-line2/70 active:bg-line2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/35"
-            onClick={handleGrabberClick}
-            onPointerDown={(event) => handleDragPointerDown(event, true)}
-            onPointerMove={handleDragPointerMove}
-            onPointerUp={handleDragPointerEnd}
-            onPointerCancel={handleDragPointerCancel}
-          >
-            <span className="flex flex-col items-center gap-1" aria-hidden="true">
-              <span className="h-1 w-10 rounded-full bg-current transition-colors group-hover:text-ink3" />
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 opacity-80">
-                <path d="M5.5 7.5 10 12l4.5-4.5" />
-              </svg>
-            </span>
-          </button>
-        </div>
-
-        {(title || description) ? (
-          <div
-            className="shrink-0 cursor-grab select-none px-5 pb-2 pt-2 active:cursor-grabbing md:cursor-auto md:select-auto"
-            onPointerDown={(event) => handleDragPointerDown(event, false)}
-            onPointerMove={handleDragPointerMove}
-            onPointerUp={handleDragPointerEnd}
-            onPointerCancel={handleDragPointerCancel}
-          >
-            {title ? <h2 id={titleId} className="text-base font-bold text-ink">{title}</h2> : null}
-            {description ? <p id={descriptionId} className="mt-1 text-base text-ink3 sm:text-sm">{description}</p> : null}
+        <div
+          className={cn("shrink-0 md:cursor-auto md:touch-auto md:select-auto", dragHandleProps.className)}
+          onPointerDown={dragHandleProps.onPointerDown}
+        >
+          <div className="flex shrink-0 justify-center px-5 pb-1 pt-2 md:hidden">
+            <button
+              type="button"
+              aria-label="Закрыть меню"
+              title="Потяните вниз, чтобы закрыть"
+              className="group flex h-10 w-full max-w-[9rem] items-center justify-center rounded-full text-ink4 transition-colors hover:bg-line2/70 active:bg-line2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/35"
+              onClick={handleGrabberClick}
+            >
+              <span className="flex flex-col items-center gap-1" aria-hidden="true">
+                <span className="h-1 w-10 rounded-full bg-current transition-colors group-hover:text-ink3" />
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 opacity-80">
+                  <path d="M5.5 7.5 10 12l4.5-4.5" />
+                </svg>
+              </span>
+            </button>
           </div>
-        ) : null}
+
+          {(title || description) ? (
+            <div className="px-5 pb-2 pt-2 md:pb-3 md:pt-3">
+              {title ? <h2 id={titleId} className="text-base font-bold text-ink">{title}</h2> : null}
+              {description ? <p id={descriptionId} className="mt-1 text-base text-ink3 sm:text-sm">{description}</p> : null}
+            </div>
+          ) : null}
+        </div>
 
         <ScrollArea
           className="min-h-0 flex-1"
