@@ -449,7 +449,13 @@ export interface ScopeManualQuestion {
   summary: string;
   created_by?: string;
   created_at?: string;
+  created_release_name?: string;
   kind?: "manual";
+}
+
+export interface ScopeQuestionMeta {
+  created_at?: string;
+  created_release_name?: string;
 }
 
 export interface ScopeTopItem {
@@ -481,6 +487,9 @@ export interface ScopeResolvedQuestion {
   comment: string;
   resolved_by?: string;
   resolved_at?: string;
+  created_at?: string;
+  created_release_name?: string;
+  resolved_release_name?: string;
 }
 
 export type ScopeReportBucket = "in_work" | "in_test" | "done" | "open_questions";
@@ -904,6 +913,7 @@ export interface ScopeBoardSnapshot {
   refresh_log?: ScopeRefreshLogEntry[];
   jira_fetch_warnings?: ScopeJiraFetchWarning[];
   flow_pace?: ScopeFlowPace | null;
+  question_meta?: Record<string, ScopeQuestionMeta>;
 }
 
 export type ScopeReleaseContext = {

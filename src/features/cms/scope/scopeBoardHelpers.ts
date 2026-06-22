@@ -422,6 +422,66 @@ export function resolvedQuestions(snapshot: ScopeBoardSnapshot): ScopeResolvedQu
   );
 }
 
+export type ReleaseDoneSubgroup = "ready_for_release" | "done";
+
+export const RELEASE_DONE_SUBGROUP_LABELS: Record<ReleaseDoneSubgroup, string> = {
+  ready_for_release: "К релизу",
+  done: "Готово",
+};
+
+export function releaseDoneSubgroup(issue: ScopeBoardIssue): ReleaseDoneSubgroup {
+  const status = (issue.status ?? "").trim().toLocaleLowerCase("ru-RU");
+  if (status === "к релизу") return "ready_for_release";
+  return "done";
+}
+
+export function openQuestionTrackingMeta(
+  issue: ScopeOpenQuestion,
+  snapshot: ScopeBoardSnapshot,
+): { created_at?: string; created_release_name?: string } {
+  const meta = snapshot.question_meta?.[issue.id];
+  const record = issue as ScopeManualQuestion;
+  return {
+    created_at: record.created_at ?? meta?.created_at,
+    created_release_name: record.created_release_name ?? meta?.created_release_name,
+  };
+}
+
+export function formatQuestionReleaseTag(releaseName?: string, createdAt?: string): string | null {
+  const parts: string[] = [];
+  if (createdAt) {
+    const parsed = new Date(createdAt);
+    if (!Number.isNaN(parsed.getTime())) {
+      parts.push(parsed.toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }));
+    }
+  }
+  if (releaseName?.trim()) {
+    parts.push(releaseName.trim());
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+export function formatDaysOpenLabel(createdAt?: string, resolvedAt?: string): string | null {
+  if (!createdAt) return null;
+  const opened = new Date(createdAt);
+  if (Number.isNaN(opened.getTime())) return null;
+  const closed = resolvedAt ? new Date(resolvedAt) : new Date();
+  if (Number.isNaN(closed.getTime())) return null;
+  const days = Math.max(
+    0,
+    Math.floor((Date.UTC(closed.getFullYear(), closed.getMonth(), closed.getDate()) -
+      Date.UTC(opened.getFullYear(), opened.getMonth(), opened.getDate())) /
+      86_400_000),
+  );
+  const suffix =
+    days % 10 === 1 && days % 100 !== 11
+      ? "день"
+      : days % 10 >= 2 && days % 10 <= 4 && (days % 100 < 10 || days % 100 >= 20)
+        ? "дня"
+        : "дней";
+  return `${days} ${suffix}`;
+}
+
 export function priorityBadgeTone(priority: string | undefined): BadgeTone {
   const rank = jiraPriorityRank(priority);
   if (rank <= 0) return "danger";
