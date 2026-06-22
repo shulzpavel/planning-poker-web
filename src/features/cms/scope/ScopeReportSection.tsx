@@ -25,6 +25,8 @@ import {
   resolveOpenQuestions,
   resolvedQuestions,
   sortDoneIssuesByRecentStatus,
+  sortReleaseDoneIssues,
+  partitionReleaseReportBucket,
   type ScopeOpenQuestion,
   type InTestReportSubgroup,
   type ReleaseDoneSubgroup,
@@ -33,6 +35,7 @@ import {
   formatQuestionReleaseTag,
   formatDaysOpenLabel,
   releaseDoneSubgroup,
+  inTestReportSubgroupForRelease,
   RELEASE_DONE_SUBGROUP_LABELS,
 } from "./scopeBoardHelpers";
 import { useIncrementalList } from "./scopeListPaging";
@@ -188,6 +191,7 @@ function ReleaseReportBlocks({
   onSaveReportComment?: (issueKey: string, text: string) => Promise<void>;
 }) {
   const current = releaseContext.current;
+  const currentColumns = useMemo(() => partitionReleaseReportBucket(current), [current]);
   const dynamicReleases = releaseContext.releases ?? [];
   const pastSlots = [
     releaseContext.previous ? { bucket: releaseContext.previous, subtitle: "Прошедший релиз" } : null,
@@ -233,15 +237,15 @@ function ReleaseReportBlocks({
             key={column.key}
             title={column.title}
             tone={column.tone}
-            count={current.counts[column.key]}
-            defaultOpen={current.counts[column.key] <= 4}
+            count={currentColumns.counts[column.key]}
+            defaultOpen={currentColumns.counts[column.key] <= 4}
           >
             <ReportColumn
               columnKey={column.key}
               title={column.title}
               tone={column.tone}
-              count={current.counts[column.key]}
-              issues={current[column.key]}
+              count={currentColumns.counts[column.key]}
+              issues={currentColumns[column.key]}
               showTechnicalFields={showTechnicalFields}
               hidePlanFields
               reportComments={reportComments}
@@ -338,6 +342,7 @@ function ReleaseHeroHeader({ bucket, subtitle }: { bucket: ScopeReleaseBucket; s
   const displayName = releaseDisplayName(bucket);
   const releaseUrl = buildReleaseReportUrl(bucket);
   const totalSp = bucket.story_points ?? 0;
+  const columns = useMemo(() => partitionReleaseReportBucket(bucket), [bucket]);
   const progress = releaseProgress(bucket);
 
   return (
@@ -381,9 +386,9 @@ function ReleaseHeroHeader({ bucket, subtitle }: { bucket: ScopeReleaseBucket; s
       <ReleaseProgressBar bucket={bucket} />
 
       <div className="mt-4 flex flex-wrap gap-1.5 sm:gap-2">
-        <Badge tone="info">{bucket.counts.in_work} в работе</Badge>
-        <Badge tone="warning">{bucket.counts.in_test} в тесте</Badge>
-        <Badge tone="success">{bucket.counts.done} готово</Badge>
+        <Badge tone="info">{columns.counts.in_work} в работе</Badge>
+        <Badge tone="warning">{columns.counts.in_test} в тесте</Badge>
+        <Badge tone="success">{columns.counts.done} готово</Badge>
         {bucket.counts.open_questions > 0 ? <Badge tone="warning">{bucket.counts.open_questions} на паузе</Badge> : null}
       </div>
 
@@ -425,6 +430,7 @@ function ReleaseSecondarySlot({
   const releaseDate = formatReleaseDate(meta?.release_date);
   const startDate = formatReleaseDate(meta?.start_date);
   const isPrevious = bucket.slot === "previous";
+  const columns = useMemo(() => partitionReleaseReportBucket(bucket), [bucket]);
 
   return (
     <details
@@ -449,9 +455,9 @@ function ReleaseSecondarySlot({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="neutral">{bucket.counts.total} задач</Badge>
-            <Badge tone="info">{bucket.counts.in_work} в работе</Badge>
-            <Badge tone="warning">{bucket.counts.in_test} в тесте</Badge>
-            <Badge tone="success">{bucket.counts.done} готово</Badge>
+            <Badge tone="info">{columns.counts.in_work} в работе</Badge>
+            <Badge tone="warning">{columns.counts.in_test} в тесте</Badge>
+            <Badge tone="success">{columns.counts.done} готово</Badge>
             <span className="scope-section-header-icon inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-transform group-open:rotate-180">
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
                 <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" />
@@ -469,15 +475,15 @@ function ReleaseSecondarySlot({
             key={column.key}
             title={column.title}
             tone={column.tone}
-            count={bucket.counts[column.key]}
-            defaultOpen={bucket.counts[column.key] <= 4}
+            count={columns.counts[column.key]}
+            defaultOpen={columns.counts[column.key] <= 4}
           >
             <ReportColumn
               columnKey={column.key}
               title={column.title}
               tone={column.tone}
-              count={bucket.counts[column.key]}
-              issues={bucket[column.key]}
+              count={columns.counts[column.key]}
+              issues={columns[column.key]}
               showTechnicalFields={showTechnicalFields}
               hidePlanFields
               reportComments={reportComments}
@@ -893,15 +899,17 @@ function releaseProgress(bucket: ScopeReleaseBucket): {
   storeReadinessPct: number;
   isInStore: boolean;
 } {
+  const columns = partitionReleaseReportBucket(bucket);
   const total = Math.max(1, bucket.counts.total);
-  const readyToReleaseCount = bucket.done.filter(isReadyToReleaseIssue).length;
-  const testingCount = bucket.counts.in_test;
-  const inWorkPct = Math.round((bucket.counts.in_work / total) * 100);
+  const readyToReleaseCount = columns.done.filter((issue) => releaseDoneSubgroup(issue) === "ready_for_release").length;
+  const actualDoneCount = columns.done.length - readyToReleaseCount;
+  const testingCount = columns.counts.in_test;
+  const inWorkPct = Math.round((columns.counts.in_work / total) * 100);
   const inTestPct = Math.round((testingCount / total) * 100);
   const readyToReleasePct = Math.round((readyToReleaseCount / total) * 100);
   const pausedPct = Math.round((bucket.counts.open_questions / total) * 100);
-  const donePct = Math.round((bucket.counts.done / total) * 100);
-  const storeReadinessPct = Math.min(100, Math.round(((readyToReleaseCount + bucket.counts.done) / total) * 100));
+  const donePct = Math.round((actualDoneCount / total) * 100);
+  const storeReadinessPct = Math.min(100, Math.round(((readyToReleaseCount + actualDoneCount) / total) * 100));
   return {
     inWorkPct,
     inTestPct,
@@ -909,12 +917,8 @@ function releaseProgress(bucket: ScopeReleaseBucket): {
     donePct,
     pausedPct,
     storeReadinessPct,
-    isInStore: bucket.counts.total > 0 && bucket.counts.done === bucket.counts.total,
+    isInStore: bucket.counts.total > 0 && actualDoneCount === bucket.counts.total,
   };
-}
-
-function isReadyToReleaseIssue(issue: ScopeBoardIssue): boolean {
-  return (issue.status ?? "").trim().toLocaleLowerCase("ru-RU") === "к релизу";
 }
 
 function sortedCountEntries(counts: Record<string, number> | undefined): Array<[string, number]> {
@@ -1403,11 +1407,15 @@ function ReportColumn({
   const sortedIssues = useMemo(
     () =>
       columnKey === "done"
-        ? sortDoneIssuesByRecentStatus(issues)
+        ? releaseReport
+          ? sortReleaseDoneIssues(issues)
+          : sortDoneIssuesByRecentStatus(issues)
         : columnKey === "in_test"
-          ? sortInTestReportIssues(issues)
+          ? releaseReport
+            ? issues
+            : sortInTestReportIssues(issues)
           : issues,
-    [columnKey, issues]
+    [columnKey, issues, releaseReport]
   );
   const { visibleItems, hasMore, loadMore, loadedCount, total } = useIncrementalList(sortedIssues);
 
@@ -1427,13 +1435,17 @@ function ReportColumn({
             {visibleItems.map((issue, index) => {
               const subgroup =
                 columnKey === "in_test"
-                  ? inTestReportSubgroup(issue)
+                  ? releaseReport
+                    ? inTestReportSubgroupForRelease(issue)
+                    : inTestReportSubgroup(issue)
                   : columnKey === "done" && releaseReport
                     ? releaseDoneSubgroup(issue)
                     : null;
               const previousSubgroup =
                 columnKey === "in_test" && index > 0
-                  ? inTestReportSubgroup(visibleItems[index - 1]!)
+                  ? releaseReport
+                    ? inTestReportSubgroupForRelease(visibleItems[index - 1]!)
+                    : inTestReportSubgroup(visibleItems[index - 1]!)
                   : columnKey === "done" && releaseReport && index > 0
                     ? releaseDoneSubgroup(visibleItems[index - 1]!)
                     : null;
