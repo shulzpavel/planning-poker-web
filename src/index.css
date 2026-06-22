@@ -570,6 +570,8 @@
   .px-safe { padding-left: var(--safe-left); padding-right: var(--safe-right); }
   .py-safe { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); }
   /* Compose with a fixed gutter, e.g. `.pb-safe-4` = 1rem + safe inset. */
+  .pt-safe-2 { padding-top: calc(var(--safe-top) + 0.5rem); }
+  .pt-safe-3 { padding-top: calc(var(--safe-top) + 0.75rem); }
   .pb-safe-4 { padding-bottom: calc(var(--safe-bottom) + 1rem); }
   .pb-safe-6 { padding-bottom: calc(var(--safe-bottom) + 1.5rem); }
   .pt-safe-4 { padding-top: calc(var(--safe-top) + 1rem); }

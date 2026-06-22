@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Badge, Surface, cn } from "../../../design-system";
 import type { ScopeBoardRecord, ScopeFlowPace } from "../api/cmsClient";
-import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
+import { cmsMobileSectionShell, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { flowPaceStatusLabel, flowPaceStatusTone } from "./scopeFlowPaceHelpers";
 import { ScopeFlowPaceDonuts } from "./ScopeFlowPaceDonuts";
 
@@ -28,12 +28,14 @@ export const ScopeFlowPaceSection = memo(function ScopeFlowPaceSection({
     <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0 shadow-none", cmsMobileSectionShell, presentation && "h-full lg:shadow-card")}>
       <details className="scope-presentation-section group">
         <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold text-ink">AI пульс спринта</h2>
-              <Badge tone={flowPaceStatusTone(flowPace.pace_status)}>{flowPaceStatusLabel(flowPace.pace_status)}</Badge>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+              <h2 className="shrink-0 whitespace-nowrap text-base font-semibold text-ink">AI пульс спринта</h2>
+              <Badge className="shrink-0 whitespace-nowrap" tone={flowPaceStatusTone(flowPace.pace_status)}>
+                {flowPaceStatusLabel(flowPace.pace_status)}
+              </Badge>
             </div>
-            <p className="scope-section-header-subtitle mt-1 text-sm">
+            <p className="scope-section-header-subtitle mt-1 truncate text-sm sm:overflow-visible sm:whitespace-normal">
               Метрики по закрытым и сигналы по активным — клик по донату открывает детали ниже.
               {canManage ? " Порядок донатов можно менять перетаскиванием." : null}
             </p>
@@ -45,7 +47,7 @@ export const ScopeFlowPaceSection = memo(function ScopeFlowPaceSection({
           </span>
         </summary>
 
-        <div className={cn("border-t border-line/50 bg-bg/45", cmsSectionBody)}>
+        <div className="space-y-4 border-t border-line/50 bg-bg/45 p-0 sm:p-4 lg:space-y-5 lg:p-7">
           {charts.length > 0 ? (
             <ScopeFlowPaceDonuts
               charts={charts}
@@ -57,7 +59,7 @@ export const ScopeFlowPaceSection = memo(function ScopeFlowPaceSection({
               onChartOrderError={onChartOrderError}
             />
           ) : (
-            <p className="rounded-lg border border-line/70 bg-surface px-4 py-6 text-center text-sm text-ink3 shadow-none sm:px-6 sm:py-8 sm:shadow-sm">
+            <p className="border-y border-line/70 bg-surface px-4 py-6 text-center text-sm text-ink3 shadow-none sm:rounded-lg sm:border sm:px-6 sm:py-8 sm:shadow-sm">
               Нет данных — обновите scope из Jira.
             </p>
           )}

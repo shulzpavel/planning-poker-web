@@ -72,7 +72,7 @@ export default function LandingPage() {
   return (
     <main className="flex min-h-screen-mobile flex-col app-gradient-bg text-ink">
       <AutoHideAppHeader className="z-10 border-line/70 bg-surface/70">
-        <div className="flex min-h-14 w-full items-center gap-3 px-4 py-3 pt-safe lg:px-6">
+        <div className="flex min-h-14 w-full items-center gap-3 px-4 py-3 pt-safe-3 lg:px-6">
           <BrandHomeLink size="md" className="min-w-0 gap-3 text-ink" />
           <div className="ml-auto flex items-center gap-2">
             <ThemeHeaderControl />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -90,16 +90,16 @@ export function FlowPaceChartDetail({
 
   if (!chart.methodology && segments.length === 0) {
     return (
-      <p className={cn("rounded-xl border border-line/70 bg-bg/70 px-4 py-3 text-sm text-ink3", className)}>
+      <p className={cn("border-y border-line/70 bg-bg/70 px-3 py-3 text-sm text-ink3 sm:rounded-xl sm:border sm:px-4", className)}>
         Подробная разбивка недоступна — обновите данные из Jira.
       </p>
     );
   }
 
   return (
-    <div className={cn("space-y-4 px-4 py-4 sm:px-6 sm:py-5", className)}>
+    <div className={cn("space-y-3 px-0 py-3 sm:space-y-4 sm:px-6 sm:py-5", className)}>
       {chart.methodology ? (
-        <p className="rounded-xl border border-line/60 bg-bg/70 px-4 py-3 text-xs leading-relaxed text-ink3 whitespace-pre-wrap">
+        <p className="border-y border-line/60 bg-bg/70 px-3 py-3 text-xs leading-relaxed text-ink3 whitespace-pre-wrap sm:rounded-xl sm:border sm:px-4">
           {chart.methodology}
         </p>
       ) : null}
@@ -152,10 +152,12 @@ function FlowPaceDonutCard({
   chart,
   selected,
   onSelect,
+  dragHandle,
 }: {
   chart: ScopeFlowPaceChart;
   selected: boolean;
   onSelect: () => void;
+  dragHandle?: ReactNode;
 }) {
   const arcs = useMemo(() => donutArcs(chart.segments), [chart.segments]);
 
@@ -166,30 +168,37 @@ function FlowPaceDonutCard({
       aria-expanded={selected}
       aria-controls={`flow-pace-detail-${chart.id}`}
       className={cn(
-        "flex h-full min-h-[24rem] w-full flex-col rounded-2xl border bg-surface p-4 text-left shadow-sm transition-colors",
+        "flex h-full min-h-[21rem] w-full flex-col rounded-lg border bg-surface p-3 text-left shadow-sm transition-colors sm:min-h-[24rem] sm:p-4",
         selected
           ? "border-accent/50 ring-2 ring-accent/25"
           : "border-line/80 hover:border-line hover:bg-surface/95",
       )}
     >
-      <div className="flex min-h-[4.75rem] shrink-0 items-start justify-between gap-2">
+      <div className="flex min-h-12 shrink-0 items-center justify-between gap-2 sm:min-h-[4.75rem]">
         <div className="min-w-0 flex-1 space-y-1">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{chart.title}</h3>
-          <p className="line-clamp-2 text-xs leading-relaxed text-ink3">{chart.subtitle}</p>
+          <h3 className="truncate whitespace-nowrap text-sm font-semibold leading-snug text-ink sm:line-clamp-2 sm:whitespace-normal">
+            {chart.title}
+          </h3>
+          <p className="truncate whitespace-nowrap text-xs leading-relaxed text-ink3 sm:line-clamp-2 sm:whitespace-normal">
+            {chart.subtitle}
+          </p>
         </div>
-        <span
-          className={cn(
-            "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink3 transition-transform",
-            selected && "rotate-180 text-accent",
-          )}
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-            <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" />
-          </svg>
-        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          {dragHandle}
+          <span
+            className={cn(
+              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink3 transition-transform",
+              selected && "rotate-180 text-accent",
+            )}
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+              <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" />
+            </svg>
+          </span>
+        </div>
       </div>
 
-      <div className="relative mx-auto my-4 h-40 w-40 shrink-0">
+      <div className="relative mx-auto my-4 h-36 w-36 shrink-0 sm:h-40 sm:w-40">
         <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
           <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="10" className="text-line2" />
           {arcs.map((arc) => (
@@ -209,11 +218,11 @@ function FlowPaceDonutCard({
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
           <p className="text-3xl font-bold tabular-nums text-ink">{chart.center_value}</p>
-          <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink3">{chart.center_label}</p>
+          <p className="mt-0.5 whitespace-nowrap text-[11px] font-semibold uppercase tracking-wide text-ink3">{chart.center_label}</p>
         </div>
       </div>
 
-      <ul className="mt-auto min-h-[8rem] max-h-[8rem] shrink-0 space-y-1.5 overflow-y-auto pr-1">
+      <ul className="mt-auto min-h-[7rem] max-h-[7rem] shrink-0 space-y-1.5 overflow-y-auto pr-1 sm:min-h-[8rem] sm:max-h-[8rem]">
         {chart.segments.map((segment) => (
           <li key={segment.key} className="flex items-center justify-between gap-2 text-xs">
             <span className="flex min-w-0 items-center gap-2 text-ink2">
@@ -250,30 +259,34 @@ function SortableFlowPaceDonutCard({
       ref={sortable.setNodeRef}
       style={style}
       className={cn(
-        "group/flow-pace-sortable flex h-full items-stretch gap-2",
+        "group/flow-pace-sortable flex h-full items-stretch",
         sortable.isDragging ? "relative z-30" : "",
       )}
     >
-      {canDrag ? (
-        <button
-          type="button"
-          className={cn(
-            "scope-no-print inline-flex h-7 w-7 shrink-0 cursor-grab self-center items-center justify-center rounded-full text-ink4 opacity-0",
-            "touch-manipulation transition-[background-color,color,opacity] hover:bg-line2/60 hover:text-ink2 hover:opacity-100 active:cursor-grabbing",
-            "focus-visible:opacity-100 group-hover/flow-pace-sortable:opacity-60 group-focus-within/flow-pace-sortable:opacity-100",
-            sortable.isDragging ? "opacity-100" : "",
-          )}
-          aria-label="Переместить донат"
-          {...sortable.attributes}
-          {...sortable.listeners}
-        >
-          <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
-            <path d="M7 5.5h6M7 10h6M7 14.5h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        </button>
-      ) : null}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <FlowPaceDonutCard chart={chart} selected={selected} onSelect={onSelect} />
+        <FlowPaceDonutCard
+          chart={chart}
+          selected={selected}
+          onSelect={onSelect}
+          dragHandle={canDrag ? (
+            <button
+              type="button"
+              className={cn(
+                "scope-no-print inline-flex h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-full text-ink4 opacity-60",
+                "touch-manipulation transition-[background-color,color,opacity] hover:bg-line2/60 hover:text-ink2 hover:opacity-100 active:cursor-grabbing",
+                "focus-visible:opacity-100 sm:opacity-0 sm:group-hover/flow-pace-sortable:opacity-60 sm:group-focus-within/flow-pace-sortable:opacity-100",
+                sortable.isDragging ? "opacity-100" : "",
+              )}
+              aria-label="Переместить донат"
+              {...sortable.attributes}
+              {...sortable.listeners}
+            >
+              <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
+                <path d="M7 5.5h6M7 10h6M7 14.5h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
+          ) : null}
+        />
       </div>
     </div>
   );
@@ -344,7 +357,7 @@ export function ScopeFlowPaceDonuts({
     <div className={cn("space-y-4", className)}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={order} strategy={rectSortingStrategy}>
-          <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid auto-rows-fr gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
             {orderedCharts.map((chart) => (
               <SortableFlowPaceDonutCard
                 key={chart.id}
@@ -363,15 +376,15 @@ export function ScopeFlowPaceDonuts({
           id={`flow-pace-detail-${activeChart.id}`}
           className={cn("scope-collapsible-card", cmsMobileSectionShell, "lg:shadow-sm")}
         >
-          <div className="flex items-start justify-between gap-3 border-b border-line/60 bg-bg/45 px-4 py-3 sm:px-5">
+          <div className="flex items-center justify-between gap-3 border-b border-line/60 bg-bg/45 px-3 py-3 sm:px-5">
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-ink">{activeChart.title}</h3>
-              <p className="mt-0.5 text-xs text-ink3">{activeChart.subtitle}</p>
+              <h3 className="truncate whitespace-nowrap text-sm font-semibold text-ink">{activeChart.title}</h3>
+              <p className="mt-0.5 truncate whitespace-nowrap text-xs text-ink3">{activeChart.subtitle}</p>
             </div>
             <button
               type="button"
               onClick={() => setSelectedChartId(null)}
-              className="shrink-0 rounded-full border border-line/70 px-3 py-1.5 text-xs font-medium text-ink3 transition-colors hover:bg-bg hover:text-ink"
+              className="shrink-0 whitespace-nowrap rounded-full border border-line/70 px-3 py-1.5 text-xs font-medium text-ink3 transition-colors hover:bg-bg hover:text-ink"
             >
               Свернуть
             </button>

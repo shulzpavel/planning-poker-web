@@ -100,21 +100,21 @@ export default function CmsShell({
     <main className="min-h-screen-mobile app-gradient-bg pb-safe">
       <header className="z-30 md:sticky md:top-[var(--maintenance-banner-offset,0px)] md:border-b md:border-line md:bg-surface/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-surface/80">
         <AutoHideAppHeader className="border-b-0" hideOnMobileScroll={false}>
-          <div className="flex min-h-14 w-full items-center gap-2 px-3 py-2 pt-safe sm:gap-3 sm:px-4 md:min-h-16 lg:px-6">
+          <div className="grid min-h-14 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 pt-safe-2 sm:flex sm:gap-3 sm:px-4 md:min-h-16 lg:px-6">
           <BrandHomeLink size="sm" showWordmark={false} className="shrink-0" />
-          <div className="min-w-0 flex-1">
+          <div className="flex min-h-10 min-w-0 flex-col items-center justify-center text-center sm:min-w-0 sm:flex-1 sm:items-start sm:text-left">
             <h1 className="hidden break-words text-base font-bold leading-snug text-ink sm:block md:text-lg">
               Planning Poker · Админка
             </h1>
-            <p className="break-words text-[11px] font-semibold uppercase tracking-wide text-ink3 sm:hidden">
+            <p className="w-full truncate whitespace-nowrap text-[11px] font-semibold uppercase tracking-wide text-ink3 sm:hidden">
               {activeTab?.label ?? "Админка"}
             </p>
-            <p className="break-words text-xs text-ink3 sm:mt-0.5">
+            <p className="w-full truncate whitespace-nowrap text-xs text-ink3 sm:mt-0.5 sm:whitespace-normal">
               {principal.display_name || principal.username}
               {principal.is_superuser ? " · суперпользователь" : ""}
             </p>
           </div>
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="flex shrink-0 items-center justify-self-end gap-1.5 sm:ml-auto sm:gap-2">
             <ThemeToggle className="hidden lg:inline-flex" />
             <Button
                 intent="open"
@@ -148,9 +148,9 @@ export default function CmsShell({
             don't double-up the navigation surface. */}
         <nav
           aria-label="Разделы CMS"
-          className="hidden lg:block border-t border-line"
+          className="hidden overflow-x-auto border-t border-line lg:block"
         >
-          <div className="flex w-full gap-1 px-4 lg:px-6">
+          <div className="mx-auto flex min-w-max justify-center gap-1 px-4 lg:px-6">
             {visibleTabs.map((item) => (
               <NavLink
                 key={item.key}
@@ -158,7 +158,7 @@ export default function CmsShell({
                 end={item.key === "overview"}
                 className={({ isActive }) =>
                   [
-                    "flex-1 basis-0 whitespace-nowrap px-3 py-2 text-center text-sm font-semibold border-b-2 transition-colors",
+                    "inline-flex items-center justify-center whitespace-nowrap border-b-2 px-3 py-2 text-center text-sm font-semibold transition-colors",
                     isActive ? "border-blue text-blue" : "border-transparent text-ink3 hover:text-ink",
                   ].join(" ")
                 }

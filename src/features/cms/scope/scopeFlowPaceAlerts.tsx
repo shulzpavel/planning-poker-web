@@ -18,11 +18,11 @@ import { useIncrementalList } from "./scopeListPaging";
 function alertGroupPanelClass(severity: ScopeFlowAlert["severity"]) {
   switch (severity) {
     case "high":
-      return "rounded-2xl border border-red/25 bg-red/[0.06] p-4 sm:p-5";
+      return "border-y border-red/25 bg-red/[0.06] p-3 sm:rounded-lg sm:border sm:p-5";
     case "medium":
-      return "rounded-2xl border border-amber/25 bg-amber/[0.06] p-4 sm:p-5";
+      return "border-y border-amber/25 bg-amber/[0.06] p-3 sm:rounded-lg sm:border sm:p-5";
     default:
-      return "rounded-2xl border border-blue/20 bg-blue/[0.05] p-4 sm:p-5";
+      return "border-y border-blue/20 bg-blue/[0.05] p-3 sm:rounded-lg sm:border sm:p-5";
   }
 }
 
@@ -61,7 +61,7 @@ function alertAccentClass(severity: ScopeFlowAlert["severity"]) {
 
 function MetaChip({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-line/60 bg-bg/80 px-2.5 py-1 text-xs text-ink3">
+    <span className="inline-flex items-center whitespace-nowrap rounded-full border border-line/60 bg-bg/80 px-2.5 py-1 text-xs text-ink3">
       {children}
     </span>
   );
@@ -69,14 +69,14 @@ function MetaChip({ children }: { children: ReactNode }) {
 
 export function JiraIssueLink({ issueKey, url }: { issueKey: string; url: string | null }) {
   if (!url) {
-    return <span className="font-mono text-sm font-semibold text-ink">{issueKey}</span>;
+    return <span className="whitespace-nowrap font-mono text-sm font-semibold text-ink">{issueKey}</span>;
   }
   return (
     <a
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1 font-mono text-sm font-semibold text-accent hover:underline"
+      className="inline-flex items-center gap-1 whitespace-nowrap font-mono text-sm font-semibold text-accent hover:underline"
       title={`Открыть ${issueKey} в Jira`}
     >
       {issueKey}
@@ -107,18 +107,20 @@ export function FlowPaceAlertCard({ alert, browseBase }: { alert: ScopeFlowAlert
   return (
     <li
       className={cn(
-        "rounded-xl border border-l-4 px-5 py-5",
+        "rounded-lg border border-l-4 px-3 py-3 sm:px-5 sm:py-5",
         alertCardClass(alert.severity),
         alertAccentClass(alert.severity),
       )}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <Badge tone={flowAlertSeverityTone(alert.severity)}>{flowAlertSeverityLabel(alert.severity)}</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+          <Badge className="shrink-0 whitespace-nowrap" tone={flowAlertSeverityTone(alert.severity)}>
+            {flowAlertSeverityLabel(alert.severity)}
+          </Badge>
           {hasIssueKey ? <JiraIssueLink issueKey={alert.issue_key} url={issueUrl} /> : null}
         </div>
         {alert.days != null ? (
-          <span className="shrink-0 rounded-full border border-line/60 bg-bg/90 px-3 py-1 text-xs font-medium tabular-nums text-ink2">
+          <span className="shrink-0 whitespace-nowrap rounded-full border border-line/60 bg-bg/90 px-3 py-1 text-xs font-medium tabular-nums text-ink2">
             {formatFlowDays(alert.days)}
           </span>
         ) : null}
@@ -341,18 +343,20 @@ export function FlowPaceDetailCard({
   return (
     <li
       className={cn(
-        "rounded-xl border border-l-4 px-5 py-5",
+        "rounded-lg border border-l-4 px-3 py-3 sm:px-5 sm:py-5",
         alertCardClass(tone),
         alertAccentClass(tone),
       )}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <Badge tone={flowAlertSeverityTone(tone)}>{badgeLabel}</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+          <Badge className="shrink-0 whitespace-nowrap" tone={flowAlertSeverityTone(tone)}>
+            {badgeLabel}
+          </Badge>
           {hasIssueKey && issueKey ? <JiraIssueLink issueKey={issueKey} url={issueUrl ?? null} /> : null}
         </div>
         {metricValue ? (
-          <span className="shrink-0 rounded-full border border-line/60 bg-bg/90 px-3 py-1 text-xs font-medium tabular-nums text-ink2">
+          <span className="shrink-0 whitespace-nowrap rounded-full border border-line/60 bg-bg/90 px-3 py-1 text-xs font-medium tabular-nums text-ink2">
             {metricValue}
           </span>
         ) : null}
