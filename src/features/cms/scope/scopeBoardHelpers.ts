@@ -6,6 +6,7 @@ import type {
   ScopeEpicReportSection,
   ScopeIntakeStatus,
   ScopeManualQuestion,
+  ScopeReleaseBucket,
   ScopeReportSectionBlock,
   ScopeResolvedQuestion,
   ScopeSectionKind,
@@ -102,10 +103,126 @@ export const IN_TEST_REPORT_SUBGROUP_LABELS: Record<InTestReportSubgroup, string
 };
 
 export function inTestReportSubgroup(issue: ScopeBoardIssue): InTestReportSubgroup {
-  const status = (issue.status || "").toLowerCase().trim();
+  const status = normalizeReportStatus(issue.status);
   if (status === "к тестированию") return "ready_for_test";
-  if (status === "к релизу") return "ready_for_release";
+  if (isReadyForReleaseStatus(status)) return "ready_for_release";
   return "testing";
+}
+
+export type InTestReleaseReportSubgroup = Exclude<InTestReportSubgroup, "ready_for_release">;
+
+export function inTestReportSubgroupForRelease(issue: ScopeBoardIssue): InTestReleaseReportSubgroup {
+  const status = normalizeReportStatus(issue.status);
+  if (status === "к тестированию") return "ready_for_test";
+  return "testing";
+}
+
+const READY_FOR_RELEASE_STATUS_NAMES = new Set([
+  "к релизу",
+  "ready for release",
+  "to release",
+  "ready to release",
+  "release ready",
+]);
+
+export function normalizeReportStatus(status?: string | null): string {
+  return (status ?? "").trim().toLocaleLowerCase("ru-RU");
+}
+
+export function isReadyForReleaseStatus(status?: string | null): boolean {
+  const normalized = normalizeReportStatus(status);
+  if (!normalized) return false;
+  if (READY_FOR_RELEASE_STATUS_NAMES.has(normalized)) return true;
+  return (
+    normalized.includes("к релиз") ||
+    normalized.includes("ready for release") ||
+    normalized.includes("ready to release") ||
+    normalized.includes("to release")
+  );
+}
+
+export function classifyReleaseReportBucket(issue: ScopeBoardIssue): ScopeReportBucket {
+  const status = normalizeReportStatus(issue.status);
+  const category = (issue.status_category || "").toLowerCase();
+  if (isReadyForReleaseStatus(status)) return "done";
+  if (category === "done" || DONE_STATUS_NAMES.has(status)) return "done";
+  if (status === "пауза" || PAUSE_STATUS_KEYWORDS.some((token) => status.includes(token))) {
+    return "open_questions";
+  }
+  if (status === "к тестированию" || status === "тестирование") return "in_test";
+  if (category === "new" || NOT_STARTED_STATUS_NAMES.has(status)) return "not_started";
+  return "in_work";
+}
+
+export function sortReleaseDoneIssues(issues: ScopeBoardIssue[]): ScopeBoardIssue[] {
+  return [...issues].sort((left, right) => {
+    const bySubgroup =
+      (releaseDoneSubgroup(left) === "ready_for_release" ? 0 : 1) -
+      (releaseDoneSubgroup(right) === "ready_for_release" ? 0 : 1);
+    if (bySubgroup !== 0) return bySubgroup;
+    const byEntered = statusEnteredTimestamp(right) - statusEnteredTimestamp(left);
+    if (byEntered !== 0) return byEntered;
+    const byPriority = jiraPriorityRank(left.priority) - jiraPriorityRank(right.priority);
+    if (byPriority !== 0) return byPriority;
+    return left.key.localeCompare(right.key);
+  });
+}
+
+export function sortInTestReportIssuesForRelease(issues: ScopeBoardIssue[]): ScopeBoardIssue[] {
+  return [...issues].sort((left, right) => {
+    const bySubgroup =
+      (inTestReportSubgroupForRelease(left) === "ready_for_test" ? 0 : 1) -
+      (inTestReportSubgroupForRelease(right) === "ready_for_test" ? 0 : 1);
+    if (bySubgroup !== 0) return bySubgroup;
+    const byPriority = jiraPriorityRank(left.priority) - jiraPriorityRank(right.priority);
+    if (byPriority !== 0) return byPriority;
+    return left.key.localeCompare(right.key);
+  });
+}
+
+function uniqueReleaseIssues(bucket: ScopeReleaseBucket): ScopeBoardIssue[] {
+  const seen = new Set<string>();
+  const merged = [
+    ...(bucket.issues ?? []),
+    ...bucket.in_work,
+    ...bucket.in_test,
+    ...bucket.done,
+    ...bucket.open_questions,
+  ];
+  return merged.filter((issue) => {
+    if (seen.has(issue.key)) return false;
+    seen.add(issue.key);
+    return true;
+  });
+}
+
+export function partitionReleaseReportBucket(
+  bucket: ScopeReleaseBucket,
+): Pick<ScopeReleaseBucket, "in_work" | "in_test" | "done" | "counts"> {
+  const in_work: ScopeBoardIssue[] = [];
+  const in_test: ScopeBoardIssue[] = [];
+  const done: ScopeBoardIssue[] = [];
+
+  for (const issue of uniqueReleaseIssues(bucket)) {
+    const column = classifyReleaseReportBucket(issue);
+    if (column === "open_questions" || column === "not_started") continue;
+    if (column === "in_work") in_work.push(issue);
+    else if (column === "in_test") in_test.push(issue);
+    else done.push(issue);
+  }
+
+  return {
+    in_work: sortIssuesByJiraPriority(in_work),
+    in_test: sortInTestReportIssuesForRelease(in_test),
+    done: sortReleaseDoneIssues(done),
+    counts: {
+      total: bucket.counts.total,
+      in_work: in_work.length,
+      in_test: in_test.length,
+      done: done.length,
+      open_questions: bucket.counts.open_questions,
+    },
+  };
 }
 
 export function sortInTestReportIssues(issues: ScopeBoardIssue[]): ScopeBoardIssue[] {
@@ -430,8 +547,7 @@ export const RELEASE_DONE_SUBGROUP_LABELS: Record<ReleaseDoneSubgroup, string> =
 };
 
 export function releaseDoneSubgroup(issue: ScopeBoardIssue): ReleaseDoneSubgroup {
-  const status = (issue.status ?? "").trim().toLocaleLowerCase("ru-RU");
-  if (status === "к релизу") return "ready_for_release";
+  if (isReadyForReleaseStatus(issue.status)) return "ready_for_release";
   return "done";
 }
 
