@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Badge, Button, Spinner, TextareaField, cn } from "../../../design-system";
 import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import type {
@@ -26,7 +26,14 @@ import {
   resolvedQuestions,
   sortDoneIssuesByRecentStatus,
   type ScopeOpenQuestion,
+  type InTestReportSubgroup,
+  type ReleaseDoneSubgroup,
   snapshotOpenQuestionStats,
+  openQuestionTrackingMeta,
+  formatQuestionReleaseTag,
+  formatDaysOpenLabel,
+  releaseDoneSubgroup,
+  RELEASE_DONE_SUBGROUP_LABELS,
 } from "./scopeBoardHelpers";
 import { useIncrementalList } from "./scopeListPaging";
 import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
@@ -122,6 +129,7 @@ export function ScopeReportSection({
         onAddQuestion={onAddQuestion}
         onResolveQuestion={onResolveQuestion}
         presentation={presentation}
+        releaseMode={releaseMode}
       />
     </div>
   );
@@ -221,19 +229,28 @@ function ReleaseReportBlocks({
       <ReleaseHeroHeader bucket={current} subtitle="Текущий релиз" />
       <div className="grid gap-3 border-t border-blue/10 p-3 sm:p-4 lg:grid-cols-3 lg:gap-4 lg:p-5">
         {REPORT_COLUMNS.map((column) => (
-          <ReportColumn
+          <CollapsibleReportColumn
             key={column.key}
-            columnKey={column.key}
             title={column.title}
             tone={column.tone}
             count={current.counts[column.key]}
-            issues={current[column.key]}
-            showTechnicalFields={showTechnicalFields}
-            hidePlanFields
-            reportComments={reportComments}
-            canManage={canManage}
-            onSaveReportComment={onSaveReportComment}
-          />
+            defaultOpen={current.counts[column.key] <= 4}
+          >
+            <ReportColumn
+              columnKey={column.key}
+              title={column.title}
+              tone={column.tone}
+              count={current.counts[column.key]}
+              issues={current[column.key]}
+              showTechnicalFields={showTechnicalFields}
+              hidePlanFields
+              reportComments={reportComments}
+              canManage={canManage}
+              onSaveReportComment={onSaveReportComment}
+              releaseReport
+              compactHeader
+            />
+          </CollapsibleReportColumn>
         ))}
       </div>
       <ReleaseCommentBlock
@@ -448,19 +465,28 @@ function ReleaseSecondarySlot({
       ) : (
       <div className="grid gap-3 p-3 sm:p-4 lg:grid-cols-3 lg:gap-4">
         {REPORT_COLUMNS.map((column) => (
-          <ReportColumn
+          <CollapsibleReportColumn
             key={column.key}
-            columnKey={column.key}
             title={column.title}
             tone={column.tone}
             count={bucket.counts[column.key]}
-            issues={bucket[column.key]}
-            showTechnicalFields={showTechnicalFields}
-            hidePlanFields
-            reportComments={reportComments}
-            canManage={canManage}
-            onSaveReportComment={onSaveReportComment}
-          />
+            defaultOpen={bucket.counts[column.key] <= 4}
+          >
+            <ReportColumn
+              columnKey={column.key}
+              title={column.title}
+              tone={column.tone}
+              count={bucket.counts[column.key]}
+              issues={bucket[column.key]}
+              showTechnicalFields={showTechnicalFields}
+              hidePlanFields
+              reportComments={reportComments}
+              canManage={canManage}
+              onSaveReportComment={onSaveReportComment}
+              releaseReport
+              compactHeader
+            />
+          </CollapsibleReportColumn>
         ))}
       </div>
       )}
@@ -868,8 +894,8 @@ function releaseProgress(bucket: ScopeReleaseBucket): {
   isInStore: boolean;
 } {
   const total = Math.max(1, bucket.counts.total);
-  const readyToReleaseCount = bucket.in_test.filter(isReadyToReleaseIssue).length;
-  const testingCount = Math.max(0, bucket.counts.in_test - readyToReleaseCount);
+  const readyToReleaseCount = bucket.done.filter(isReadyToReleaseIssue).length;
+  const testingCount = bucket.counts.in_test;
   const inWorkPct = Math.round((bucket.counts.in_work / total) * 100);
   const inTestPct = Math.round((testingCount / total) * 100);
   const readyToReleasePct = Math.round((readyToReleaseCount / total) * 100);
@@ -1014,6 +1040,7 @@ function OpenQuestionsBlock({
   onAddQuestion,
   onResolveQuestion,
   presentation = false,
+  releaseMode = false,
 }: {
   snapshot: ScopeBoardSnapshot;
   count: number;
@@ -1023,6 +1050,7 @@ function OpenQuestionsBlock({
   onAddQuestion: (text: string) => Promise<void>;
   onResolveQuestion: (questionId: string, comment: string) => Promise<void>;
   presentation?: boolean;
+  releaseMode?: boolean;
 }) {
   const needsAttention = count > 0;
   const stats = snapshotOpenQuestionStats(snapshot);
@@ -1080,9 +1108,13 @@ function OpenQuestionsBlock({
               {needsAttention ? <Badge tone="warning">Требует внимания</Badge> : null}
             </div>
             <p className="max-w-2xl text-sm text-ink2">
-              {needsAttention
-                ? "Обсудите вопрос и сразу зафиксируйте решение. Jira-вопросы сохранят ответ комментарием в Jira."
-                : "Добавьте вопрос вручную или переведите Jira-задачу в «Пауза»."}
+              {releaseMode
+                ? needsAttention
+                  ? "Вопросы команды переносятся между релизными отчётами. Закрывайте их с решением — история сохранится."
+                  : "Открытые вопросы команды подтягиваются в каждый новый релизный отчёт автоматически."
+                : needsAttention
+                  ? "Обсудите вопрос и сразу зафиксируйте решение. Jira-вопросы сохранят ответ комментарием в Jira."
+                  : "Добавьте вопрос вручную или переведите Jira-задачу в «Пауза»."}
             </p>
           </div>
           <Badge tone={needsAttention ? "warning" : "neutral"}>{count}</Badge>
@@ -1113,8 +1145,10 @@ function OpenQuestionsBlock({
                 <OpenQuestionCard
                   key={issue.id}
                   issue={issue}
+                  snapshot={snapshot}
                   canManage={canManage}
                   presentation={presentation}
+                  releaseMode={releaseMode}
                   onResolveQuestion={onResolveQuestion}
                 />
               ))}
@@ -1144,7 +1178,7 @@ function OpenQuestionsBlock({
           </div>
         )}
 
-        <ResolvedQuestionsList items={resolved} />
+        <ResolvedQuestionsList items={resolved} releaseMode={releaseMode} />
       </div>
     </div>
   );
@@ -1152,18 +1186,25 @@ function OpenQuestionsBlock({
 
 function OpenQuestionCard({
   issue,
+  snapshot,
   canManage,
   presentation = false,
+  releaseMode = false,
   onResolveQuestion,
 }: {
   issue: ScopeOpenQuestion;
+  snapshot: ScopeBoardSnapshot;
   canManage: boolean;
   presentation?: boolean;
+  releaseMode?: boolean;
   onResolveQuestion: (questionId: string, comment: string) => Promise<void>;
 }) {
   const isJira = issue.kind === "jira";
   const jiraIssue = isJira ? (issue as ScopeBoardIssue) : null;
   const commentMeta = jiraIssue ? formatCommentMeta(jiraIssue) : null;
+  const tracking = releaseMode ? openQuestionTrackingMeta(issue, snapshot) : null;
+  const openedTag = tracking ? formatQuestionReleaseTag(tracking.created_release_name, tracking.created_at) : null;
+  const daysOpenLabel = tracking ? formatDaysOpenLabel(tracking.created_at) : null;
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1193,6 +1234,8 @@ function OpenQuestionCard({
               {issue.bucket ? <Badge tone={issue.section_kind === "planned" ? "info" : "warning"}>{issue.section_name || issue.bucket}</Badge> : null}
             {jiraIssue?.priority ? <Badge tone={priorityBadgeTone(jiraIssue.priority)}>{jiraIssue.priority}</Badge> : null}
             {jiraIssue ? <span className="text-xs text-ink3">{formatScopeSp(jiraIssue.story_points)} SP</span> : null}
+            {releaseMode && openedTag ? <Badge tone="neutral">Открыт: {openedTag}</Badge> : null}
+            {releaseMode && daysOpenLabel ? <Badge tone="warning">{daysOpenLabel} в открытом</Badge> : null}
           </div>
           <p className="mt-1 text-sm text-ink2">{issue.summary}</p>
           {jiraIssue?.assignee ? <p className="mt-1 text-xs text-ink3">Owner: {jiraIssue.assignee}</p> : null}
@@ -1236,7 +1279,7 @@ function OpenQuestionCard({
   );
 }
 
-function ResolvedQuestionsList({ items }: { items: ScopeResolvedQuestion[] }) {
+function ResolvedQuestionsList({ items, releaseMode = false }: { items: ScopeResolvedQuestion[]; releaseMode?: boolean }) {
   const { visibleItems, hasMore, loadMore, loadedCount, total } = useIncrementalList(items);
   if (items.length === 0) return null;
 
@@ -1244,9 +1287,19 @@ function ResolvedQuestionsList({ items }: { items: ScopeResolvedQuestion[] }) {
     <details className="mt-4 rounded-md border border-line bg-bg px-3 py-3">
       <summary className="cursor-pointer text-sm font-semibold text-ink">
         Решённые вопросы · {items.length}
+        {releaseMode ? <span className="ml-2 text-xs font-normal text-ink3">новые сверху</span> : null}
       </summary>
       <ul className="mt-3 space-y-2">
-        {visibleItems.map((item) => (
+        {visibleItems.map((item) => {
+          const openedTag = releaseMode
+            ? formatQuestionReleaseTag(item.created_release_name, item.created_at)
+            : null;
+          const closedTag = releaseMode
+            ? formatQuestionReleaseTag(item.resolved_release_name, item.resolved_at)
+            : null;
+          const daysOpenLabel = releaseMode ? formatDaysOpenLabel(item.created_at, item.resolved_at) : null;
+
+          return (
           <li key={`${item.id}-${item.resolved_at}`} className="rounded border border-line bg-surface px-3 py-2 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               {item.url && item.key ? (
@@ -1257,12 +1310,16 @@ function ResolvedQuestionsList({ items }: { items: ScopeResolvedQuestion[] }) {
                 <span className="font-medium text-ink">Вручную</span>
               )}
               {item.bucket ? <Badge tone={item.section_kind === "planned" ? "info" : "warning"}>{item.section_name || item.bucket}</Badge> : null}
-              <span className="text-xs text-ink3">{formatResolvedDate(item.resolved_at)}</span>
+              {releaseMode && openedTag ? <Badge tone="neutral">Открыт: {openedTag}</Badge> : null}
+              {releaseMode && closedTag ? <Badge tone="success">Закрыт: {closedTag}</Badge> : null}
+              {!releaseMode ? <span className="text-xs text-ink3">{formatResolvedDate(item.resolved_at)}</span> : null}
+              {releaseMode && daysOpenLabel ? <Badge tone="info">{daysOpenLabel}</Badge> : null}
             </div>
             <p className="mt-1 text-ink2">{item.summary}</p>
             <p className="mt-1 whitespace-pre-wrap text-xs text-ink3">{item.comment}</p>
           </li>
-        ))}
+          );
+        })}
       </ul>
       <ScopeIncrementalFooter
         loadedCount={loadedCount}
@@ -1282,6 +1339,40 @@ function formatResolvedDate(value?: string): string {
   return parsed.toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
 }
 
+function CollapsibleReportColumn({
+  title,
+  tone,
+  count,
+  defaultOpen,
+  children,
+}: {
+  title: string;
+  tone: "info" | "warning" | "success";
+  count: number;
+  defaultOpen: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen || count === 0}
+      className="group overflow-hidden rounded-2xl border border-line/80 bg-bg/70"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-3 marker:content-none sm:px-4">
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-semibold text-ink">{title}</h3>
+          <Badge tone={tone}>{count}</Badge>
+        </div>
+        <span className="scope-section-header-icon inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-transform group-open:rotate-180">
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+            <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" />
+          </svg>
+        </span>
+      </summary>
+      <div className="border-t border-line/70 p-3 sm:p-4">{children}</div>
+    </details>
+  );
+}
+
 function ReportColumn({
   columnKey,
   title,
@@ -1293,6 +1384,8 @@ function ReportColumn({
   reportComments = {},
   canManage = false,
   onSaveReportComment,
+  releaseReport = false,
+  compactHeader = false,
 }: {
   columnKey: "in_work" | "in_test" | "done";
   title: string;
@@ -1304,6 +1397,8 @@ function ReportColumn({
   reportComments?: Record<string, ScopeReportComment>;
   canManage?: boolean;
   onSaveReportComment?: (issueKey: string, text: string) => Promise<void>;
+  releaseReport?: boolean;
+  compactHeader?: boolean;
 }) {
   const sortedIssues = useMemo(
     () =>
@@ -1317,29 +1412,44 @@ function ReportColumn({
   const { visibleItems, hasMore, loadMore, loadedCount, total } = useIncrementalList(sortedIssues);
 
   return (
-    <div className="bg-transparent p-0 sm:rounded-2xl sm:bg-bg/70 sm:p-4">
-      <div className="mb-3 flex items-center justify-between gap-2 sm:mb-4">
-        <h3 className="text-base font-semibold text-ink">{title}</h3>
-        <Badge tone={tone}>{count}</Badge>
-      </div>
+    <div className={compactHeader ? "bg-transparent p-0" : "bg-transparent p-0 sm:rounded-2xl sm:bg-bg/70 sm:p-4"}>
+      {!compactHeader ? (
+        <div className="mb-3 flex items-center justify-between gap-2 sm:mb-4">
+          <h3 className="text-base font-semibold text-ink">{title}</h3>
+          <Badge tone={tone}>{count}</Badge>
+        </div>
+      ) : null}
       {sortedIssues.length === 0 ? (
         <p className="rounded-lg bg-line2/40 px-3 py-4 text-center text-sm text-ink3 sm:py-5">Нет задач</p>
       ) : (
         <>
           <ul className="space-y-0 text-sm sm:space-y-3">
             {visibleItems.map((issue, index) => {
-              const subgroup = columnKey === "in_test" ? inTestReportSubgroup(issue) : null;
+              const subgroup =
+                columnKey === "in_test"
+                  ? inTestReportSubgroup(issue)
+                  : columnKey === "done" && releaseReport
+                    ? releaseDoneSubgroup(issue)
+                    : null;
               const previousSubgroup =
-                columnKey === "in_test" && index > 0 ? inTestReportSubgroup(visibleItems[index - 1]!) : null;
+                columnKey === "in_test" && index > 0
+                  ? inTestReportSubgroup(visibleItems[index - 1]!)
+                  : columnKey === "done" && releaseReport && index > 0
+                    ? releaseDoneSubgroup(visibleItems[index - 1]!)
+                    : null;
               const showSubgroupHeader = subgroup != null && subgroup !== previousSubgroup;
+              let subgroupLabel: string | null = null;
+              if (columnKey === "in_test" && subgroup) {
+                subgroupLabel = IN_TEST_REPORT_SUBGROUP_LABELS[subgroup as InTestReportSubgroup];
+              } else if (columnKey === "done" && releaseReport && subgroup) {
+                subgroupLabel = RELEASE_DONE_SUBGROUP_LABELS[subgroup as ReleaseDoneSubgroup];
+              }
 
               return (
                 <Fragment key={issue.key}>
-                  {showSubgroupHeader ? (
+                  {showSubgroupHeader && subgroupLabel ? (
                     <li className="list-none pt-1 first:pt-0">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-ink3">
-                        {IN_TEST_REPORT_SUBGROUP_LABELS[subgroup]}
-                      </p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink3">{subgroupLabel}</p>
                     </li>
                   ) : null}
                   <li className="border-t border-line bg-transparent px-0 py-3 first:border-t-0 sm:rounded-xl sm:border-t-0 sm:bg-surface/80 sm:px-3">
