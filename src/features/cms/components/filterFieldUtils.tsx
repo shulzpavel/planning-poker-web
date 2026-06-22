@@ -25,11 +25,12 @@ function flattenChildren(children: ReactNode): ReactNode[] {
 
 /** Inject compact field props into TextField / DropdownField (incl. fragment groups). */
 export function compactFilterFields(children: ReactNode): ReactNode {
-  return flattenChildren(children).map((child) => {
-    if (!isValidElement(child)) return child;
-    if (child.type === TextField || child.type === DropdownField) {
-      return cloneElement(child as ReactElement<CompactFieldProps>, filterFieldProps);
-    }
-    return child;
+  return flattenChildren(children).map((child, index) => {
+    const key = isValidElement(child) && child.key != null ? child.key : `filter-field-${index}`;
+    const node =
+      isValidElement(child) && (child.type === TextField || child.type === DropdownField)
+        ? cloneElement(child as ReactElement<CompactFieldProps>, filterFieldProps)
+        : child;
+    return <Fragment key={key}>{node}</Fragment>;
   });
 }
