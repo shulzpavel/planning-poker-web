@@ -99,24 +99,39 @@ interface UseSessionReturn {
   error: string | null;
 }
 
+const SESSION_EXPIRED_MESSAGE = "Сессия истекла. Откройте ссылку заново.";
+
 export function useSession(token: string): UseSessionReturn {
   const pidKey = `pp_pid_${token}`;
   const { participantId, persistParticipantId, clearParticipantId } =
     useStoredParticipantId(pidKey);
   const [state, setState] = useState<WebSessionState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [realtimeEnabled, setRealtimeEnabled] = useState(true);
 
   const phase: Phase = participantId === null ? "joining" : (state?.phase ?? "waiting");
 
+  const markSessionExpired = useCallback(() => {
+    setRealtimeEnabled(false);
+    clearParticipantId();
+    setState(null);
+    setError(SESSION_EXPIRED_MESSAGE);
+  }, [clearParticipantId]);
+
   const refreshState = useCallback(async () => {
+    if (!realtimeEnabled) return;
     try {
       const resp = await fetch(apiUrl(`/web/state/${encodeURIComponent(token)}`));
+      if (resp.status === 404) {
+        markSessionExpired();
+        return;
+      }
       if (!resp.ok) return;
       setState((await resp.json()) as WebSessionState);
     } catch {
       // WebSocket reconnect will keep retrying; this is only catch-up.
     }
-  }, [token]);
+  }, [markSessionExpired, realtimeEnabled, token]);
 
   const handleMessage = useCallback((msg: Record<string, unknown>) => {
     if (msg.type === "session_state") {
@@ -166,6 +181,7 @@ export function useSession(token: string): UseSessionReturn {
   }, []);
 
   useRealtimeChannel({
+    enabled: realtimeEnabled,
     connectWhenJoined: true,
     participantId,
     buildUrl: () => wsUrl(token),
@@ -174,9 +190,7 @@ export function useSession(token: string): UseSessionReturn {
     resetBackoffOnTypes: ["session_state"],
     onClose: (ev) => {
       if (ev.code !== 4004) return false;
-      clearParticipantId();
-      setState(null);
-      setError("Сессия истекла. Откройте ссылку заново.");
+      markSessionExpired();
       return true;
     },
   });
@@ -234,14 +248,13 @@ export function useSession(token: string): UseSessionReturn {
         const data = await resp.json().catch(() => ({}));
         setError((data as { detail?: string }).detail ?? "Vote failed");
         if (resp.status === 403 || resp.status === 404) {
-          clearParticipantId();
-          setState(null);
+          markSessionExpired();
         }
         return false;
       }
       return true;
     },
-    [token, participantId, clearParticipantId]
+    [markSessionExpired, participantId, token]
   );
 
   return { state, phase, participantId, join, vote, error };
