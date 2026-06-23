@@ -88,21 +88,18 @@ export function useRealtimeChannel({
   const reconnectDelay = useRef(1000);
   const unmounted = useRef(false);
 
-  const handleMessage = useCallback(
-    (raw: string) => {
-      try {
-        const msg = JSON.parse(raw) as Record<string, unknown>;
-        if (msg.type === "ping") return;
-        onMessage(msg);
-        if (resetBackoffOnTypes?.includes(String(msg.type))) {
-          reconnectDelay.current = 1000;
-        }
-      } catch {
-        // ignore parse errors
-      }
-    },
-    [onMessage, resetBackoffOnTypes],
-  );
+  // Callers often pass inline lambdas (buildUrl/onClose). Keep them in refs so
+  // parent re-renders do not tear down an open socket and reconnect in a loop.
+  const buildUrlRef = useRef(buildUrl);
+  const onMessageRef = useRef(onMessage);
+  const refreshStateRef = useRef(refreshState);
+  const onCloseRef = useRef(onClose);
+  const resetBackoffOnTypesRef = useRef(resetBackoffOnTypes);
+  buildUrlRef.current = buildUrl;
+  onMessageRef.current = onMessage;
+  refreshStateRef.current = refreshState;
+  onCloseRef.current = onClose;
+  resetBackoffOnTypesRef.current = resetBackoffOnTypes;
 
   const resetBackoff = useCallback(() => {
     reconnectDelay.current = 1000;
@@ -118,21 +115,30 @@ export function useRealtimeChannel({
       wsRef.current = null;
     }
 
-    const ws = new WebSocket(buildUrl());
+    const ws = new WebSocket(buildUrlRef.current());
     wsRef.current = ws;
 
     ws.onopen = () => {
       resetBackoff();
-      void refreshState?.();
+      void refreshStateRef.current?.();
     };
 
     ws.onmessage = (ev) => {
-      handleMessage(ev.data as string);
+      try {
+        const msg = JSON.parse(ev.data as string) as Record<string, unknown>;
+        if (msg.type === "ping") return;
+        onMessageRef.current(msg);
+        if (resetBackoffOnTypesRef.current?.includes(String(msg.type))) {
+          reconnectDelay.current = 1000;
+        }
+      } catch {
+        // ignore parse errors
+      }
     };
 
     ws.onclose = (ev) => {
       if (unmounted.current) return;
-      if (onClose?.(ev)) return;
+      if (onCloseRef.current?.(ev)) return;
       const delay = reconnectDelay.current;
       reconnectDelay.current = Math.min(delay * 2, 30000);
       reconnectTimer.current = setTimeout(connect, delay);
@@ -141,16 +147,7 @@ export function useRealtimeChannel({
     ws.onerror = () => {
       ws.close();
     };
-  }, [
-    buildUrl,
-    connectWhenJoined,
-    enabled,
-    handleMessage,
-    onClose,
-    participantId,
-    refreshState,
-    resetBackoff,
-  ]);
+  }, [connectWhenJoined, enabled, participantId, resetBackoff]);
 
   const reconnectNow = useCallback(() => {
     if (!enabled || unmounted.current) return;
