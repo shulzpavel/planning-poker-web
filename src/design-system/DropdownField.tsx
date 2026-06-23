@@ -26,6 +26,8 @@ interface DropdownFieldProps {
   searchable?: boolean;
   className?: string;
   id?: string;
+  triggerClassName?: string;
+  chevronClassName?: string;
   "aria-label"?: string;
   reserveMessageSpace?: boolean;
 }
@@ -132,6 +134,8 @@ export function DropdownField({
   searchable,
   className,
   id,
+  triggerClassName,
+  chevronClassName,
   "aria-label": ariaLabel,
   reserveMessageSpace = true,
 }: DropdownFieldProps) {
@@ -311,12 +315,18 @@ export function DropdownField({
           "focus-visible:border-blue focus-visible:ring-2 focus-visible:ring-blue/20 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
           "disabled:cursor-not-allowed disabled:bg-line2 disabled:text-ink4 disabled:opacity-60 sm:min-h-10 sm:text-sm",
           error ? "border-red focus-visible:border-red focus-visible:ring-red/20" : undefined,
+          triggerClassName,
         )}
       >
         <span className={cn("min-w-0 truncate", selectedOption ? "text-ink" : "text-ink4")}>
           {selectedOption?.label ?? placeholder}
         </span>
-        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink3 transition-colors group-hover:border-blue/40 group-hover:text-blue">
+        <span
+          className={cn(
+            "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink3 transition-colors group-hover:border-blue/40 group-hover:text-blue",
+            chevronClassName,
+          )}
+        >
           <ChevronDownIcon className={cn("h-4 w-4 transition-transform", open ? "rotate-180" : undefined)} />
         </span>
       </button>

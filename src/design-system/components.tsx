@@ -227,7 +227,7 @@ export function FieldLabel({ children, htmlFor }: { children: ReactNode; htmlFor
   );
 }
 
-const inputClassName =
+const baseInputClassName =
   "min-h-11 w-full scroll-mt-24 scroll-mb-40 rounded-lg border border-line bg-surface px-3 py-2.5 text-base text-ink placeholder-ink4 shadow-none outline-none transition-[border-color,box-shadow] duration-150 focus:border-blue focus:ring-2 focus:ring-blue/20 disabled:cursor-not-allowed disabled:bg-line2 disabled:text-ink4 sm:min-h-10 sm:text-sm";
 
 function handleMobileFieldFocus<T extends HTMLElement>(
@@ -242,6 +242,8 @@ type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: ReactNode;
   hint?: ReactNode;
   error?: string | null;
+  /** Extra classes on the `<input>` element (wrapper uses `className`). */
+  inputClassName?: string;
   /** When true (default), reserve a line of vertical space for the
    *  hint/error message even when it's empty. Prevents the form CTA
    *  from jumping the moment validation surfaces. Set to `false` on
@@ -250,7 +252,7 @@ type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 export const TextField = forwardRef(function TextField(
-  { label, hint, error, className, id, reserveMessageSpace = true, onFocus, ...props }: TextFieldProps,
+  { label, hint, error, className, inputClassName, id, reserveMessageSpace = true, onFocus, ...props }: TextFieldProps,
   ref: Ref<HTMLInputElement>,
 ) {
   // Inline `useId` works inside forwardRef just like in regular function
@@ -265,7 +267,7 @@ export const TextField = forwardRef(function TextField(
       <input
         ref={ref}
         id={inputId}
-        className={cn(inputClassName, error ? "border-red focus:border-red focus:ring-red/20" : "")}
+        className={cn(baseInputClassName, inputClassName, error ? "border-red focus:border-red focus:ring-red/20" : "")}
         aria-invalid={Boolean(error) || undefined}
         aria-describedby={hint || error ? descriptionId : undefined}
         onFocus={(event) => handleMobileFieldFocus(event, onFocus)}
@@ -333,7 +335,7 @@ export function TextareaField({
       {label ? <FieldLabel htmlFor={inputId}>{label}</FieldLabel> : null}
       <textarea
         id={inputId}
-        className={cn(inputClassName, "min-h-24 resize-y", error ? "border-red focus:border-red focus:ring-red/20" : "")}
+        className={cn(baseInputClassName, "min-h-24 resize-y", error ? "border-red focus:border-red focus:ring-red/20" : "")}
         aria-invalid={Boolean(error) || undefined}
         aria-describedby={hint || error ? descriptionId : undefined}
         onFocus={(event) => handleMobileFieldFocus(event, onFocus)}

@@ -19,6 +19,7 @@ const OverviewPage = lazy(() => import("../overview/OverviewPage"));
 const PlannerShell = lazy(() => import("../planner/PlannerShell"));
 const ScopeBoardShell = lazy(() => import("../scope/ScopeBoardShell"));
 const RetroShell = lazy(() => import("../retro/RetroShell"));
+const StandupsShell = lazy(() => import("../standups/StandupsShell"));
 const SessionsPage = lazy(() => import("../sessions/SessionsPage"));
 const UsersPage = lazy(() => import("../users/UsersPage"));
 
@@ -70,6 +71,7 @@ export default function CmsShell({
   const canManageSessions = hasPermission(principal, CMS_PERMISSIONS.appSessionsManage);
   const canManageRetro = hasPermission(principal, CMS_PERMISSIONS.retroManage);
   const canAnalyzeRetro = hasPermission(principal, CMS_PERMISSIONS.retroAnalyze);
+  const canManageStandups = hasPermission(principal, CMS_PERMISSIONS.standupsManage);
   const canManageScope = hasPermission(principal, CMS_PERMISSIONS.planner);
 
   const cmsTransitionKey = useMemo(
@@ -283,6 +285,12 @@ export default function CmsShell({
                       canAnalyze={canAnalyzeRetro}
                     />
                   }
+                />
+              ) : null}
+              {hasPermission(principal, CMS_PERMISSIONS.standups) ? (
+                <Route
+                  path="standups/*"
+                  element={<StandupsShell principal={principal} canManage={canManageStandups} />}
                 />
               ) : null}
               {/* Deprecated routes from the Telegram-era console: route any

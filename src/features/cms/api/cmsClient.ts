@@ -11,6 +11,7 @@ import type {
   CmsTeam,
   JiraPreview,
   TaskItem,
+  TeamRef,
   ThemeMode,
 } from "./cmsTypes";
 import type { RetroAiSummary, RetroLiveState } from "../retro/retroLogic";
@@ -364,6 +365,110 @@ export const cmsPlannerApi = {
     cmsFetch<{ ok: boolean; id: number }>(`/sprint-plans/${planId}`, {
       method: "DELETE",
     }),
+};
+
+export type StandupRole = "front" | "back" | "qa" | "other";
+export type StandupTrack = "yesterday" | "today" | "blocker";
+export type StandupItemStatus = "in_progress" | "done" | "blocked" | "waiting";
+export type StandupStatus = "draft" | "published";
+
+export interface StandupRosterMember {
+  id: string;
+  name: string;
+  role: StandupRole;
+  active: boolean;
+}
+
+export interface StandupWorkItem {
+  id: string;
+  task_title: string;
+  jira_key?: string;
+  track: StandupTrack;
+  due_date?: string | null;
+  status?: StandupItemStatus | null;
+  comment?: string;
+}
+
+export interface StandupParticipant {
+  id: string;
+  name: string;
+  role: StandupRole;
+  present: boolean;
+  items: StandupWorkItem[];
+}
+
+export interface StandupPayload {
+  facilitator?: string;
+  duration_minutes?: number | null;
+  notes?: string;
+  participants: StandupParticipant[];
+}
+
+export interface StandupRecord {
+  id: number;
+  team_id: number | null;
+  team?: TeamRef | null;
+  meeting_date: string;
+  status: StandupStatus;
+  payload: StandupPayload;
+  created_by?: number | null;
+  published_by?: number | null;
+  published_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StandupRosterRecord {
+  team_id: number;
+  members: StandupRosterMember[];
+  updated_by?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export const cmsStandupsApi = {
+  list: (params: CmsListTeamParams & { from?: string; to?: string; sort?: string } = {}, cursor: string | null = null) =>
+    cmsList<StandupRecord>("/standups", params as Record<string, ParamValue>, cursor),
+  get: (standupId: number) => cmsFetch<StandupRecord>(`/standups/${standupId}`),
+  create: (body: { team_id?: number | null; meeting_date: string; payload?: StandupPayload }) =>
+    cmsFetch<StandupRecord>("/standups", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  update: (standupId: number, body: { payload: StandupPayload; status?: StandupStatus }) =>
+    cmsFetch<StandupRecord>(`/standups/${standupId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  publish: (standupId: number) =>
+    cmsFetch<StandupRecord>(`/standups/${standupId}/publish`, {
+      method: "POST",
+    }),
+  syncRoster: (standupId: number) =>
+    cmsFetch<StandupRecord>(`/standups/${standupId}/sync-roster`, {
+      method: "POST",
+    }),
+  delete: (standupId: number) =>
+    cmsFetch<{ ok: boolean; id: number }>(`/standups/${standupId}`, {
+      method: "DELETE",
+    }),
+  getRoster: (teamId: number) => cmsFetch<StandupRosterRecord>(`/standup-rosters/${teamId}`),
+  saveRoster: (teamId: number, members: StandupRosterMember[]) =>
+    cmsFetch<StandupRosterRecord>(`/standup-rosters/${teamId}`, {
+      method: "PUT",
+      body: JSON.stringify({ members }),
+    }),
+  lookupJiraIssue: (issueKey: string) =>
+    cmsFetch<{ key: string; summary: string; url: string }>(
+      `/standups/jira-issues/${encodeURIComponent(issueKey.trim())}`,
+    ),
+  lookupLocalDueHint: (issueKey: string, params: { team_id: number; before?: string }) => {
+    const query = new URLSearchParams({ team_id: String(params.team_id) });
+    if (params.before) query.set("before", params.before);
+    return cmsFetch<{ jira_key: string; due_date?: string | null; meeting_date?: string | null }>(
+      `/standups/local-due-hints/${encodeURIComponent(issueKey.trim())}?${query.toString()}`,
+    );
+  },
 };
 
 export type ScopeIntakeStatus = "ok" | "warning" | "stop";

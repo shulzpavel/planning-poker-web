@@ -9,7 +9,8 @@ export type TabKey =
   | "access"
   | "planner"
   | "scope"
-  | "retro";
+  | "retro"
+  | "standups";
 
 export type ThemeMode = "dark" | "light" | "system";
 

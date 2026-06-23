@@ -259,6 +259,8 @@ export function DataTable({
     />
   );
 
+  const showEmpty = Boolean(empty) && loadedCount === 0 && !showInitialSkeleton;
+
   if (mobileCards) {
     return (
       <>
@@ -268,7 +270,7 @@ export function DataTable({
             <div className="px-3 sm:px-4">
               <ListSkeleton rows={6} />
             </div>
-          ) : empty ? (
+          ) : showEmpty ? (
             <div className="px-3 sm:px-4">{empty}</div>
           ) : (
             <div className="space-y-2">
@@ -285,8 +287,8 @@ export function DataTable({
               <ListSkeleton rows={6} />
             </div>
           ) : null}
-          {!showInitialSkeleton && empty ? <div className="p-3">{empty}</div> : null}
-          {!showInitialSkeleton ? (
+          {showEmpty ? <div className="p-3">{empty}</div> : null}
+          {!showInitialSkeleton && !showEmpty ? (
             <table className="w-full table-auto text-sm">
               <thead className="bg-line2 text-xs uppercase text-ink3">
                 <tr>
@@ -316,8 +318,8 @@ export function DataTable({
           <ListSkeleton rows={6} />
         </div>
       ) : null}
-      {!showInitialSkeleton && empty ? <div className="p-3">{empty}</div> : null}
-      {!showInitialSkeleton ? (
+      {showEmpty ? <div className="p-3">{empty}</div> : null}
+      {!showInitialSkeleton && !showEmpty ? (
         <div className="block">
           <table className="w-full table-auto text-sm">
             <thead className="bg-line2 text-xs uppercase text-ink3">
