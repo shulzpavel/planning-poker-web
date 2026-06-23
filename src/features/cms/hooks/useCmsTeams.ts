@@ -71,6 +71,11 @@ async function fetchTeamsForPrincipal(principal: CmsPrincipal): Promise<CmsTeam[
   return inflightTeamsRequest;
 }
 
+export function invalidateCmsTeamsCache(): void {
+  sharedTeamsCache = null;
+  inflightTeamsRequest = null;
+}
+
 export function useCmsTeams(principal: CmsPrincipal | null) {
   const principalRef = useRef(principal);
   principalRef.current = principal;

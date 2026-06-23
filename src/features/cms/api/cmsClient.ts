@@ -331,6 +331,21 @@ export interface CmsListTeamParams {
   sort?: "team_then_updated";
 }
 
+export interface CmsTeamDeleteResult {
+  id: number;
+  slug: string;
+  name: string;
+  detached: {
+    sessions: number;
+    sprint_plans: number;
+    retros: number;
+    scope_boards: number;
+    standups_deleted: number;
+    standup_rosters_deleted: number;
+    admin_links_removed: number;
+  };
+}
+
 export const cmsTeamsApi = {
   list: () => cmsFetch<{ items: CmsTeam[] }>("/teams"),
   create: (body: { slug?: string; name: string; description?: string }) =>
@@ -342,6 +357,10 @@ export const cmsTeamsApi = {
     cmsFetch<CmsTeam>(`/teams/${teamId}`, {
       method: "PATCH",
       body: JSON.stringify(body),
+    }),
+  delete: (teamId: number) =>
+    cmsFetch<CmsTeamDeleteResult>(`/teams/${teamId}`, {
+      method: "DELETE",
     }),
 };
 

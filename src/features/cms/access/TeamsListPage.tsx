@@ -3,7 +3,21 @@ import { cmsTeamsApi } from "../api/cmsClient";
 import type { CmsTeam } from "../api/cmsTypes";
 import { InlineError, SectionHeader, Skeleton } from "../components/CmsPrimitives";
 import { Badge, Button, Surface, TextField } from "../../../design-system";
+import { invalidateCmsTeamsCache } from "../hooks/useCmsTeams";
 import { useAccessContext } from "./AccessShell";
+
+function deleteTeamHint(team: CmsTeam): string {
+  if (team.slug === "default") {
+    return "Системную команду default удалить нельзя.";
+  }
+  return [
+    `Удалить команду «${team.name}»?`,
+    "Сессии, scope boards, ретро и планы спринта станут legacy-записями без команды (видны всем админам).",
+    "Standup-записи и roster этой команды будут удалены.",
+    "Привязки админов к команде снимутся.",
+    "Нельзя удалить команду с активными сессиями или live-ретро.",
+  ].join("\n\n");
+}
 
 export default function TeamsListPage() {
   const { canManage, isSuperuser } = useAccessContext();
@@ -14,6 +28,7 @@ export default function TeamsListPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -45,11 +60,40 @@ export default function TeamsListPage() {
       setSlug("");
       setName("");
       setDescription("");
+      invalidateCmsTeamsCache();
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось создать команду");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function deactivateTeam(team: CmsTeam) {
+    if (!canManage || !isSuperuser || team.slug === "default") return;
+    setError(null);
+    try {
+      await cmsTeamsApi.update(team.id, { is_active: false });
+      invalidateCmsTeamsCache();
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось архивировать команду");
+    }
+  }
+
+  async function deleteTeam(team: CmsTeam) {
+    if (!canManage || !isSuperuser || team.slug === "default") return;
+    if (!window.confirm(deleteTeamHint(team))) return;
+    setDeletingId(team.id);
+    setError(null);
+    try {
+      await cmsTeamsApi.delete(team.id);
+      invalidateCmsTeamsCache();
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось удалить команду");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -94,12 +138,33 @@ export default function TeamsListPage() {
       ) : (
         <div className="space-y-2">
           {teams.map((team) => (
-            <Surface key={team.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
-              <div>
+            <Surface key={team.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+              <div className="min-w-0">
                 <p className="font-semibold text-ink">{team.name}</p>
                 <p className="text-xs text-ink3">{team.slug}</p>
+                {team.description ? <p className="mt-1 text-sm text-ink3">{team.description}</p> : null}
               </div>
-              <Badge tone={team.is_active ? "success" : "neutral"}>{team.is_active ? "активна" : "неактивна"}</Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone={team.is_active ? "success" : "neutral"}>{team.is_active ? "активна" : "архив"}</Badge>
+                {canManage && team.slug !== "default" ? (
+                  <>
+                    {team.is_active ? (
+                      <Button intent="neutral" size="sm" onClick={() => void deactivateTeam(team)}>
+                        Архивировать
+                      </Button>
+                    ) : null}
+                    <Button
+                      intent="danger"
+                      size="sm"
+                      loading={deletingId === team.id}
+                      disabled={deletingId !== null && deletingId !== team.id}
+                      onClick={() => void deleteTeam(team)}
+                    >
+                      Удалить
+                    </Button>
+                  </>
+                ) : null}
+              </div>
             </Surface>
           ))}
           {teams.length === 0 ? <p className="text-sm text-ink3">Команд пока нет.</p> : null}
