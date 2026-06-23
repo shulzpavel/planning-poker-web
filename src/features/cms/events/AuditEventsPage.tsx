@@ -15,36 +15,12 @@ import {
 import { useCmsList } from "../hooks/useCmsList";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { formatDate } from "../../../shared/lib/format";
-
-const ACTION_LABELS: Record<string, string> = {
-  "cms.login": "Вход в CMS",
-  "cms.logout": "Выход из CMS",
-  "cms.session.close": "Сессия закрыта",
-  "cms.session.delete": "Сессия удалена",
-  "cms.token.revoke": "Invite-ссылка отозвана",
-  "cms.task.create": "Задача создана",
-  "cms.task.bulk_create": "Задачи добавлены пачкой",
-  "cms.task.update": "Задача изменена",
-  "cms.task.delete": "Задача удалена",
-  "cms.task.move": "Задача перемещена",
-  "cms.task.reorder": "Очередь переставлена",
-  "cms.task.jira_import": "Импорт из Jira",
-  "cms.access.role.create": "Создана роль",
-  "cms.access.role.update": "Роль обновлена",
-  "cms.access.admin.create": "Создан CMS-пользователь",
-  "cms.access.admin.update": "CMS-пользователь обновлён",
-  "app.session.start": "Старт раунда",
-  "app.session.reveal": "Reveal",
-  "app.session.next": "Следующая задача",
-  "app.session.skip": "Пропуск задачи",
-  "app.session.finish": "Сессия завершена",
-  "app.session.final_estimate": "Финальная оценка SP",
-  "app.session.invite": "Сгенерирована invite-ссылка",
-};
-
-function labelForAction(action: string): string {
-  return ACTION_LABELS[action] ?? action;
-}
+import {
+  extractAuditEntityLinks,
+  formatAuditPayloadValue,
+  labelForAction,
+  labelForPayloadField,
+} from "./auditEventLabels";
 
 function localDateToIso(value: string, boundary: "start" | "end"): string | undefined {
   if (!value) return undefined;
@@ -82,67 +58,6 @@ function normalizePayload(payload: unknown): Record<string, unknown> | null {
   return null;
 }
 
-function formatPayloadValue(value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return JSON.stringify(value);
-}
-
-interface EntityLink {
-  label: string;
-  to: string;
-}
-
-/**
- * Walk a payload and emit "open the related entity" links so each audit row
- * has at least one concrete next step instead of being a read-only dead-end.
- *
- * Closes UX audit risk: "Audit event row — нет перехода к сущности".
- *
- * Currently understood keys (intentionally narrow — we only link when the
- * destination page would actually surface the entity):
- *   - session_id / chat_id  → /cms/sessions
- *   - user / username       → /cms/access/users (search) — admin entities
- *   - admin                 → same as user
- *
- * Unknown keys are ignored so the table stays uncluttered when the payload
- * is opaque (e.g. cms.login).
- */
-function extractEntityLinks(payload: Record<string, unknown> | null): EntityLink[] {
-  if (!payload) return [];
-  const links: EntityLink[] = [];
-  const seen = new Set<string>();
-  const push = (link: EntityLink) => {
-    const key = `${link.label}::${link.to}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    links.push(link);
-  };
-
-  const sessionId =
-    typeof payload.session_id === "number" || typeof payload.session_id === "string"
-      ? String(payload.session_id)
-      : typeof payload.chat_id === "number" || typeof payload.chat_id === "string"
-        ? String(payload.chat_id)
-        : null;
-  if (sessionId) {
-    push({ label: `Открыть сессию ${sessionId}`, to: `/cms/sessions?q=${encodeURIComponent(sessionId)}` });
-  }
-
-  const username =
-    typeof payload.username === "string" && payload.username
-      ? payload.username
-      : typeof payload.admin === "string" && payload.admin
-        ? payload.admin
-        : null;
-  if (username) {
-    push({ label: `Открыть пользователя ${username}`, to: `/cms/access/users?q=${encodeURIComponent(username)}` });
-  }
-
-  return links;
-}
-
 function PayloadList({ payload }: { payload: unknown }) {
   const normalized = normalizePayload(payload);
   if (!normalized || Object.keys(normalized).length === 0) {
@@ -153,8 +68,8 @@ function PayloadList({ payload }: { payload: unknown }) {
     <ul className="space-y-0.5 text-xs">
       {entries.map(([key, value]) => (
         <li key={key} className="flex gap-1.5">
-          <span className="font-semibold text-ink3">{key}:</span>
-          <span className="min-w-0 break-words text-ink2">{formatPayloadValue(value)}</span>
+          <span className="font-semibold text-ink3">{labelForPayloadField(key)}:</span>
+          <span className="min-w-0 break-words text-ink2">{formatAuditPayloadValue(key, value)}</span>
         </li>
       ))}
     </ul>
@@ -314,7 +229,7 @@ export default function AuditEventsPage() {
           ) : null
         }
         mobileCards={list.items.map((item) => {
-          const entityLinks = extractEntityLinks(normalizePayload(item.payload));
+          const entityLinks = extractAuditEntityLinks(normalizePayload(item.payload));
           return (
             <MobileRecordCard
               key={item.id}
@@ -364,7 +279,7 @@ export default function AuditEventsPage() {
         })}
       >
         {list.items.map((item) => {
-          const entityLinks = extractEntityLinks(normalizePayload(item.payload));
+          const entityLinks = extractAuditEntityLinks(normalizePayload(item.payload));
           return (
             <tr key={item.id} className="border-t border-line align-top">
               <td className="px-3 py-2">

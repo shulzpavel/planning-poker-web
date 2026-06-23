@@ -21,6 +21,7 @@ import { useAccessContext } from "./AccessShell";
 import { RolePicker } from "./parts/RolePicker";
 import { TeamPicker } from "./parts/TeamPicker";
 import { formatRelativeTime } from "./parts/helpers";
+import { labelForAction } from "../events/auditEventLabels";
 import { validateCreateAdminInput, ADMIN_PASSWORD_MIN_LENGTH } from "./accessValidation";
 
 const ADMIN_FALLBACK_PAGE_LIMIT = 10;
@@ -692,7 +693,10 @@ function RecentActionsPanel({ username }: RecentActionsPanelProps) {
           {items.map((event) => (
             <li key={event.id} className="rounded-md border border-line bg-canvas/40 px-2.5 py-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <code className="font-mono text-xs text-ink2">{event.action}</code>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-ink">{labelForAction(event.action)}</p>
+                  <p className="font-mono text-[10px] text-ink4">{event.action}</p>
+                </div>
                 <Status active={event.status === "ok"} label={event.status === "ok" ? "успех" : "ошибка"} />
               </div>
               <p className="mt-1 text-xs text-ink3">{formatRelativeTime(event.ts)}</p>
