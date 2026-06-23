@@ -44,6 +44,7 @@ import {
 import { useIncrementalList } from "./scopeListPaging";
 import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
 import { PlanFieldBadges } from "./scopePlanInsights";
+import { scopeIssueTypeTone } from "./scopeIssueTypeTone";
 import {
   RANKED_DROP_ZONE_ID,
   WAREHOUSE_DROP_ZONE_ID,
@@ -762,21 +763,13 @@ function QueueIssueSpBadge({ storyPoints }: { storyPoints: number | null | undef
   );
 }
 
-function queueIssueTypeTone(issue: ScopeBoardIssue): "story" | "bug" | "epic" | "task" {
-  const type = (issue.issue_type || "").trim().toLowerCase();
-  if (type === "story" || type === "user story" || type === "история") return "story";
-  if (type === "bug" || type === "баг" || type === "defect" || type === "ошибка") return "bug";
-  if (type === "epic" || type === "эпик") return "epic";
-  return "task";
-}
-
 function queueIssueToneClasses(issue: ScopeBoardIssue): {
   rail: string;
   index: string;
   grooming: string;
   accent: string;
 } {
-  const tone = queueIssueTypeTone(issue);
+  const tone = scopeIssueTypeTone(issue);
   if (tone === "story") {
     return {
       rail: "bg-green/70",
