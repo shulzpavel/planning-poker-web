@@ -81,6 +81,18 @@ export default function TeamsListPage() {
     }
   }
 
+  async function activateTeam(team: CmsTeam) {
+    if (!canManage || !isSuperuser) return;
+    setError(null);
+    try {
+      await cmsTeamsApi.update(team.id, { is_active: true });
+      invalidateCmsTeamsCache();
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось разархивировать команду");
+    }
+  }
+
   async function deleteTeam(team: CmsTeam) {
     if (!canManage || !isSuperuser || team.slug === "default") return;
     if (!window.confirm(deleteTeamHint(team))) return;
@@ -152,7 +164,11 @@ export default function TeamsListPage() {
                       <Button intent="neutral" size="sm" onClick={() => void deactivateTeam(team)}>
                         Архивировать
                       </Button>
-                    ) : null}
+                    ) : (
+                      <Button intent="success" size="sm" onClick={() => void activateTeam(team)}>
+                        Разархивировать
+                      </Button>
+                    )}
                     <Button
                       intent="danger"
                       size="sm"
