@@ -411,12 +411,46 @@ export interface StandupRecord {
   meeting_date: string;
   status: StandupStatus;
   payload: StandupPayload;
+  ai_summary?: StandupAiSummary | null;
   created_by?: number | null;
   published_by?: number | null;
   published_at?: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export interface StandupAiBlocker {
+  person: string;
+  text: string;
+  severity: "low" | "medium" | "high";
+}
+
+export interface StandupAiInProgress {
+  person: string;
+  tasks: string[];
+}
+
+export interface StandupAiSummary {
+  summary: string;
+  changed?: string[];
+  unchanged?: string[];
+  watch?: string[];
+  done: string[];
+  in_progress: StandupAiInProgress[];
+  blockers: StandupAiBlocker[];
+  risks: string[];
+  focus: string[];
+  generated_at?: string;
+  source?: string;
+  telegram_sent_at?: string | null;
+}
+
+export type StandupAnalyzeResult = {
+  ai_summary: StandupAiSummary;
+  cached?: boolean;
+};
+
+export type StandupAnalyzeStartResponse = StandupAnalyzeResult | AiJobResponse<StandupAnalyzeResult>;
 
 export interface StandupRosterRecord {
   team_id: number;
@@ -469,6 +503,20 @@ export const cmsStandupsApi = {
       `/standups/local-due-hints/${encodeURIComponent(issueKey.trim())}?${query.toString()}`,
     );
   },
+  analyze: (standupId: number, init?: { signal?: AbortSignal }) =>
+    cmsFetch<StandupAnalyzeResult>(`/standups/${standupId}/analyze`, {
+      method: "POST",
+      ...init,
+    }),
+  startAnalyze: (standupId: number, force = false) =>
+    cmsFetch<StandupAnalyzeStartResponse>(
+      `/standups/${standupId}/analyze?async=1${force ? "&force=1" : ""}`,
+      { method: "POST" },
+    ),
+  getAnalyzeJob: (standupId: number, jobId: string) =>
+    cmsFetch<AiJobResponse<StandupAnalyzeResult>>(
+      `/standups/${standupId}/analyze/jobs/${encodeURIComponent(jobId)}`,
+    ),
 };
 
 export type ScopeIntakeStatus = "ok" | "warning" | "stop";
