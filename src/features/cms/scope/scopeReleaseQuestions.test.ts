@@ -47,6 +47,35 @@ describe("release open question helpers", () => {
     expect(isReadyForReleaseStatus("Тестирование")).toBe(false);
   });
 
+  it("partitions backlog and todo issues into the to_triage column", () => {
+    const bucket: ScopeReleaseBucket = {
+      slot: "current",
+      label: "0.692",
+      jql: "project = AIG2 AND fixVersion = 0.692",
+      project_key: "AIG2",
+      version_id: "1",
+      version_name: "0.692",
+      issues: [
+        { key: "AIG2-1", summary: "Backlog", url: "", story_points: 1, status: "Backlog" },
+        { key: "AIG2-2", summary: "Todo", url: "", story_points: 1, status: "К выполнению" },
+        { key: "AIG2-3", summary: "Dev", url: "", story_points: 1, status: "В работе" },
+        { key: "AIG2-4", summary: "Test", url: "", story_points: 1, status: "К тестированию" },
+      ],
+      counts: { total: 4, in_work: 1, in_test: 1, done: 0, open_questions: 0 },
+      by_status: {},
+      in_work: [],
+      in_test: [],
+      done: [],
+      open_questions: [],
+    };
+
+    const columns = partitionReleaseReportBucket(bucket);
+    expect(columns.to_triage.map((issue) => issue.key)).toEqual(["AIG2-1", "AIG2-2"]);
+    expect(columns.in_work.map((issue) => issue.key)).toEqual(["AIG2-3"]);
+    expect(columns.in_test.map((issue) => issue.key)).toEqual(["AIG2-4"]);
+    expect(columns.counts.to_triage).toBe(2);
+  });
+
   it("moves ready-for-release issues from in_test into done partition", () => {
     const bucket: ScopeReleaseBucket = {
       slot: "current",

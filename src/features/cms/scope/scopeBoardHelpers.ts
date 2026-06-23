@@ -196,27 +196,36 @@ function uniqueReleaseIssues(bucket: ScopeReleaseBucket): ScopeBoardIssue[] {
   });
 }
 
-export function partitionReleaseReportBucket(
-  bucket: ScopeReleaseBucket,
-): Pick<ScopeReleaseBucket, "in_work" | "in_test" | "done" | "counts"> {
+export type ReleaseReportColumnKey = "to_triage" | "in_work" | "in_test" | "done";
+
+export type ReleaseReportColumns = Pick<ScopeReleaseBucket, "in_work" | "in_test" | "done"> & {
+  to_triage: ScopeBoardIssue[];
+  counts: ScopeReleaseBucket["counts"] & { to_triage: number };
+};
+
+export function partitionReleaseReportBucket(bucket: ScopeReleaseBucket): ReleaseReportColumns {
+  const to_triage: ScopeBoardIssue[] = [];
   const in_work: ScopeBoardIssue[] = [];
   const in_test: ScopeBoardIssue[] = [];
   const done: ScopeBoardIssue[] = [];
 
   for (const issue of uniqueReleaseIssues(bucket)) {
     const column = classifyReleaseReportBucket(issue);
-    if (column === "open_questions" || column === "not_started") continue;
-    if (column === "in_work") in_work.push(issue);
+    if (column === "open_questions") continue;
+    if (column === "not_started") to_triage.push(issue);
+    else if (column === "in_work") in_work.push(issue);
     else if (column === "in_test") in_test.push(issue);
     else done.push(issue);
   }
 
   return {
+    to_triage: sortIssuesByJiraPriority(to_triage),
     in_work: sortIssuesByJiraPriority(in_work),
     in_test: sortInTestReportIssuesForRelease(in_test),
     done: sortReleaseDoneIssues(done),
     counts: {
       total: bucket.counts.total,
+      to_triage: to_triage.length,
       in_work: in_work.length,
       in_test: in_test.length,
       done: done.length,
