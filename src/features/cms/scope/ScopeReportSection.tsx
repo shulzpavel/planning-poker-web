@@ -51,6 +51,11 @@ const REPORT_COLUMNS = [
   { key: "done" as const, title: "Готово", tone: "success" as const },
 ];
 
+const RELEASE_REPORT_COLUMNS = [
+  { key: "to_triage" as const, title: "Разобрать", tone: "neutral" as const },
+  ...REPORT_COLUMNS,
+];
+
 const MAX_RELEASE_COMMENTS = 10;
 
 interface ReleaseCommentItem {
@@ -231,8 +236,8 @@ function ReleaseReportBlocks({
       ) : null}
 
       <ReleaseHeroHeader bucket={current} subtitle="Текущий релиз" />
-      <div className="grid gap-3 border-t border-blue/10 p-3 sm:p-4 lg:grid-cols-3 lg:gap-4 lg:p-5">
-        {REPORT_COLUMNS.map((column) => (
+      <div className="grid gap-3 border-t border-blue/10 p-3 sm:p-4 lg:grid-cols-2 xl:grid-cols-4 lg:gap-4 lg:p-5">
+        {RELEASE_REPORT_COLUMNS.map((column) => (
           <CollapsibleReportColumn
             key={column.key}
             title={column.title}
@@ -386,6 +391,9 @@ function ReleaseHeroHeader({ bucket, subtitle }: { bucket: ScopeReleaseBucket; s
       <ReleaseProgressBar bucket={bucket} />
 
       <div className="mt-4 flex flex-wrap gap-1.5 sm:gap-2">
+        {columns.counts.to_triage > 0 ? (
+          <Badge tone="neutral">{columns.counts.to_triage} разобрать</Badge>
+        ) : null}
         <Badge tone="info">{columns.counts.in_work} в работе</Badge>
         <Badge tone="warning">{columns.counts.in_test} в тесте</Badge>
         <Badge tone="success">{columns.counts.done} готово</Badge>
@@ -455,6 +463,9 @@ function ReleaseSecondarySlot({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="neutral">{bucket.counts.total} задач</Badge>
+            {columns.counts.to_triage > 0 ? (
+              <Badge tone="neutral">{columns.counts.to_triage} разобрать</Badge>
+            ) : null}
             <Badge tone="info">{columns.counts.in_work} в работе</Badge>
             <Badge tone="warning">{columns.counts.in_test} в тесте</Badge>
             <Badge tone="success">{columns.counts.done} готово</Badge>
@@ -469,8 +480,8 @@ function ReleaseSecondarySlot({
       {isPrevious ? (
         <ReleaseArchiveSummary bucket={bucket} />
       ) : (
-      <div className="grid gap-3 p-3 sm:p-4 lg:grid-cols-3 lg:gap-4">
-        {REPORT_COLUMNS.map((column) => (
+      <div className="grid gap-3 p-3 sm:p-4 lg:grid-cols-2 xl:grid-cols-4 lg:gap-4">
+        {RELEASE_REPORT_COLUMNS.map((column) => (
           <CollapsibleReportColumn
             key={column.key}
             title={column.title}
@@ -1351,7 +1362,7 @@ function CollapsibleReportColumn({
   children,
 }: {
   title: string;
-  tone: "info" | "warning" | "success";
+  tone: "neutral" | "info" | "warning" | "success";
   count: number;
   defaultOpen: boolean;
   children: ReactNode;
@@ -1391,9 +1402,9 @@ function ReportColumn({
   releaseReport = false,
   compactHeader = false,
 }: {
-  columnKey: "in_work" | "in_test" | "done";
+  columnKey: "to_triage" | "in_work" | "in_test" | "done";
   title: string;
-  tone: "info" | "warning" | "success";
+  tone: "neutral" | "info" | "warning" | "success";
   count: number;
   issues: ScopeBoardIssue[];
   showTechnicalFields: boolean;
