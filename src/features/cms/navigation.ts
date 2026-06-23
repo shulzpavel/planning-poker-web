@@ -14,6 +14,8 @@ export const CMS_PERMISSIONS = {
   retro: "cms.retro.view",
   retroManage: "cms.retro.manage",
   retroAnalyze: "cms.retro.analyze",
+  standups: "cms.standups.view",
+  standupsManage: "cms.standups.manage",
 } as const;
 
 /**
@@ -97,6 +99,15 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.retro,
     path: "/cms/retro",
     routePath: "retro",
+    group: "operations",
+  },
+  {
+    key: "standups",
+    label: "Дейлики",
+    description: "Ежедневные standup-записи по командам: вчера, сегодня, блокеры и сроки задач.",
+    permission: CMS_PERMISSIONS.standups,
+    path: "/cms/standups",
+    routePath: "standups",
     group: "operations",
   },
   {

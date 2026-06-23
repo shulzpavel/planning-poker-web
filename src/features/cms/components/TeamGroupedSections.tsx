@@ -87,6 +87,7 @@ export function GroupedDataTableList<T extends TeamScopedRow>({
   );
 
   const showInitialSkeleton = loading && loadedCount === 0;
+  const showEmpty = Boolean(empty) && loadedCount === 0 && !showInitialSkeleton;
 
   return (
     <>
@@ -94,7 +95,7 @@ export function GroupedDataTableList<T extends TeamScopedRow>({
         {error ? <div className="px-3 sm:px-4"><InlineError text={error} /></div> : null}
         {showInitialSkeleton ? (
           <div className="px-3 sm:px-4"><ListSkeleton rows={6} /></div>
-        ) : empty ? (
+        ) : showEmpty ? (
           <div className="px-3 sm:px-4">{empty}</div>
         ) : (
           groups.map((group) => (
@@ -115,7 +116,7 @@ export function GroupedDataTableList<T extends TeamScopedRow>({
         {error ? <InlineError text={error} /> : null}
         {showInitialSkeleton ? (
           <ListSkeleton rows={6} />
-        ) : empty ? (
+        ) : showEmpty ? (
           empty
         ) : (
           groups.map((group) => (

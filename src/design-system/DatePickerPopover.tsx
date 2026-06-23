@@ -71,6 +71,8 @@ export function DatePickerPopover({
   placeholder = "не задан",
   reservePopoverSpace = true,
   className,
+  triggerClassName,
+  chevronClassName,
   onChange,
 }: {
   value: string;
@@ -83,6 +85,8 @@ export function DatePickerPopover({
   placeholder?: string;
   reservePopoverSpace?: boolean;
   className?: string;
+  triggerClassName?: string;
+  chevronClassName?: string;
   onChange: (value: string) => void;
 }) {
   const selectedDate = useMemo(() => parseDateValue(value), [value]);
@@ -186,7 +190,8 @@ export function DatePickerPopover({
         className={cn(
           "inline-flex w-full max-w-full min-h-11 items-center justify-between gap-3 rounded-lg border border-line bg-surface px-3 py-2.5 text-left text-base transition-colors sm:min-h-10 sm:text-sm",
           "hover:border-blue/40 hover:bg-line2/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/30",
-          "disabled:cursor-not-allowed disabled:opacity-60"
+          "disabled:cursor-not-allowed disabled:opacity-60",
+          triggerClassName,
         )}
       >
         <span className={cn("min-w-0 truncate font-semibold tabular-nums", selectedDate ? "text-ink" : "text-ink3")}>
@@ -197,7 +202,12 @@ export function DatePickerPopover({
             </>
           )}
         </span>
-        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink3">
+        <span
+          className={cn(
+            "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink3",
+            chevronClassName,
+          )}
+        >
           <span aria-hidden="true">▾</span>
         </span>
       </button>
