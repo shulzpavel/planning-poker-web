@@ -41,6 +41,7 @@ import {
 import { useIncrementalList } from "./scopeListPaging";
 import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
 import { formatQueueTimelineDate } from "./scopePriorityQueueTimeline";
+import { scopeIssueTypeRailClass } from "./scopeIssueTypeTone";
 import { PlanFieldBadges } from "./scopePlanInsights";
 import { RoleContributorsBadges } from "./scopeRoleContributors";
 import { TextWithLinks } from "./textWithLinks";
@@ -1475,7 +1476,14 @@ function ReportColumn({
                       <p className="text-xs font-semibold uppercase tracking-wide text-ink3">{subgroupLabel}</p>
                     </li>
                   ) : null}
-                  <li className="border-t border-line bg-transparent px-0 py-3 first:border-t-0 sm:rounded-xl sm:border-t-0 sm:bg-surface/80 sm:px-3">
+                  <li className="relative border-t border-line bg-transparent py-3 pl-3 first:border-t-0 sm:rounded-xl sm:border-t-0 sm:bg-surface/80 sm:py-3 sm:pl-5 sm:pr-3">
+                    <span
+                      className={cn(
+                        "absolute inset-y-2 left-0 w-1 rounded-r-full sm:inset-y-3",
+                        scopeIssueTypeRailClass(issue),
+                      )}
+                      aria-hidden="true"
+                    />
                     <div className="flex flex-wrap items-center gap-2">
                       <ReportIssueLink issue={issue} />
                       {issue.priority ? (
