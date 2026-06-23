@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
+  AiGenerationProgress,
   BackButton,
   BackLink,
   Badge,
@@ -19,6 +20,7 @@ import {
 } from "../../../design-system";
 import {
   cmsStandupsApi,
+  type StandupAiSummary,
   type StandupParticipant,
   type StandupPayload,
   type StandupRecord,
@@ -27,6 +29,7 @@ import {
   type StandupTrack,
   type StandupWorkItem,
 } from "../api/cmsClient";
+import { pollAiJob } from "../../../shared/lib/pollAiJob";
 import type { CmsPrincipal } from "../api/cmsTypes";
 import { InlineError, SectionHeader, Skeleton } from "../components/CmsPrimitives";
 import { filterFieldWidth } from "../components/cmsFilterLayout";
@@ -43,7 +46,9 @@ import { useCmsTeams } from "../hooks/useCmsTeams";
 import { useCmsList } from "../hooks/useCmsList";
 import { useUnsavedChangesGuard } from "../hooks/useUnsavedChangesGuard";
 import { StandupParticipantSection } from "./StandupParticipantSection";
+import { StandupAiSummaryView } from "./StandupAiSummaryView";
 import { StandupsListView } from "./StandupsListView";
+import { isStandupAnalyzeResult } from "./standupAi";
 import {
   STANDUP_ROLE_META,
   collectBlockerItems,
@@ -407,6 +412,8 @@ function StandupDetailPage({ canManage }: { canManage: boolean }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiSummary, setAiSummary] = useState<StandupAiSummary | null>(null);
+  const [aiProgress, setAiProgress] = useState<string | null>(null);
   const dirty = useMemo(() => JSON.stringify(payload) !== JSON.stringify(record?.payload ?? null), [payload, record]);
   const unsavedGuard = useUnsavedChangesGuard({
     when: dirty && canManage,
@@ -422,6 +429,7 @@ function StandupDetailPage({ canManage }: { canManage: boolean }) {
       const item = await cmsStandupsApi.get(numericId);
       setRecord(item);
       setPayload(item.payload);
+      setAiSummary(item.ai_summary ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось загрузить дейлик.");
     } finally {
@@ -497,6 +505,39 @@ function StandupDetailPage({ canManage }: { canManage: boolean }) {
     );
   }
 
+  async function waitForStandupAi(standupId: number) {
+    setAiProgress("Запускаем AI-дайджест...");
+    try {
+      const started = await cmsStandupsApi.startAnalyze(standupId);
+      if (isStandupAnalyzeResult(started)) {
+        setAiSummary(started.ai_summary);
+        setRecord((current) => (current ? { ...current, ai_summary: started.ai_summary } : current));
+        toast.success(started.cached ? "AI-дайджест уже актуален" : "AI-дайджест готов");
+        return;
+      }
+
+      const jobId = started.job_id;
+      if (!jobId) {
+        throw new Error("AI job was not started");
+      }
+
+      const result = await pollAiJob(
+        () => cmsStandupsApi.getAnalyzeJob(standupId, jobId),
+        {
+          intervalMs: 1200,
+          onProgress: (job) => setAiProgress(job.message ?? "AI готовит дайджест..."),
+        },
+      );
+      setAiSummary(result.ai_summary);
+      setRecord((current) => (current ? { ...current, ai_summary: result.ai_summary } : current));
+      toast.success(result.cached ? "AI-дайджест уже актуален" : "AI-дайджест готов и отправлен в Telegram");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI-дайджест не выполнен", { title: "Ошибка" });
+    } finally {
+      setAiProgress(null);
+    }
+  }
+
   async function saveStandup(publish = false) {
     if (!record || !payload) return;
     const normalized = sanitizeStandupPayload(payload);
@@ -515,6 +556,9 @@ function StandupDetailPage({ canManage }: { canManage: boolean }) {
       setRecord(updated);
       setPayload(updated.payload);
       toast.success(publish ? "Опубликовано." : "Сохранено.");
+      if (publish && updated.status === "published") {
+        void waitForStandupAi(updated.id);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось сохранить.");
     } finally {
@@ -602,6 +646,14 @@ function StandupDetailPage({ canManage }: { canManage: boolean }) {
             ))}
           </ul>
         </Alert>
+      ) : null}
+
+      {record.status === "published" && (aiSummary || aiProgress) ? (
+        aiSummary ? (
+          <StandupAiSummaryView summary={aiSummary} loading={Boolean(aiProgress)} progress={aiProgress} />
+        ) : (
+          <AiGenerationProgress message={aiProgress ?? "Готовим AI-дайджест..."} />
+        )
       ) : null}
 
       <Surface className="grid gap-2 p-3 sm:grid-cols-2 sm:p-4">
