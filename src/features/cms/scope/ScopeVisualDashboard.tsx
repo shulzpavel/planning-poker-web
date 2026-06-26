@@ -1,6 +1,7 @@
 import { Badge, Surface, cn } from "../../../design-system";
 import type { CSSProperties } from "react";
 import type { ScopeBoardMetrics, ScopeWorkloadMode } from "../api/cmsClient";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { formatScopeSp, intakeStatusMeta } from "./scopeBoardHelpers";
 import {
@@ -72,12 +73,12 @@ export function ScopeVisualDashboard({
         {splitMode && devVisual && testVisual ? (
           presentation ? (
             <div className="scope-capacity-hero-split">
-              <TrackCapacityPanel title="SP Dev" visual={devVisual} intake={intake} presentation trackIndex={0} />
+              <TrackCapacityPanel title="SP Dev" visual={devVisual} intake={intake} presentation trackIndex={0} showLayoutDragHandle />
               <TrackCapacityPanel title="SP Test" visual={testVisual} intake={intake} presentation trackIndex={1} />
             </div>
           ) : (
             <div className="grid gap-5 xl:grid-cols-2">
-              <TrackCapacityPanel title="SP Dev" visual={devVisual} intake={intake} />
+              <TrackCapacityPanel title="SP Dev" visual={devVisual} intake={intake} showLayoutDragHandle />
               <TrackCapacityPanel title="SP Test" visual={testVisual} intake={intake} />
             </div>
           )
@@ -137,7 +138,10 @@ export function ScopeVisualDashboard({
             <div className="flex flex-col items-center gap-5">
               <CapacityDonut visual={visual} arcs={arcs} />
               <div className="w-full space-y-3 text-center">
-                <p className="text-sm font-medium text-ink3">{visual.subtitle}</p>
+                <p className="flex items-center justify-center gap-2 text-sm font-medium text-ink3">
+                  <SortableLayoutBlockDragHandle />
+                  <span>{visual.subtitle}</span>
+                </p>
                 <div className="grid auto-rows-fr gap-2 sm:grid-cols-3">
                   {visual.segments.map((segment) => (
                     <CapacitySegmentChip
@@ -422,12 +426,14 @@ function TrackCapacityPanel({
   intake,
   presentation = false,
   trackIndex = 0,
+  showLayoutDragHandle = false,
 }: {
   title: string;
   visual: ReturnType<typeof buildTrackCapacityVisual>;
   intake: ReturnType<typeof intakeStatusMeta>;
   presentation?: boolean;
   trackIndex?: number;
+  showLayoutDragHandle?: boolean;
 }) {
   const arcs = donutArcs(visual.segments);
   return (
@@ -439,7 +445,10 @@ function TrackCapacityPanel({
     >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className={cn("font-semibold text-ink", presentation ? "text-lg" : "text-base")}>{title}</p>
+          <p className={cn("flex items-center gap-2 font-semibold text-ink", presentation ? "text-lg" : "text-base")}>
+            {showLayoutDragHandle ? <SortableLayoutBlockDragHandle /> : null}
+            <span>{title}</span>
+          </p>
           <p className="mt-1 text-sm text-ink3 lg:text-base">{visual.subtitle}</p>
         </div>
         <Badge tone={intake.tone}>{intake.label}</Badge>

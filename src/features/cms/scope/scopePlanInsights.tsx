@@ -1,4 +1,5 @@
 import { Badge, Surface, cn } from "../../../design-system";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import type { ScopeBoardIssue, ScopeBoardMetrics } from "../api/cmsClient";
 
@@ -100,11 +101,14 @@ export function ScopePlanInsights({ metrics, presentation = false }: { metrics: 
     <Surface className={cn("scope-collapsible-card overflow-hidden border-0 bg-surface/80 p-0 shadow-none", cmsMobileSectionShell, presentation && "h-full lg:shadow-card")}>
       <details className="scope-presentation-section group">
         <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
-          <div>
-            <h2 className="text-base font-semibold text-ink">Plan status и Plan change reason</h2>
-            <p className="scope-section-header-subtitle mt-1 text-sm">
-              Сводка по Jira-полям scope: каких plan status и причин изменения плана больше в текущем snapshot.
-            </p>
+          <div className="flex min-w-0 flex-1 items-start gap-2">
+            <SortableLayoutBlockDragHandle />
+            <div>
+              <h2 className="text-base font-semibold text-ink">Plan status и Plan change reason</h2>
+              <p className="scope-section-header-subtitle mt-1 text-sm">
+                Сводка по Jira-полям scope: каких plan status и причин изменения плана больше в текущем snapshot.
+              </p>
+            </div>
           </div>
           <span className="scope-section-header-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform group-open:rotate-180">
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">

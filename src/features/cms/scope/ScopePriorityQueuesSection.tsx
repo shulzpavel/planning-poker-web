@@ -26,6 +26,7 @@ import {
   TextareaField,
   cn,
 } from "../../../design-system";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import type {
   ScopeBoardIssue,
   ScopeBoardSnapshot,
@@ -146,6 +147,7 @@ export const ScopePriorityQueuesSection = memo(function ScopePriorityQueuesSecti
         queue={resolveQueue(snapshot, "todo")}
         jql={todoJql}
         canManage={canManage}
+        showLayoutDragHandle
         onReorderQueue={onReorderQueue}
         onAddQueueComment={onAddQueueComment}
         onUpdateQueueDueDate={onUpdateQueueDueDate}
@@ -168,6 +170,7 @@ function PriorityQueueBlock({
   queue,
   jql,
   canManage,
+  showLayoutDragHandle = false,
   onReorderQueue,
   onAddQueueComment,
   onUpdateQueueDueDate,
@@ -176,6 +179,7 @@ function PriorityQueueBlock({
   queue: ScopePriorityQueue;
   jql: string;
   canManage: boolean;
+  showLayoutDragHandle?: boolean;
   onReorderQueue: (queue: ScopePriorityQueueKind, order: string[], movedKey: string) => Promise<void>;
   onAddQueueComment: (queue: ScopePriorityQueueKind, issueKey: string, text: string) => Promise<void>;
   onUpdateQueueDueDate: (queue: ScopePriorityQueueKind, issueKey: string, dueDate: string) => Promise<void>;
@@ -226,7 +230,10 @@ function PriorityQueueBlock({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
             <div>
-              <p className="text-base font-semibold text-ink">{meta.title}</p>
+              <p className="flex items-center gap-2 text-base font-semibold text-ink">
+                {showLayoutDragHandle ? <SortableLayoutBlockDragHandle /> : null}
+                <span>{meta.title}</span>
+              </p>
               <p className="mt-0.5 text-xs text-ink3">{meta.jqlHint}</p>
             </div>
             <QueueNewArrivalsLabel count={warehouseNewTotal} />

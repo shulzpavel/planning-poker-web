@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { cn } from "../../../design-system";
 import type { ScopeBoardSnapshot, ScopeRefreshEvent, ScopeRefreshLogEntry } from "../api/cmsClient";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { useIncrementalList } from "./scopeListPaging";
 import { ScopeIncrementalFooter } from "./ScopeIncrementalFooter";
@@ -101,9 +102,12 @@ export function ScopeActivityFeed({ snapshot }: { snapshot: ScopeBoardSnapshot }
   return (
     <details className={cn("scope-collapsible-card scope-presentation-section group", cmsMobileSectionShell)}>
       <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
-        <div>
-          <h3 className="text-base font-semibold text-ink">Что изменилось</h3>
-          <p className="scope-section-header-subtitle mt-1 text-sm">Обновлено {formatFeedTime(snapshot.refreshed_at)}</p>
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <SortableLayoutBlockDragHandle />
+          <div>
+            <h3 className="text-base font-semibold text-ink">Что изменилось</h3>
+            <p className="scope-section-header-subtitle mt-1 text-sm">Обновлено {formatFeedTime(snapshot.refreshed_at)}</p>
+          </div>
         </div>
         <span className="scope-section-header-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform group-open:rotate-180">
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">

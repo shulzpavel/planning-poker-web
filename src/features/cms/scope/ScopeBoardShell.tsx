@@ -50,6 +50,7 @@ import {
   SectionHeader,
   Skeleton,
 } from "../components/CmsPrimitives";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell, cmsSectionHeaderPad, cmsMobileSurface } from "../components/cmsMobileLayout";
 import { TeamBadge } from "../components/TeamBadge";
 import { TeamFilter, teamFilterParams } from "../components/TeamFilter";
@@ -1472,7 +1473,15 @@ function ScopeBoardEditorPage({
             presentation={presentationOpen}
           />
         ) : (
-          <Alert tone="info" title="AI пульс спринта">
+          <Alert
+            tone="info"
+            title={
+              <span className="inline-flex items-center gap-2">
+                <SortableLayoutBlockDragHandle />
+                AI пульс спринта
+              </span>
+            }
+          >
             Обновите snapshot из Jira — блок доступен для команды iGaming Rip.
           </Alert>
         );
@@ -1539,15 +1548,17 @@ function ScopeBoardEditorPage({
                 Проверьте JQL в настройках.
               </Alert>
             ) : null}
-            {resolveSnapshotSections(snapshot).map((section) => {
+            {resolveSnapshotSections(snapshot).map((section, sectionIndex) => {
               const sectionMetrics = metrics.sections?.find((item) => item.id === section.id);
               return (
                 <details key={section.id} className={cn("scope-collapsible-card group", cmsMobileSectionShell)}>
                   <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
-                    <div>
-                      <p className="text-base font-semibold text-ink">
-                        {section.name} · {sectionMetrics?.count ?? section.issues.length} задач
-                      </p>
+                    <div className="flex min-w-0 flex-1 items-start gap-2">
+                      {sectionIndex === 0 ? <SortableLayoutBlockDragHandle /> : null}
+                      <div>
+                        <p className="text-base font-semibold text-ink">
+                          {section.name} · {sectionMetrics?.count ?? section.issues.length} задач
+                        </p>
                       {sectionMetrics?.by_status && Object.keys(sectionMetrics.by_status).length > 0 ? (
                         <p className="scope-section-header-subtitle mt-1 text-sm">
                           {Object.entries(sectionMetrics.by_status)
@@ -1558,6 +1569,7 @@ function ScopeBoardEditorPage({
                       <p className="scope-section-header-subtitle mt-1 text-xs">
                         Полный список задач, полученный по JQL-фильтру. На его основе собираются метрики и отчёт.
                       </p>
+                      </div>
                     </div>
                     <span className="scope-section-header-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform group-open:rotate-180">
                       <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
@@ -1581,7 +1593,10 @@ function ScopeBoardEditorPage({
         return (
           <details className={cn("scope-collapsible-card scope-no-print group", cmsMobileSectionShell)}>
             <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink marker:content-none", cmsSectionHeaderPad)}>
-              <span>⚙ Настройки и JQL</span>
+              <span className="inline-flex items-center gap-2">
+                <SortableLayoutBlockDragHandle />
+                ⚙ Настройки и JQL
+              </span>
               <span className="scope-section-header-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform group-open:rotate-180">
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
                   <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" />

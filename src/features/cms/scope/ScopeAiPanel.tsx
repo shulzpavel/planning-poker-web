@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Badge, cn } from "../../../design-system";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { normalizeAiHistory } from "./scopeAiHistory";
 import { ScopeAiJiraExportBadge } from "./scopeAiJiraExport";
@@ -71,7 +72,10 @@ export function ScopeAiPanel({
       >
         <summary className={cn("scope-section-header cursor-pointer list-none marker:content-none", cmsSectionHeaderPad)}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-base font-semibold text-ink">AI-сводка для бизнеса</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <SortableLayoutBlockDragHandle />
+              <span className="text-base font-semibold text-ink">AI-сводка для бизнеса</span>
+            </div>
             <span className="scope-print-hide inline-flex items-center gap-2 text-xs font-semibold text-ink">
               <span className="group-open:hidden">Показать</span>
               <span className="hidden group-open:inline">Скрыть</span>
@@ -109,6 +113,7 @@ export function ScopeAiPanel({
       <summary className={cn("scope-section-header cursor-pointer list-none marker:content-none", cmsSectionHeaderPad)}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
+            <SortableLayoutBlockDragHandle />
             <span className="text-base font-semibold text-ink">AI-сводка для бизнеса</span>
             <Badge tone={HEALTH_TONE[activeEntry.health]}>{HEALTH_LABELS[activeEntry.health]}</Badge>
             <ScopeAiJiraExportBadge

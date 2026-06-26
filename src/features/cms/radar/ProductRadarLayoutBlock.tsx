@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Button, Surface, cn } from "../../../design-system";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 
 export function ProductRadarLayoutBlock({
@@ -21,8 +22,13 @@ export function ProductRadarLayoutBlock({
     return (
       <Surface className={cmsMobileSectionShell}>
         <div className={cmsSectionHeaderPad}>
-          <h2 className="text-lg font-semibold text-ink">{title}</h2>
-          {subtitle ? <p className="text-sm text-ink3">{subtitle}</p> : null}
+          <div className="flex items-start gap-2">
+            <SortableLayoutBlockDragHandle />
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-ink">{title}</h2>
+              {subtitle ? <p className="text-sm text-ink3">{subtitle}</p> : null}
+            </div>
+          </div>
         </div>
         <div className={cmsSectionBody}>{children}</div>
       </Surface>
@@ -32,8 +38,11 @@ export function ProductRadarLayoutBlock({
   return (
     <Surface className={cmsMobileSectionShell}>
       <div className={cn(cmsSectionHeaderPad, "flex items-start justify-between gap-3")}>
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-lg font-semibold text-ink">{title}</h2>
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex items-start gap-2">
+            <SortableLayoutBlockDragHandle />
+            <h2 className="text-lg font-semibold text-ink">{title}</h2>
+          </div>
           {subtitle && expanded ? <p className="text-sm text-ink3">{subtitle}</p> : null}
         </div>
         <Button type="button" size="sm" variant={expanded ? "primary" : "secondary"} onClick={() => setExpanded((open) => !open)}>
