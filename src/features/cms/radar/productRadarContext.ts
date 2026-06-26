@@ -378,7 +378,7 @@ export function buildBlockingFeed(
       id,
       category: "blocking",
       severity: (insight.severity ?? "medium") as BlockingFeedRow["severity"],
-      blockingTeam: insight.blocker_team || insight.blocker_key || "—",
+      blockingTeam: insight.blocker_team || insight.metric_value || insight.blocker_key || "—",
       blockedTeam: insight.blocked_team || insight.parent_team || blocked?.team || "—",
       blockedKey,
       blockerKey,

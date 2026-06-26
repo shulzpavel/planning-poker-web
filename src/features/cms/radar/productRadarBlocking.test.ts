@@ -45,4 +45,44 @@ describe("resolveProductRadarBlocking", () => {
     expect(blockings.length).toBeGreaterThan(0);
     expect(blockings[0]?.blockedKey).toBe("BTBMGLBL-364");
   });
+
+  it("falls back to snapshot signals when analytics reports blocks but team items are empty", () => {
+    const snapshot: ProductRadarSnapshot = {
+      signals: [
+        {
+          kind: "cross_team_block",
+          severity: "high",
+          issue_key: "BTBMGLBL-364",
+          summary: "Blocked task",
+          title: "Блокировка",
+          detail: "detail",
+          blocking_team: "Android",
+          blocked_team: "RIP",
+          blocker_key: "BT-450",
+        },
+      ],
+      analytics: {
+        period: "month",
+        label: "Месяц",
+        insights: [{ kind: "release_tail", severity: "high", score: 90, issue_key: "X-1", summary: "s", title: "t", detail: "d", blocker_key: "BT-450" }],
+        team_blocking: { teams: [], total_blocks: 3 },
+        periods: {
+          all: {
+            period: "all",
+            label: "За всё время",
+            insights: [],
+            team_blocking: { teams: [], total_blocks: 3 },
+          },
+        },
+      },
+    };
+
+    const resolved = resolveProductRadarBlocking(snapshot);
+    const { blockings } = splitBlockingFeed(
+      buildBlockingFeed(resolved.insights, resolved.teamBlocking, {}),
+    );
+
+    expect(blockings.length).toBeGreaterThan(0);
+    expect(blockings[0]?.blockedKey).toBe("BTBMGLBL-364");
+  });
 });
