@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge, Button, cn } from "../../../design-system";
 import type { ProductRadarInsight, ProductRadarIssue, ProductRadarTeamBlockingRow } from "../api/cmsClient";
 import { JiraIssueLink } from "../scope/scopeFlowPaceAlerts";
@@ -215,7 +215,13 @@ function FeedSection({
   issuesByKey: Record<string, ProductRadarIssue>;
   emptyText: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(rows.length > 0);
+
+  useEffect(() => {
+    if (rows.length > 0) {
+      setOpen(true);
+    }
+  }, [rows.length]);
   const { visibleItems, hasMore, loadMore, loadedCount, total } = useListDisplayWindow(rows, FEED_PAGE_SIZE);
 
   return (
