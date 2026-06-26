@@ -17,6 +17,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "../../../design-system";
 import type { ScopeBoardRecord, ScopeFlowAlert, ScopeFlowPaceChart, ScopeFlowPaceChartDetailSegment } from "../api/cmsClient";
+import { SortableDragHandleIcon } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell } from "../components/cmsMobileLayout";
 import { cmsScopeApi } from "../api/cmsClient";
 import {
@@ -174,7 +175,8 @@ function FlowPaceDonutCard({
           : "border-line/80 hover:border-line hover:bg-surface/95",
       )}
     >
-      <div className="flex min-h-12 shrink-0 items-center justify-between gap-2 sm:min-h-[4.75rem]">
+      <div className="flex min-h-12 shrink-0 items-start gap-2 sm:min-h-[4.75rem]">
+        {dragHandle}
         <div className="min-w-0 flex-1 space-y-1">
           <h3 className="truncate whitespace-nowrap text-sm font-semibold leading-snug text-ink sm:line-clamp-2 sm:whitespace-normal">
             {chart.title}
@@ -183,19 +185,16 @@ function FlowPaceDonutCard({
             {chart.subtitle}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {dragHandle}
-          <span
-            className={cn(
-              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink3 transition-transform",
-              selected && "rotate-180 text-accent",
-            )}
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-              <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" />
-            </svg>
-          </span>
-        </div>
+        <span
+          className={cn(
+            "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink3 transition-transform",
+            selected && "rotate-180 text-accent",
+          )}
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+            <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" />
+          </svg>
+        </span>
       </div>
 
       <div className="relative mx-auto my-4 h-36 w-36 shrink-0 sm:h-40 sm:w-40">
@@ -281,9 +280,7 @@ function SortableFlowPaceDonutCard({
               {...sortable.attributes}
               {...sortable.listeners}
             >
-              <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
-                <path d="M7 5.5h6M7 10h6M7 14.5h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
+              <SortableDragHandleIcon />
             </button>
           ) : null}
         />

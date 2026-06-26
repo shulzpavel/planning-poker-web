@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Badge, Surface, cn } from "../../../design-system";
 import type { ScopeBoardRecord, ScopeFlowPace } from "../api/cmsClient";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import { flowPaceStatusLabel, flowPaceStatusTone } from "./scopeFlowPaceHelpers";
 import { ScopeFlowPaceDonuts } from "./ScopeFlowPaceDonuts";
@@ -30,6 +31,7 @@ export const ScopeFlowPaceSection = memo(function ScopeFlowPaceSection({
         <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+              <SortableLayoutBlockDragHandle />
               <h2 className="shrink-0 whitespace-nowrap text-base font-semibold text-ink">AI пульс спринта</h2>
               <Badge className="shrink-0 whitespace-nowrap" tone={flowPaceStatusTone(flowPace.pace_status)}>
                 {flowPaceStatusLabel(flowPace.pace_status)}

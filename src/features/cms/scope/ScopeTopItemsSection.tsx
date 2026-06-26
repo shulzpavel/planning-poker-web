@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Badge, Button, Spinner, TextareaField, cn } from "../../../design-system";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import type { ScopeBoardSnapshot, ScopeTopItem } from "../api/cmsClient";
 import { TextWithLinks } from "./textWithLinks";
@@ -50,6 +51,7 @@ export function ScopeTopItemsSection({
       <summary className={cn("scope-section-header cursor-pointer list-none marker:content-none", cmsSectionHeaderPad)}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
+            <SortableLayoutBlockDragHandle />
             <span className="text-sm font-semibold text-ink">Топ-10 вопросов и задач</span>
             <Badge tone={items.length > 0 ? "info" : "neutral"}>{items.length}/{MAX_TOP_ITEMS}</Badge>
           </div>

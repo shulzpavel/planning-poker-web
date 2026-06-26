@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Badge, Button, Spinner, TextareaField, cn } from "../../../design-system";
+import { SortableLayoutBlockDragHandle } from "../components/SortableLayoutBlock";
 import { cmsMobileSectionShell, cmsSectionBody, cmsSectionHeaderPad } from "../components/cmsMobileLayout";
 import type {
   ScopeBoardIssue,
@@ -147,11 +148,14 @@ export function ScopeReportSection({
     return (
       <section className={cn("scope-collapsible-card", cmsMobileSectionShell)}>
         <div className={cn("scope-section-header", cmsSectionHeaderPad)}>
-          <div>
-            <h2 className="text-base font-semibold text-ink">Релиз</h2>
-            <p className="scope-section-header-subtitle mt-1 text-sm">
-              Единый отчёт по fixVersion · задачи сгруппированы по статусу
-            </p>
+          <div className="flex items-start gap-2">
+            <SortableLayoutBlockDragHandle />
+            <div>
+              <h2 className="text-base font-semibold text-ink">Релиз</h2>
+              <p className="scope-section-header-subtitle mt-1 text-sm">
+                Единый отчёт по fixVersion · задачи сгруппированы по статусу
+              </p>
+            </div>
           </div>
         </div>
         {body}
@@ -162,11 +166,14 @@ export function ScopeReportSection({
   return (
     <details className={cn("scope-collapsible-card scope-presentation-section group", cmsMobileSectionShell)}>
       <summary className={cn("scope-section-header flex cursor-pointer list-none items-center justify-between gap-3 marker:content-none", cmsSectionHeaderPad)}>
-        <div>
-          <h2 className="text-base font-semibold text-ink">Отчёт</h2>
-          <p className="scope-section-header-subtitle mt-1 text-sm">
-            Каждая JQL-секция отдельно · внутри блока сортировка по приоритету Jira
-          </p>
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <SortableLayoutBlockDragHandle />
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-ink">Отчёт</h2>
+            <p className="scope-section-header-subtitle mt-1 text-sm">
+              Каждая JQL-секция отдельно · внутри блока сортировка по приоритету Jira
+            </p>
+          </div>
         </div>
         <span className="scope-section-header-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform group-open:rotate-180">
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
