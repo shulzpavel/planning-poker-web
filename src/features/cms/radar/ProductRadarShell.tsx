@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import {
   DndContext,
@@ -37,6 +37,7 @@ import {
 import {
   defaultProductRadarCreateForm,
   formatProductRadarUpdatedAt,
+  needsProductRadarSnapshotRefresh,
   validateProductRadarCreate,
 } from "./productRadarForm";
 import {
@@ -437,11 +438,46 @@ function ProductRadarDetailPage() {
   const [refreshProgress, setRefreshProgress] = useState<ProductRadarRefreshProgress | null>(null);
   const [error, setError] = useState("");
   const [radar, setRadar] = useState<ProductRadarRecord | null>(null);
+  const autoRefreshAttempted = useRef(false);
 
   const loadRadar = useCallback(async (id: number) => {
     const response = await cmsProductRadarApi.get(id);
     setRadar(response.radar);
   }, []);
+
+  const runRefresh = useCallback(
+    async (record: ProductRadarRecord, force = false, options?: { silent?: boolean }) => {
+      setRefreshing(true);
+      setError("");
+      try {
+        const response = await cmsProductRadarApi.refreshAll(record.id, {
+          force,
+          onProgress: (progress, updatedRadar) => {
+            setRefreshProgress(progress);
+            setRadar(updatedRadar);
+          },
+        });
+        setRadar(response.radar);
+        setRefreshProgress(response.refresh_progress);
+        if (!options?.silent) {
+          toast.success(
+            response.refresh_progress.status === "complete"
+              ? "Данные обновлены из Jira"
+              : "Загружен список задач — обогащение не завершено",
+          );
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Не удалось обновить из Jira";
+        setError(message);
+        if (!options?.silent) {
+          toast.error(message);
+        }
+      } finally {
+        setRefreshing(false);
+      }
+    },
+    [toast],
+  );
 
   useEffect(() => {
     if (Number.isNaN(radarId)) {
@@ -449,6 +485,8 @@ function ProductRadarDetailPage() {
       setLoading(false);
       return;
     }
+
+    autoRefreshAttempted.current = false;
 
     let cancelled = false;
     void (async () => {
@@ -468,32 +506,16 @@ function ProductRadarDetailPage() {
     };
   }, [loadRadar, radarId]);
 
+  useEffect(() => {
+    if (loading || !radar || refreshing || autoRefreshAttempted.current) return;
+    if (!needsProductRadarSnapshotRefresh(radar.snapshot)) return;
+    autoRefreshAttempted.current = true;
+    void runRefresh(radar, false, { silent: true });
+  }, [loading, radar, refreshing, runRefresh]);
+
   const handleRefresh = async (force = false) => {
     if (!radar) return;
-    setRefreshing(true);
-    setError("");
-    try {
-      const response = await cmsProductRadarApi.refreshAll(radar.id, {
-        force,
-        onProgress: (progress, updatedRadar) => {
-          setRefreshProgress(progress);
-          setRadar(updatedRadar);
-        },
-      });
-      setRadar(response.radar);
-      setRefreshProgress(response.refresh_progress);
-      toast.success(
-        response.refresh_progress.status === "complete"
-          ? "Данные обновлены из Jira"
-          : "Загружен список задач — обогащение не завершено",
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Не удалось обновить из Jira";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setRefreshing(false);
-    }
+    await runRefresh(radar, force);
   };
 
   const handleSaveJql = async (jql: string) => {

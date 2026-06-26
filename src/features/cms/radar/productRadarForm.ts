@@ -19,6 +19,11 @@ export function defaultProductRadarCreateForm() {
   };
 }
 
+export function needsProductRadarSnapshotRefresh(snapshot: { refreshed_at?: string | null } | null | undefined): boolean {
+  if (!snapshot) return true;
+  return !String(snapshot.refreshed_at ?? "").trim();
+}
+
 export function formatProductRadarUpdatedAt(iso: string | null | undefined): string {
   if (!iso) return "—";
   try {
