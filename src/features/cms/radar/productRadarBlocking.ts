@@ -117,7 +117,19 @@ export function resolveProductRadarBlocking(snapshot?: ProductRadarSnapshot | nu
     }
   }
 
-  return { insights, teamBlocking };
+  const resolved = { insights, teamBlocking };
+  const hasResolvedBlocking =
+    (resolved.teamBlocking?.teams ?? []).some((team) => (team.items?.length ?? 0) > 0) ||
+    resolved.insights.some((insight) => insight.kind === "cross_team_block" || insight.blocker_key);
+
+  if (!hasResolvedBlocking && crossSignals.length) {
+    return {
+      insights: crossSignals.map(signalToInsight),
+      teamBlocking: teamBlockingFromSignals(crossSignals),
+    };
+  }
+
+  return resolved;
 }
 
 export function resolveProductRadarBlockingFromAnalytics(analytics?: ProductRadarAnalytics | null) {
