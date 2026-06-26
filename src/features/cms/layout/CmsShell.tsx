@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AutoHideAppHeader, BottomSheet, BrandHomeLink, Button, DeferredFallback, HeaderMenuButton, RouteTransition, SheetActionButton, SheetFooterActions, SheetItem, ThemeMenuControl, ThemeToggle, useTheme, type ThemeMode } from "../../../design-system";
 import { cmsAuthApi } from "../api/cmsClient";
@@ -17,6 +17,7 @@ const AccessShell = lazy(() => import("../access/AccessShell"));
 const AuditEventsPage = lazy(() => import("../events/AuditEventsPage"));
 const OverviewPage = lazy(() => import("../overview/OverviewPage"));
 const PlannerShell = lazy(() => import("../planner/PlannerShell"));
+const ProductRadarShell = lazy(() => import("../radar/ProductRadarShell"));
 const ScopeBoardShell = lazy(() => import("../scope/ScopeBoardShell"));
 const RetroShell = lazy(() => import("../retro/RetroShell"));
 const StandupsShell = lazy(() => import("../standups/StandupsShell"));
@@ -152,22 +153,29 @@ export default function CmsShell({
           aria-label="Разделы CMS"
           className="hidden overflow-x-auto border-t border-line lg:block"
         >
-          <div className="mx-auto flex min-w-max justify-center gap-1 px-4 lg:px-6">
-            {visibleTabs.map((item) => (
-              <NavLink
-                key={item.key}
-                to={item.path}
-                end={item.key === "overview"}
-                className={({ isActive }) =>
-                  [
-                    "inline-flex items-center justify-center whitespace-nowrap border-b-2 px-3 py-2 text-center text-sm font-semibold transition-colors",
-                    isActive ? "border-blue text-blue" : "border-transparent text-ink3 hover:text-ink",
-                  ].join(" ")
-                }
-                onClick={() => setMobileOpen(false)}
-              >
-                {item.label}
-              </NavLink>
+          <div className="mx-auto flex min-w-max items-stretch justify-center px-4 lg:px-6">
+            {groupedTabs.map((section, sectionIndex) => (
+              <Fragment key={section.group.key}>
+                {sectionIndex > 0 ? <CmsNavGroupDivider layout="horizontal" /> : null}
+                <div className="flex items-stretch gap-1">
+                  {section.items.map((item) => (
+                    <NavLink
+                      key={item.key}
+                      to={item.path}
+                      end={item.key === "overview"}
+                      className={({ isActive }) =>
+                        [
+                          "inline-flex items-center justify-center whitespace-nowrap border-b-2 px-3 py-2 text-center text-sm font-semibold transition-colors",
+                          isActive ? "border-blue text-blue" : "border-transparent text-ink3 hover:text-ink",
+                        ].join(" ")
+                      }
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </Fragment>
             ))}
           </div>
         </nav>
@@ -203,11 +211,14 @@ export default function CmsShell({
       >
         <div className="space-y-3 px-1 pb-2">
           <ThemeMenuControl />
-          {groupedTabs.map((section) => (
+          {groupedTabs.map((section, sectionIndex) => (
             <div key={section.group.key}>
-              <h3 className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink3">
-                {section.group.label}
-              </h3>
+              {sectionIndex > 0 ? <CmsNavGroupDivider layout="vertical" /> : null}
+              {section.group.label ? (
+                <h3 className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink3">
+                  {section.group.label}
+                </h3>
+              ) : null}
               <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const isActive = activeTab?.key === item.key;
@@ -275,6 +286,9 @@ export default function CmsShell({
               {hasPermission(principal, CMS_PERMISSIONS.planner) ? (
                 <Route path="scope/*" element={<ScopeBoardShell principal={principal} canManage={canManageScope} />} />
               ) : null}
+              {hasPermission(principal, CMS_PERMISSIONS.planner) ? (
+                <Route path="radar/*" element={<ProductRadarShell principal={principal} canManage={canManageScope} />} />
+              ) : null}
               {hasPermission(principal, CMS_PERMISSIONS.retro) ? (
                 <Route
                   path="retro/*"
@@ -321,6 +335,13 @@ function CmsIndexRedirect({
     return <OverviewPage principal={principal} />;
   }
   return <Navigate to={firstPath} replace />;
+}
+
+function CmsNavGroupDivider({ layout }: { layout: "horizontal" | "vertical" }) {
+  if (layout === "horizontal") {
+    return <div className="mx-1.5 w-px shrink-0 self-center bg-line/90" style={{ height: "1.25rem" }} aria-hidden="true" />;
+  }
+  return <div className="mx-3 my-2 border-t border-line/90" role="separator" />;
 }
 
 function CheckIcon() {

@@ -9,6 +9,7 @@ export type TabKey =
   | "access"
   | "planner"
   | "scope"
+  | "radar"
   | "retro"
   | "standups";
 
