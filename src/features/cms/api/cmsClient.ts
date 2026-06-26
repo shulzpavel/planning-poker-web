@@ -957,7 +957,12 @@ export type ScopeFlowAlertKind =
   | "test_heavy"
   | "assignee_overloaded"
   | "epic_stalled"
-  | "handoff_stuck";
+  | "handoff_stuck"
+  | "cross_team_block"
+  | "dependency_stall"
+  | "subtask_gap"
+  | "no_subtasks"
+  | "subtask_stalled";
 
 export interface ScopeFlowAlert {
   kind: ScopeFlowAlertKind;
@@ -976,6 +981,10 @@ export interface ScopeFlowAlert {
   section_name?: string;
   status_durations?: Record<string, number>;
   issue_url?: string;
+  blocking_team?: string;
+  blocked_team?: string;
+  blocker_key?: string;
+  subtask_keys?: string[];
 }
 
 export interface ScopeFlowPaceDonutSegment {
@@ -1503,5 +1512,361 @@ export const cmsTasksApi = {
         selected_keys: body.selected_keys ?? [],
         expected_version: body.expected_version ?? null,
       }),
+    }),
+};
+
+export type ProductRadarHealth = "ok" | "attention" | "critical";
+export type ProductRadarLoadBand = "loaded" | "normal" | "idle" | "light";
+
+export interface ProductRadarPerson {
+  name: string;
+  active_count: number;
+  backlog_count: number;
+  active_sp: number;
+  backlog_sp: number;
+  max_status_days: number;
+  load_band: ProductRadarLoadBand;
+  total_count: number;
+  issue_keys: string[];
+}
+
+export interface ProductRadarTrigger {
+  id: string;
+  label: string;
+  severity: ScopeFlowAlertSeverity;
+  count: number;
+  issue_keys: string[];
+}
+
+export interface ProductRadarChart {
+  id: string;
+  title: string;
+  subtitle: string;
+  center_value: string;
+  center_label: string;
+  segments: ScopeFlowPaceDonutSegment[];
+  methodology?: string;
+  detail_segments?: ScopeFlowPaceChartDetailSegment[];
+}
+
+export interface ProductRadarTimelineSegment {
+  status: string;
+  assignee?: string;
+  bucket?: string;
+  days?: number | null;
+  started_at?: string | null;
+  ended_at?: string | null;
+}
+
+export interface ProductRadarSubtask {
+  key: string;
+  summary?: string;
+  status?: string;
+  status_category?: string;
+  assignee?: string;
+  url?: string;
+}
+
+export interface ProductRadarIssueLink {
+  relation: string;
+  relation_label?: string;
+  key: string;
+  summary?: string;
+  status?: string;
+  status_category?: string;
+  team?: string;
+}
+
+export interface ProductRadarIssueDrilldown {
+  team?: string;
+  subtasks?: ProductRadarSubtask[];
+  issue_links?: ProductRadarIssueLink[];
+  timeline?: ProductRadarTimelineSegment[];
+  role_workload_items?: Array<Record<string, unknown>>;
+  status_bucket_durations?: Record<string, number>;
+}
+
+export interface ProductRadarIssue {
+  key: string;
+  summary?: string;
+  status?: string;
+  status_category?: string;
+  current_status_days?: number;
+  status_entered_at?: string;
+  status_changed_at?: string;
+  resolution?: string;
+  resolution_date?: string | null;
+  assignee?: string;
+  team?: string;
+  url?: string;
+  issue_type?: string;
+  parent_key?: string;
+  linked_epic_key?: string;
+  epic_key?: string;
+  timeline?: ProductRadarTimelineSegment[];
+  subtasks?: ProductRadarSubtask[];
+  issue_links?: ProductRadarIssueLink[];
+  drilldown?: ProductRadarIssueDrilldown;
+}
+
+export type ProductRadarRefreshPhase = "start" | "partition";
+
+export interface ProductRadarRefreshProgress {
+  status: "in_progress" | "complete";
+  total: number;
+  loaded: number;
+  enriched: number;
+  next_index: number;
+  partition_size: number;
+  percent: number;
+}
+
+export interface ProductRadarRefreshState {
+  status?: string;
+  keys?: string[];
+  next_index?: number;
+  partition_size?: number;
+  total?: number;
+  enriched_count?: number;
+}
+
+export interface ProductRadarBarItem {
+  key: string;
+  label: string;
+  value: number;
+  color?: string;
+  sp?: number;
+  backlog_count?: number;
+  issue_keys?: string[];
+  month_key?: string;
+  month_label?: string;
+}
+
+export interface ProductRadarDetailItem {
+  issue_key: string;
+  summary: string;
+  issue_url?: string;
+  detail?: string;
+  metric_label?: string;
+  metric_value?: string;
+  blocked_team?: string;
+  blocker_key?: string;
+  blocker_status?: string;
+  resolved_at?: string;
+  story_points?: number;
+  team?: string;
+  dominant_phase?: string;
+  phase_days?: number;
+}
+
+export interface ProductRadarTeamBlockingRow extends ProductRadarBarItem {
+  blocked_teams?: string[];
+  items?: ProductRadarDetailItem[];
+}
+
+export interface ProductRadarEpicInteriorParent {
+  key: string;
+  label: string;
+  group_type?: "epic" | "parent" | "linked";
+  summary?: string;
+  issue_url?: string | null;
+  epic_key?: string;
+  team?: string;
+  value: number;
+  total_subtasks?: number;
+  done_subtasks?: number;
+  open_subtasks?: number;
+  progress_pct?: number;
+  subtasks?: Array<{
+    issue_key: string;
+    summary?: string;
+    status?: string;
+    assignee?: string;
+    done?: boolean;
+    relation?: string;
+    relation_label?: string;
+    link_kind?: string;
+  }>;
+}
+
+export interface ProductRadarEpicInteriorStats {
+  totals?: {
+    epics?: number;
+    parents?: number;
+    tasks?: number;
+    subtasks?: number;
+    linked_tasks?: number;
+    done_tasks?: number;
+    open_tasks?: number;
+    done_subtasks?: number;
+    open_subtasks?: number;
+  };
+  epics?: ProductRadarEpicInteriorParent[];
+  parents?: ProductRadarEpicInteriorParent[];
+  groups?: ProductRadarEpicInteriorParent[];
+}
+
+export interface ProductRadarChartDetails {
+  people_load?: ProductRadarBarItem[];
+  team_blocking?: { teams?: ProductRadarTeamBlockingRow[]; total_blocks?: number };
+  closures?: ProductRadarDetailItem[];
+  phase_time?: ProductRadarDetailItem[];
+  epic_interior?: ProductRadarEpicInteriorParent[];
+}
+
+export interface ProductRadarReleaseStage {
+  key: string;
+  label: string;
+  count: number;
+  sp: number;
+  avg_days: number;
+  color: string;
+}
+
+export interface ProductRadarInsight {
+  kind: string;
+  severity: "high" | "medium" | "low";
+  score: number;
+  issue_key: string;
+  summary: string;
+  issue_url?: string;
+  title: string;
+  detail: string;
+  parent_team?: string;
+  blocker_key?: string;
+  blocker_team?: string;
+  blocker_status?: string;
+  days?: number;
+  metric_label?: string;
+  metric_value?: string;
+}
+
+export type ProductRadarAnalyticsPeriod = "all" | "quarter" | "month";
+
+export interface ProductRadarPeriodAnalytics {
+  period: ProductRadarAnalyticsPeriod;
+  label: string;
+  issue_count?: number;
+  active_count?: number;
+  insights?: ProductRadarInsight[];
+  release_contour?: {
+    stages?: ProductRadarReleaseStage[];
+    total_active?: number;
+  };
+  load_by_team?: ProductRadarBarItem[];
+  status_age?: ProductRadarBarItem[];
+  phase_totals?: {
+    dev: number;
+    test: number;
+    pause: number;
+    todo: number;
+    other: number;
+  };
+  closure_trend?: ProductRadarBarItem[];
+  throughput?: {
+    wip: number;
+    active: number;
+    done_in_period: number;
+    done_sp_in_period: number;
+    done_7d?: number;
+    done_14d?: number;
+    target_in_period: number;
+    target_per_week: number;
+    ratio: number;
+    period_days: number;
+  };
+  people_load?: ProductRadarBarItem[];
+  team_blocking?: ProductRadarChartDetails["team_blocking"];
+  chart_details?: ProductRadarChartDetails;
+  epic_interior?: ProductRadarEpicInteriorStats;
+}
+
+export interface ProductRadarAnalytics extends ProductRadarPeriodAnalytics {
+  default_period?: ProductRadarAnalyticsPeriod;
+  periods?: Partial<Record<ProductRadarAnalyticsPeriod, ProductRadarPeriodAnalytics>>;
+}
+
+export interface ProductRadarSnapshot {
+  refreshed_at?: string;
+  jql?: string;
+  issue_count?: number;
+  active_count?: number;
+  health_status?: ProductRadarHealth;
+  truncated?: boolean;
+  enrichment_complete?: boolean;
+  refresh_state?: ProductRadarRefreshState;
+  warnings?: Array<{ code: string; message: string }>;
+  people?: ProductRadarPerson[];
+  signals?: ScopeFlowAlert[];
+  triggers?: ProductRadarTrigger[];
+  charts?: ProductRadarChart[];
+  analytics?: ProductRadarAnalytics;
+  issues?: ProductRadarIssue[];
+  attention_issues?: ProductRadarIssue[];
+  summary?: {
+    loaded_people?: number;
+    idle_people?: number;
+    high_signals?: number;
+    unassigned_active?: number;
+  };
+}
+
+export interface ProductRadarRecord {
+  id: number;
+  name: string;
+  jql: string;
+  snapshot?: ProductRadarSnapshot | null;
+  created_by?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export const DEFAULT_PRODUCT_RADAR_JQL =
+  "project = BTBMGLBL AND (statusCategory != Done OR resolved >= -120d) ORDER BY updated DESC";
+
+export const cmsProductRadarApi = {
+  list: () => cmsFetch<{ items: ProductRadarRecord[] }>("/product-radars"),
+  create: (body: { name: string; jql: string }) =>
+    cmsFetch<{ radar: ProductRadarRecord }>("/product-radars", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  get: (radarId: number) => cmsFetch<{ radar: ProductRadarRecord }>(`/product-radars/${radarId}`),
+  delete: (radarId: number) =>
+    cmsFetch<{ ok: boolean }>(`/product-radars/${radarId}`, {
+      method: "DELETE",
+    }),
+  refresh: (
+    radarId: number,
+    options?: {
+      force?: boolean;
+      phase?: ProductRadarRefreshPhase;
+      partitionSize?: number;
+    },
+  ) =>
+    cmsFetch<{ radar: ProductRadarRecord; refresh_progress: ProductRadarRefreshProgress }>(
+      `/product-radars/${radarId}/refresh?force=${options?.force ? "true" : "false"}`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          phase: options?.phase ?? "start",
+          partition_size: options?.partitionSize,
+        }),
+      },
+    ),
+  refreshAll: async (radarId: number, options?: { force?: boolean; partitionSize?: number; onProgress?: (progress: ProductRadarRefreshProgress, radar: ProductRadarRecord) => void }) => {
+    const partitionSize = options?.partitionSize ?? 25;
+    let response = await cmsProductRadarApi.refresh(radarId, { force: options?.force, phase: "start", partitionSize });
+    options?.onProgress?.(response.refresh_progress, response.radar);
+    while (response.refresh_progress.status === "in_progress") {
+      response = await cmsProductRadarApi.refresh(radarId, { force: options?.force, phase: "partition", partitionSize });
+      options?.onProgress?.(response.refresh_progress, response.radar);
+    }
+    return response;
+  },
+  update: (radarId: number, body: { name?: string; jql?: string }) =>
+    cmsFetch<{ radar: ProductRadarRecord }>(`/product-radars/${radarId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
     }),
 };

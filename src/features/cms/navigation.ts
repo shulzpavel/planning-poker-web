@@ -19,26 +19,22 @@ export const CMS_PERMISSIONS = {
 } as const;
 
 /**
- * Logical groups that organize the CMS nav menu. The mobile drawer renders
- * groups in the order declared here, so new sections can be added simply by
- * appending a new entry (e.g. `{ key: "automation", label: "Автоматизации" }`)
- * and tagging the relevant `cmsTabs[].group` with it — `CmsShell` will pick
- * them up automatically with no further changes.
- *
- * Keep group keys narrow (`CmsNavGroupKey`) so TypeScript flags any tab whose
- * group does not exist in this list.
+ * Logical groups for the CMS nav menu. Groups render in declaration order;
+ * empty groups are omitted per principal. Labels are optional — when omitted,
+ * sections are separated visually (divider) instead of a heading.
  */
-export type CmsNavGroupKey = "core" | "operations" | "security";
+export type CmsNavGroupKey = "overview" | "workflow" | "coordination" | "admin";
 
 export interface CmsNavGroup {
   key: CmsNavGroupKey;
-  label: string;
+  label?: string;
 }
 
 export const cmsNavGroups: CmsNavGroup[] = [
-  { key: "core", label: "Главное" },
-  { key: "operations", label: "Операции" },
-  { key: "security", label: "Безопасность" },
+  { key: "overview" },
+  { key: "workflow" },
+  { key: "coordination" },
+  { key: "admin" },
 ];
 
 export interface CmsTab {
@@ -63,7 +59,7 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.overview,
     path: "/cms",
     routePath: "",
-    group: "core",
+    group: "overview",
   },
   {
     key: "planner",
@@ -72,7 +68,7 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.planner,
     path: "/cms/planner",
     routePath: "planner",
-    group: "operations",
+    group: "workflow",
   },
   {
     key: "sessions",
@@ -81,7 +77,7 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.sessions,
     path: "/cms/sessions",
     routePath: "sessions",
-    group: "operations",
+    group: "workflow",
   },
   {
     key: "scope",
@@ -90,7 +86,7 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.planner,
     path: "/cms/scope",
     routePath: "scope",
-    group: "operations",
+    group: "workflow",
   },
   {
     key: "retro",
@@ -99,7 +95,7 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.retro,
     path: "/cms/retro",
     routePath: "retro",
-    group: "operations",
+    group: "workflow",
   },
   {
     key: "standups",
@@ -108,7 +104,16 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.standups,
     path: "/cms/standups",
     routePath: "standups",
-    group: "operations",
+    group: "coordination",
+  },
+  {
+    key: "radar",
+    label: "Радар",
+    description: "Продуктовая нагрузка: кто загружен, кто простаивает, автоматические сигналы по Jira.",
+    permission: CMS_PERMISSIONS.planner,
+    path: "/cms/radar",
+    routePath: "radar",
+    group: "coordination",
   },
   {
     key: "users",
@@ -117,7 +122,7 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.users,
     path: "/cms/users",
     routePath: "users",
-    group: "operations",
+    group: "admin",
   },
   {
     key: "events",
@@ -126,7 +131,7 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.events,
     path: "/cms/events",
     routePath: "events",
-    group: "security",
+    group: "admin",
   },
   {
     key: "access",
@@ -135,7 +140,7 @@ export const cmsTabs: CmsTab[] = [
     permission: CMS_PERMISSIONS.access,
     path: "/cms/access",
     routePath: "access",
-    group: "security",
+    group: "admin",
   },
 ];
 
@@ -198,20 +203,11 @@ export function resolveAppTransitionKey(pathname: string): string {
 export function groupVisibleTabs(
   principal: CmsPrincipal,
 ): { group: CmsNavGroup; items: CmsTab[] }[] {
-  const flat = visibleCmsTabs(principal);
-  const bucket = new Map<CmsNavGroupKey, CmsTab[]>();
-  for (const tab of flat) {
-    const items = bucket.get(tab.group);
-    if (items) {
-      items.push(tab);
-    } else {
-      bucket.set(tab.group, [tab]);
-    }
-  }
+  const visibleKeys = new Set(visibleCmsTabs(principal).map((tab) => tab.key));
   const result: { group: CmsNavGroup; items: CmsTab[] }[] = [];
   for (const group of cmsNavGroups) {
-    const items = bucket.get(group.key);
-    if (items && items.length > 0) {
+    const items = cmsTabs.filter((tab) => tab.group === group.key && visibleKeys.has(tab.key));
+    if (items.length > 0) {
       result.push({ group, items });
     }
   }

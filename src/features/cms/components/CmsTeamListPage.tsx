@@ -47,6 +47,8 @@ export interface CmsTeamListPageProps {
     itemNoun: string;
     onFocusSearch?: () => void;
   };
+  /** When true, superusers do not see the team filter (e.g. portfolio radars). */
+  hideTeamFilter?: boolean;
   children: ReactNode;
   className?: string;
 }
@@ -75,11 +77,12 @@ export function CmsTeamListPage({
   error,
   banner,
   listFooter,
+  hideTeamFilter = false,
   children,
   className = "space-y-4",
 }: CmsTeamListPageProps) {
   const { teams } = useCmsTeams(principal);
-  const showTeamFilter = principal.is_superuser;
+  const showTeamFilter = principal.is_superuser && !hideTeamFilter;
   const showFilterBar = Boolean(toolbar || showTeamFilter);
 
   return (
