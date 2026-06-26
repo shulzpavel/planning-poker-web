@@ -284,17 +284,20 @@ function FeedSection({
 export function ProductRadarInsightsFeed({
   insights,
   teamBlocking,
+  prebuiltBlockings,
   issuesByKey,
 }: {
   insights: ProductRadarInsight[];
   teamBlocking?: { teams?: ProductRadarTeamBlockingRow[]; total_blocks?: number };
+  prebuiltBlockings?: BlockingFeedRow[];
   issuesByKey: Record<string, ProductRadarIssue>;
 }) {
   const feed = useMemo(() => buildBlockingFeed(insights, teamBlocking, issuesByKey), [insights, issuesByKey, teamBlocking]);
-  const { blockings, insights: insightRows } = useMemo(() => splitBlockingFeed(feed), [feed]);
+  const { blockings: derivedBlockings, insights: insightRows } = useMemo(() => splitBlockingFeed(feed), [feed]);
+  const blockings = prebuiltBlockings?.length ? prebuiltBlockings : derivedBlockings;
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  if (!feed.length) {
+  if (!blockings.length && !insightRows.length) {
     return <p className="text-sm text-ink3">Блокировок и критичных инсайтов не найдено.</p>;
   }
 

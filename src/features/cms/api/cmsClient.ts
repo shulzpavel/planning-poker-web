@@ -1802,6 +1802,22 @@ export interface ProductRadarSnapshot {
   triggers?: ProductRadarTrigger[];
   charts?: ProductRadarChart[];
   analytics?: ProductRadarAnalytics;
+  blocking_feed?: {
+    total?: number;
+    blockings?: Array<{
+      id: string;
+      category?: "blocking" | "insight";
+      severity?: "high" | "medium" | "low";
+      blockingTeam: string;
+      blockedTeam: string;
+      blockedKey: string;
+      blockerKey?: string;
+      blockerStatus?: string;
+      title: string;
+      detail: string;
+      issueUrl?: string;
+    }>;
+  };
   issues?: ProductRadarIssue[];
   attention_issues?: ProductRadarIssue[];
   summary?: {
