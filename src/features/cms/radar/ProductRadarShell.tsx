@@ -40,11 +40,8 @@ import {
   needsProductRadarSnapshotRefresh,
   validateProductRadarCreate,
 } from "./productRadarForm";
-import {
-  productRadarTeamBlocking,
-  resolveProductRadarInsightsAnalytics,
-  useProductRadarPeriod,
-} from "./productRadarPeriod";
+import { resolveProductRadarBlocking } from "./productRadarBlocking";
+import { useProductRadarPeriod } from "./productRadarPeriod";
 import { SortableProductRadarBlock } from "./SortableProductRadarBlock";
 
 function healthMeta(status: ProductRadarSnapshot["health_status"]) {
@@ -80,14 +77,7 @@ function ProductRadarView({
   const [layoutDragging, setLayoutDragging] = useState(false);
 
   const { period, setPeriod } = useProductRadarPeriod(snapshot?.analytics);
-  const insightsAnalytics = useMemo(
-    () => resolveProductRadarInsightsAnalytics(snapshot?.analytics),
-    [snapshot?.analytics],
-  );
-  const insightsTeamBlocking = useMemo(
-    () => productRadarTeamBlocking(insightsAnalytics),
-    [insightsAnalytics],
-  );
+  const blockingFeed = useMemo(() => resolveProductRadarBlocking(snapshot), [snapshot]);
 
   const health = healthMeta(snapshot?.health_status);
   const issuesByKey = useMemo(() => {
@@ -170,8 +160,8 @@ function ProductRadarView({
             subtitle="Актуальные триггеры по портфелю — цепочка эпик → задача → связи."
           >
             <ProductRadarInsightsFeed
-              insights={insightsAnalytics?.insights ?? []}
-              teamBlocking={insightsTeamBlocking}
+              insights={blockingFeed.insights}
+              teamBlocking={blockingFeed.teamBlocking}
               issuesByKey={issuesByKey}
             />
           </ProductRadarLayoutBlock>

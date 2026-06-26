@@ -1733,6 +1733,7 @@ export interface ProductRadarInsight {
   title: string;
   detail: string;
   parent_team?: string;
+  blocked_team?: string;
   blocker_key?: string;
   blocker_team?: string;
   blocker_status?: string;

@@ -66,6 +66,7 @@ function makePeriodBundle(
       closure_trend: nested.closure_trend ?? [],
       chart_details: nested.chart_details ?? analytics.chart_details,
       insights: nested.insights ?? [],
+      team_blocking: nested.team_blocking ?? analytics.team_blocking,
     };
   }
 
@@ -76,6 +77,7 @@ function makePeriodBundle(
     issue_count: source.issue_count ?? analytics.issue_count ?? 0,
     active_count: source.active_count ?? analytics.active_count ?? 0,
     insights: source.insights ?? analytics.insights ?? [],
+    team_blocking: source.team_blocking ?? analytics.team_blocking,
     release_contour: source.release_contour ?? analytics.release_contour,
     load_by_team: source.load_by_team ?? analytics.load_by_team ?? [],
     status_age: source.status_age ?? analytics.status_age ?? [],
