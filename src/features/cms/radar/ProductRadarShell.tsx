@@ -41,6 +41,7 @@ import {
   validateProductRadarCreate,
 } from "./productRadarForm";
 import { resolveProductRadarBlocking } from "./productRadarBlocking";
+import type { BlockingFeedRow } from "./productRadarContext";
 import { useProductRadarPeriod } from "./productRadarPeriod";
 import { SortableProductRadarBlock } from "./SortableProductRadarBlock";
 
@@ -162,6 +163,7 @@ function ProductRadarView({
             <ProductRadarInsightsFeed
               insights={blockingFeed.insights}
               teamBlocking={blockingFeed.teamBlocking}
+              prebuiltBlockings={snapshot?.blocking_feed?.blockings as BlockingFeedRow[] | undefined}
               issuesByKey={issuesByKey}
             />
           </ProductRadarLayoutBlock>
