@@ -91,6 +91,7 @@ import { ScopeSectionEditor } from "./ScopeSectionEditor";
 import { ScopeAssigneeCharts } from "./ScopeAssigneeCharts";
 import { ScopePlanInsights, planChangeReasonLabel } from "./scopePlanInsights";
 import { mergeScopeBoardRecord } from "./scopeBoardMerge";
+import { useScopePriorityQueueSync } from "./useScopePriorityQueueSync";
 import { ScopeFlowPaceSection } from "./ScopeFlowPaceSection";
 import { shouldShowFlowPaceBlock } from "./scopeFlowPaceHelpers";
 import { ScopeVisualDashboard, type ScopeDataQualityDetails, type ScopeReportSummary } from "./ScopeVisualDashboard";
@@ -917,6 +918,16 @@ function ScopeBoardEditorPage({
   const [presentationClosing, setPresentationClosing] = useState(false);
   const printRootRef = useRef<HTMLDivElement>(null);
   const aiReportRef = useRef<HTMLDivElement>(null);
+  const queueSyncPausedRef = useRef(false);
+
+  const withQueueSyncPaused = useCallback(async <T,>(action: () => Promise<T>): Promise<T> => {
+    queueSyncPausedRef.current = true;
+    try {
+      return await action();
+    } finally {
+      queueSyncPausedRef.current = false;
+    }
+  }, []);
 
   const inferredReportType: "monthly" | "release" = useMemo(() => {
     if (mode === "edit") return (board?.report_type ?? "monthly") as "monthly" | "release";
@@ -929,6 +940,14 @@ function ScopeBoardEditorPage({
   const applyBoardMutation = useCallback((record: ScopeBoardRecord) => {
     setBoard((previous) => mergeScopeBoardRecord(previous, record));
   }, []);
+
+  useScopePriorityQueueSync({
+    boardId: mode === "edit" ? boardId : null,
+    enabled: mode === "edit",
+    updatedAt: board?.updated_at,
+    onSync: applyBoardMutation,
+    isPaused: () => queueSyncPausedRef.current || refreshing || analyzing,
+  });
   const planEpicKey = useMemo(
     () => normalizePlanEpicKey(board?.plan_epic_key ?? savedForm.plan_epic_key),
     [board?.plan_epic_key, savedForm.plan_epic_key],
@@ -1268,21 +1287,25 @@ function ScopeBoardEditorPage({
   const reorderQueue = useCallback(
     async (queue: ScopePriorityQueueKind, order: string[], movedKey: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
-      const record = await cmsScopeApi.reorderQueue(boardId, queue, order, movedKey);
-      applyBoardMutation(record);
-      toast.success("Порядок и значимость сохранены");
+      await withQueueSyncPaused(async () => {
+        const record = await cmsScopeApi.reorderQueue(boardId, queue, order, movedKey);
+        applyBoardMutation(record);
+        toast.success("Порядок и значимость сохранены");
+      });
     },
-    [applyBoardMutation, boardId, toast]
+    [applyBoardMutation, boardId, toast, withQueueSyncPaused]
   );
 
   const addQueueComment = useCallback(
     async (queue: ScopePriorityQueueKind, issueKey: string, text: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
-      const record = await cmsScopeApi.addQueueIssueComment(boardId, queue, issueKey, text);
-      applyBoardMutation(record);
-      toast.success("Комментарий отправлен в Jira");
+      await withQueueSyncPaused(async () => {
+        const record = await cmsScopeApi.addQueueIssueComment(boardId, queue, issueKey, text);
+        applyBoardMutation(record);
+        toast.success("Комментарий отправлен в Jira");
+      });
     },
-    [applyBoardMutation, boardId, toast]
+    [applyBoardMutation, boardId, toast, withQueueSyncPaused]
   );
 
   const saveReportComment = useCallback(
@@ -1298,11 +1321,13 @@ function ScopeBoardEditorPage({
   const updateQueueDueDate = useCallback(
     async (queue: ScopePriorityQueueKind, issueKey: string, dueDate: string) => {
       if (boardId === null || Number.isNaN(boardId)) return;
-      const record = await cmsScopeApi.updateQueueIssueDueDate(boardId, queue, issueKey, dueDate);
-      applyBoardMutation(record);
-      toast.success("Срок исполнения сохранён в Jira");
+      await withQueueSyncPaused(async () => {
+        const record = await cmsScopeApi.updateQueueIssueDueDate(boardId, queue, issueKey, dueDate);
+        applyBoardMutation(record);
+        toast.success("Срок исполнения сохранён в Jira");
+      });
     },
-    [applyBoardMutation, boardId, toast]
+    [applyBoardMutation, boardId, toast, withQueueSyncPaused]
   );
 
   async function handleSave() {
