@@ -17,6 +17,12 @@ const ForbiddenPage = lazy(() => import("./pages/ForbiddenPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const SessionPage = lazy(() => import("./pages/SessionPage"));
 const RetroPage = lazy(() => import("./pages/RetroPage"));
+const IntakeDashboard = import.meta.env.DEV && import.meta.env.VITE_DH_INTAKE_PREVIEW === "1"
+  ? lazy(() => import("./features/cms/dashboards/IntakeDashboard"))
+  : () => null;
+const DiscoveryDashboard = import.meta.env.DEV && import.meta.env.VITE_DH_INTAKE_PREVIEW === "1"
+  ? lazy(() => import("./features/cms/dashboards/DiscoveryDashboard"))
+  : () => null;
 
 function SessionDetailIndex() {
   const { id } = useParams<{ id: string }>();
@@ -68,6 +74,15 @@ function AppRoutes() {
     >
       <RouteTransition transitionKey={transitionKey}>
         <Routes location={location}>
+          {import.meta.env.DEV && import.meta.env.VITE_DH_INTAKE_PREVIEW === "1" && (
+            <Route path="/prototype/dashboards" element={<Navigate to="/prototype/dashboards/intake" replace />} />
+          )}
+          {import.meta.env.DEV && import.meta.env.VITE_DH_INTAKE_PREVIEW === "1" && (
+            <Route path="/prototype/dashboards/intake" element={<IntakeDashboard />} />
+          )}
+          {import.meta.env.DEV && import.meta.env.VITE_DH_INTAKE_PREVIEW === "1" && (
+            <Route path="/prototype/dashboards/discovery" element={<DiscoveryDashboard />} />
+          )}
           {/* Root is the public landing page. Authenticated entry points
               (cockpit, CMS) are linked from there. */}
           <Route

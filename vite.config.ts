@@ -1,8 +1,9 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
+import { intakePreview } from "./dev/intakePreview.ts";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), intakePreview()],
   test: {
     exclude: ["node_modules/**", "dist/**", "e2e/**"],
   },
