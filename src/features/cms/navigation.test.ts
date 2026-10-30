@@ -118,8 +118,14 @@ describe("CMS navigation", () => {
     expect(visibleCmsTabs(admin).map((tab) => tab.key)).toEqual(["sessions"]);
   });
 
+  it("shows dashboards only with the server owner capability, even for superusers", () => {
+    expect(visibleCmsTabs(principal({ is_superuser: true })).some(x => x.key === "dashboards")).toBe(false);
+    expect(visibleCmsTabs(principal({ is_superuser: true, intake_dashboard_access: true })).some(x => x.key === "dashboards")).toBe(true);
+    expect(visibleCmsTabs(principal({ intake_dashboard_access: true })).some(x => x.key === "dashboards")).toBe(false);
+  });
+
   it("keeps the canonical tab count stable", () => {
-    expect(cmsTabs).toHaveLength(10);
+    expect(cmsTabs).toHaveLength(11);
   });
 });
 

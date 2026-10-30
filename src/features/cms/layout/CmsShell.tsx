@@ -13,6 +13,7 @@ import {
   type CmsTab,
 } from "../navigation";
 
+const IntakeDashboard = lazy(() => import("../dashboards/IntakeDashboard"));
 const AccessShell = lazy(() => import("../access/AccessShell"));
 const AuditEventsPage = lazy(() => import("../events/AuditEventsPage"));
 const OverviewPage = lazy(() => import("../overview/OverviewPage"));
@@ -237,7 +238,7 @@ export default function CmsShell({
         </div>
       </BottomSheet>
 
-      <div className="mx-auto max-w-7xl space-y-3 px-3 py-4 sm:space-y-5 sm:px-4 sm:py-5 lg:py-6 cms-shell">
+      <div className={`mx-auto ${location.pathname.startsWith("/cms/dashboards") ? "intake-content" : "max-w-7xl"} space-y-3 px-3 py-4 sm:space-y-5 sm:px-4 sm:py-5 lg:py-6 cms-shell`}>
         {visibleTabs.length === 0 ? (
           <InlineError text="Для этой учётной записи не настроено ни одного раздела CMS." />
         ) : null}
@@ -250,6 +251,9 @@ export default function CmsShell({
         >
           <RouteTransition transitionKey={cmsTransitionKey}>
             <Routes>
+              <Route path="dashboards" element={<Navigate to="/cms/dashboards/intake" replace/>}/>
+              <Route path="dashboards/intake" element={principal.intake_dashboard_access && canManageScope ? <IntakeDashboard/> : <Navigate to="/403" replace/>}/>
+
               <Route index element={<CmsIndexRedirect firstPath={visibleTabs[0]?.path} principal={principal} />} />
               {hasPermission(principal, CMS_PERMISSIONS.overview) ? (
                 <Route path="overview" element={<Navigate to="/cms" replace />} />

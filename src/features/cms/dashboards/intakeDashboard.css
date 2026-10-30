@@ -1,0 +1,130 @@
+.intake-figure {
+  margin: 0;
+  min-width: 0;
+}
+.intake-dashboard h1,
+.intake-dashboard h2 {
+  color: rgb(var(--c-ink));
+}
+:root[data-theme="dark"] .intake-dashboard h1,
+:root[data-theme="dark"] .intake-dashboard h2 {
+  color: white;
+}
+.intake-dashboard strong {
+  color: rgb(var(--c-ink));
+  font-weight: 650;
+}
+.intake-subtitle {
+  color: rgb(var(--c-ink3));
+}
+.intake-explanation {
+  text-wrap: pretty;
+}
+.intake-metric-tile {
+  padding: 18px 16px;
+}
+.intake-metric-tile > p:first-child {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 12px;
+  line-height: 1.6;
+  opacity: 1;
+  color: rgb(var(--c-ink3));
+}
+.intake-metric-tile > div {
+  margin-top: 8px;
+  font-size: 26px;
+  line-height: 1.3;
+  font-weight: 650;
+}
+.intake-metric-tile > p:last-child {
+  margin-top: 8px;
+  line-height: 1.65;
+}
+.intake-figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 340px;
+  overflow: visible;
+}
+.intake-figure svg text {
+  font-family: inherit;
+  font-size: 11px;
+  fill: rgb(var(--c-ink3));
+}
+.intake-figure figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: rgb(var(--c-ink3));
+  font-size: 11px;
+}
+.intake-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-left: 12px;
+}
+.intake-dot:first-child {
+  margin-left: 0;
+}
+.intake-dot.blue {
+  background: rgb(var(--c-blue));
+}
+.intake-dot.teal {
+  background: rgb(var(--c-purple));
+}
+.intake-chart-caption {
+  margin-left: auto;
+}
+.intake-point {
+  cursor: pointer;
+}
+.intake-point:hover circle {
+  stroke: rgb(var(--c-ink));
+  stroke-width: 2;
+}
+.intake-point:focus-visible {
+  outline: 2px solid rgb(var(--c-blue));
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .intake-chart-caption {
+    margin-left: 0;
+    width: 100%;
+  }
+  .intake-figure svg text {
+    font-size: 13px;
+  }
+}
+
+/* The existing CMS shell grows to 80% on wide displays, retaining mobile gutters. */
+.intake-content {
+  width: 100%;
+  max-width: max(1280px, 80vw);
+}
+.intake-chart-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+.intake-chart-body {
+  flex: 1;
+  min-width: 0;
+}
+.intake-chart-footer {
+  margin-top: auto;
+}
+.intake-chart-footer > .scope-collapsible-card {
+  margin: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+  box-shadow: none;
+}

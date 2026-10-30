@@ -64,7 +64,8 @@ export const cmsTabs: CmsTab[] = [
   {
     key: "planner",
     label: "Калькулятор",
-    description: "Velocity и Capacity на следующий спринт: задаём команду и историю — получаем рекомендацию в SP.",
+    description:
+      "Velocity и Capacity на следующий спринт: задаём команду и историю — получаем рекомендацию в SP.",
     permission: CMS_PERMISSIONS.planner,
     path: "/cms/planner",
     routePath: "planner",
@@ -73,16 +74,27 @@ export const cmsTabs: CmsTab[] = [
   {
     key: "sessions",
     label: "Сессии",
-    description: "Список планирований: открыть управление, отчёт, закрыть или удалить из истории.",
+    description:
+      "Список планирований: открыть управление, отчёт, закрыть или удалить из истории.",
     permission: CMS_PERMISSIONS.sessions,
     path: "/cms/sessions",
     routePath: "sessions",
     group: "workflow",
   },
   {
+    key: "dashboards",
+    label: "Дэшборды",
+    description: "Динамика и обработка продуктовых инициатив.",
+    permission: CMS_PERMISSIONS.planner,
+    path: "/cms/dashboards/intake",
+    routePath: "dashboards",
+    group: "workflow",
+  },
+  {
     key: "scope",
     label: "Отчеты",
-    description: "Месячные отчёты по командам: capacity, статус задач, открытые вопросы и AI-сводка для бизнеса.",
+    description:
+      "Месячные отчёты по командам: capacity, статус задач, открытые вопросы и AI-сводка для бизнеса.",
     permission: CMS_PERMISSIONS.planner,
     path: "/cms/scope",
     routePath: "scope",
@@ -91,7 +103,8 @@ export const cmsTabs: CmsTab[] = [
   {
     key: "retro",
     label: "Ретроспективы",
-    description: "Живое ретро: настраиваем секции, команда подключается по ссылке, в конце — AI-анализ итогов.",
+    description:
+      "Живое ретро: настраиваем секции, команда подключается по ссылке, в конце — AI-анализ итогов.",
     permission: CMS_PERMISSIONS.retro,
     path: "/cms/retro",
     routePath: "retro",
@@ -100,7 +113,8 @@ export const cmsTabs: CmsTab[] = [
   {
     key: "standups",
     label: "Дейлики",
-    description: "Ежедневные standup-записи по командам: вчера, сегодня, блокеры и сроки задач.",
+    description:
+      "Ежедневные standup-записи по командам: вчера, сегодня, блокеры и сроки задач.",
     permission: CMS_PERMISSIONS.standups,
     path: "/cms/standups",
     routePath: "standups",
@@ -109,7 +123,8 @@ export const cmsTabs: CmsTab[] = [
   {
     key: "radar",
     label: "Радар",
-    description: "Продуктовая нагрузка: кто загружен, кто простаивает, автоматические сигналы по Jira.",
+    description:
+      "Продуктовая нагрузка: кто загружен, кто простаивает, автоматические сигналы по Jira.",
     permission: CMS_PERMISSIONS.planner,
     path: "/cms/radar",
     routePath: "radar",
@@ -118,7 +133,8 @@ export const cmsTabs: CmsTab[] = [
   {
     key: "users",
     label: "Участники",
-    description: "Кто заходил в сессии. Используется для поиска по имени и роли.",
+    description:
+      "Кто заходил в сессии. Используется для поиска по имени и роли.",
     permission: CMS_PERMISSIONS.users,
     path: "/cms/users",
     routePath: "users",
@@ -136,7 +152,8 @@ export const cmsTabs: CmsTab[] = [
   {
     key: "access",
     label: "Доступы",
-    description: "CMS-пользователи, роли и права. Системные роли защищены от изменений.",
+    description:
+      "CMS-пользователи, роли и права. Системные роли защищены от изменений.",
     permission: CMS_PERMISSIONS.access,
     path: "/cms/access",
     routePath: "access",
@@ -144,23 +161,43 @@ export const cmsTabs: CmsTab[] = [
   },
 ];
 
-export function hasPermission(principal: CmsPrincipal, permission: string): boolean {
+export function hasPermission(
+  principal: CmsPrincipal,
+  permission: string,
+): boolean {
   return principal.is_superuser || principal.permissions.includes(permission);
 }
 
 export function visibleCmsTabs(principal: CmsPrincipal): CmsTab[] {
-  const tabByKey = new Map<TabKey, CmsTab>(cmsTabs.map((tab) => [tab.key, tab]));
+  const tabByKey = new Map<TabKey, CmsTab>(
+    cmsTabs.map((tab) => [tab.key, tab]),
+  );
   const orderedFromDb = principal.pages
     .map((page) => tabByKey.get(page.key as TabKey))
     .filter((tab): tab is CmsTab => Boolean(tab))
-    .filter((tab) => hasPermission(principal, tab.permission));
+    .filter(
+      (tab) =>
+        hasPermission(principal, tab.permission) &&
+        (tab.key !== "dashboards" ||
+          principal.intake_dashboard_access === true),
+    );
 
   if (orderedFromDb.length > 0) {
     const included = new Set(orderedFromDb.map((tab) => tab.key));
-    const missingPermittedTabs = cmsTabs.filter((tab) => !included.has(tab.key) && hasPermission(principal, tab.permission));
+    const missingPermittedTabs = cmsTabs.filter(
+      (tab) =>
+        !included.has(tab.key) &&
+        hasPermission(principal, tab.permission) &&
+        (tab.key !== "dashboards" ||
+          principal.intake_dashboard_access === true),
+    );
     return [...orderedFromDb, ...missingPermittedTabs];
   }
-  return cmsTabs.filter((tab) => hasPermission(principal, tab.permission));
+  return cmsTabs.filter(
+    (tab) =>
+      hasPermission(principal, tab.permission) &&
+      (tab.key !== "dashboards" || principal.intake_dashboard_access === true),
+  );
 }
 
 /**
@@ -206,7 +243,9 @@ export function groupVisibleTabs(
   const visibleKeys = new Set(visibleCmsTabs(principal).map((tab) => tab.key));
   const result: { group: CmsNavGroup; items: CmsTab[] }[] = [];
   for (const group of cmsNavGroups) {
-    const items = cmsTabs.filter((tab) => tab.group === group.key && visibleKeys.has(tab.key));
+    const items = cmsTabs.filter(
+      (tab) => tab.group === group.key && visibleKeys.has(tab.key),
+    );
     if (items.length > 0) {
       result.push({ group, items });
     }

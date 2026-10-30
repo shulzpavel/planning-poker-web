@@ -8,6 +8,7 @@ export type TabKey =
   | "events"
   | "access"
   | "planner"
+  | "dashboards"
   | "scope"
   | "radar"
   | "retro"
@@ -48,6 +49,7 @@ export interface CmsTeam {
 }
 
 export interface CmsPrincipal {
+  intake_dashboard_access?: boolean;
   id: number;
   username: string;
   display_name: string | null;
